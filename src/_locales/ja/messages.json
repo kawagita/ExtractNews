@@ -1,0 +1,1176 @@
+{
+  "extensionName": {
+    "message": "ExtractNews",
+    "description": "拡張機能の名前。"
+  },
+
+  "extensionDescription": {
+    "message": "ExtractNews は興味深いニュースの発見を手助けし、うんざりする話題を見えないようにします。",
+    "description": "アドオンの説明。"
+  },
+
+  "extensionFontFamily": {
+    "message": "ＭＳ Ｐゴシック",
+    "description": "アドオンで使われるフォントファミリー。"
+  },
+
+  "extractNewsYahooJapanNewsName": {
+    "message": "Yahoo! JAPAN ニュース",
+    "description": "Yahoo! JAPAN ニュースの名称。"
+  },
+
+  "extractNewsYahooJapanNewsTitleSuffix": {
+    "message": " - Yahoo!ニュース",
+    "description": "Yahoo!ニュースのタイトルサフィックス。"
+  },
+
+  "extractNewsYahooJapanNewsUrlHostServerPatterns": {
+    "message": "news",
+    "description": "Yahoo! JAPAN ニュースURLのホストサーバーのパターン。"
+  },
+
+  "extractNewsYahooJapanNewsUrlDomain": {
+    "message": "yahoo.co.jp",
+    "description": "Yahoo! JAPAN ニュースURLのドメイン。"
+  },
+
+  "extractNewsYahooJapanNewsUrlRootDirectoryPath": {
+    "message": "",
+    "description": "Yahoo! JAPAN ニュースURLのルートディレクトリのパス。"
+  },
+
+  "extractNewsYahooJapanNewsArticlePaths": {
+    "message": "/articles,/pickup",
+    "description": "Yahoo! JAPAN ニュースの記事のパス。"
+  },
+
+  "extractNewsYahooJapanNewsCategoryRootPath": {
+    "message": "/categories",
+    "description": "Yahoo! JAPAN ニュースのカテゴリーのルートパス。"
+  },
+
+  "extractNewsYahooJapanNewsCategoryPaths": {
+    "message": ",/domestic,/world,/business,/entertaiment,/sports,/it,/science,/life,/local",
+    "description": "Yahoo! JAPAN ニュースのカテゴリーのパス。"
+  },
+
+  "extractNewsYahooJapanNewsITScienceCategoryPath": {
+    "message": "/it-science",
+    "description": "Yahoo! JAPAN ニュースのIT・科学カテゴリーのパス。"
+  },
+
+  "extractNewsYahooJapanNewsCategories": {
+    "message": "主要,国内,国際,経済,エンタメ,スポーツ,IT,科学,ライフ,地域",
+    "description": "Yahoo! JAPAN ニュースのカテゴリー。"
+  },
+
+  "extractNewsYahooJapanNewsITScienceCategory": {
+    "message": "IT・科学",
+    "description": "Yahoo! JAPAN ニュースのIT・科学カテゴリー。"
+  },
+
+  "extractNewsYahooJapanNewsCategoryTopics": {
+    "message": "国内 政治 社会 国際 アメリカ 中国 経済 ビジネス エンタメ スポーツ IT テクノロジー ライフ 東京 名古屋 大阪,国内 政治 社会 メディア,国際 アメリカ 英国 ロシア 中国 韓国,経済 ビジネス マーケット 金融 自動車 バイク,エンタメ 映画 テレビ 音楽 アニメ ゲーム 韓流,スポーツ 野球 サッカー モータースポーツ 競馬 ゴルフ 格闘技,インターネット IT 通信 モバイル PC ハードウェア ビジネス,科学 テクノロジー 医療,ライフ 健康 文化 アート,地域 北海道 東京 神奈川 名古屋 大阪 福岡 沖縄",
+    "description": "Yahoo! JAPAN ニュースのカテゴリーのトピックス。"
+  },
+
+  "extractNewsYahooJapanNewsHeadingTopicRegularExpression": {
+    "message": "^.+（(.+)(?:総合)?）$$",
+    "description": "Yahoo! JAPAN ニュースの見出しトピックの正規表現。"
+  },
+
+  "extractNewsYahooJapanNewsFlashPath": {
+    "message": "/flash",
+    "description": "Yahoo! JAPAN ニュースの速報のパス。"
+  },
+
+  "extractNewsYahooJapanNewsFlashNewsTitle": {
+    "message": "速報ニュース",
+    "description": "Yahoo! JAPAN ニュースの速報ニュースのタイトル。"
+  },
+
+  "extractNewsYahooJapanNewsLivePath": {
+    "message": "/live",
+    "description": "Yahoo! JAPAN ニュースのライブのパス。"
+  },
+
+  "extractNewsYahooJapanNewsLiveMovieTitle": {
+    "message": "話題の動画",
+    "description": "Yahoo! JAPAN ニュースのライブ動画のタイトル。"
+  },
+
+  "extractNewsYahooJapanNewsTopicsPath": {
+    "message": "/topics",
+    "description": "Yahoo! JAPAN ニュースのトピックス一覧のパス。"
+  },
+
+  "extractNewsYahooJapanNewsRankingRootPath": {
+    "message": "/ranking",
+    "description": "Yahoo! JAPAN ニュースのランキングのルートパス。"
+  },
+
+  "extractNewsYahooJapanNewsRankingPaths": {
+    "message": "/access/news,/access/photo,/access/video,/access/magazine,/access/byline,/comment",
+    "description": "Yahoo! JAPAN ニュースのランキングのパス。"
+  },
+
+  "extractNewsYahooJapanNewsPaidNews": {
+    "message": "有料記事",
+    "description": "Yahoo! JAPAN ニュースの有料記事。"
+  },
+
+  "extractNewsYahooJapanNewsCommentCountRegularExpression": {
+    "message": "^(:?[1-9][0-9]*|件/時)$$",
+    "description": "Yahoo! JAPAN ニュースのコメントカウントの正規表現。"
+  },
+
+  "extractNewsImpressWatchName": {
+    "message": "Impress Watch",
+    "description": "Impress Watchの名称。"
+  },
+
+  "extractNewsImpressWatchTitleSuffixRegularExpression": {
+    "message": " [-|] ([^-]+)$$",
+    "description": "Impress Watchのタイトルサフィックス。"
+  },
+
+  "extractNewsImpressWatchDocumentsTitle": {
+    "message": "記事一覧",
+    "description": "Impress Watchの記事一覧のタイトル。"
+  },
+
+  "extractNewsImpressWatchDocumentsDurationTitleRegularExpression": {
+    "message": "(?:[0-9]{4}年(?: |[1-9][0-9]?月の))記事(?:一覧)?",
+    "description": "Impress Watchの記事一覧の特定期間のタイトル。"
+  },
+
+  "extractNewsImpressWatchUrlHostServerPatterns": {
+    "message": "*",
+    "description": "Impress Watch URLのホストサーバーのパターン。"
+  },
+
+  "extractNewsImpressWatchUrlDomain": {
+    "message": "watch.impress.co.jp",
+    "description": "Impress Watch URLのドメイン。"
+  },
+
+  "extractNewsImpressWatchUrlRootDirectoryPath": {
+    "message": "",
+    "description": "Impress Watch URLのルートディレクトリのパス。"
+  },
+
+  "extractNewsImpressWatchSiteHostServers": {
+    "message": "internet,pc,dc,akiba-pc,av,kaden,k-tai,cloud,forest,car,travel,gourmet,game,hobby,video",
+    "description": "Impress Watchサイトのホストサーバー。"
+  },
+
+  "extractNewsImpressWatchSiteNames": {
+    "message": "INTERNET Watch,PC Watch,デジカメ Watch,AKIBA PC Hotline!,AV Watch,家電 Watch,ケータイ Watch,クラウド Watch,窓の杜,Car Watch,トラベル Watch,グルメ WatchGAME Watch,HOBBY Watch,Watch Video",
+    "description": "Impress Watchサイトの名称。"
+  },
+
+  "extractNewsImpressWatchDocumentsRegularExpression": {
+    "message": "/[0-9]+\\.html$$",
+    "description": "Impress Watchの記事の正規表現。"
+  },
+
+  "extractNewsImpressWatchTopics": {
+    "message": "インターネット,IT,通信,モバイル,テクノロジー,ビジネス,ライフ,エンタメ,マネー,社会",
+    "description": "Impress Watchのトピックス。"
+  },
+
+  "extractNewsImpressWatchSiteTopics": {
+    "message": "インターネット ネットワーク セキュリティ IT テクノロジー,PC ハードウェア IT テクノロジー,デジカメ,秋葉原 PC ハードウェア ソフトウェア,テレビ オーディオ 映画 アニメ 音楽,家電 ライフ,携帯電話 スマホ スマートフォン モバイル 通信,クラウド ビジネス,Windows フリーソフト オープンソース,自動車 バイク モータースポーツ,トラベル 旅行 ホテル,料理 食べ物 コンビニ ファーストフード,ゲーム アニメ,おもちゃ,レビュー 携帯電話 スマートフォン",
+    "description": "Impress Watchサイトのカテゴリーのトピックス。"
+  },
+
+  "extractNewsImpressWatchKodomoItPath": {
+    "message": "/kodomo_it",
+    "description": "Impress WatchのこどもITのパス。"
+  },
+
+  "extractNewsImpressWatchKodomoItTopics": {
+    "message": "教育",
+    "description": "Impress WatchのこどもITのトピックス。"
+  },
+
+  "extractNewsImpressWatchBackNumberPath": {
+    "message": "/backno",
+    "description": "Impress Watchのバックナンバーのパス。"
+  },
+
+  "extractNewsImpressWatchBackNumberTopPath": {
+    "message": "/top",
+    "description": "Impress Watchのバックナンバートップのパス。"
+  },
+
+  "extractNewsImpressWatchAccessRankingPath": {
+    "message": "/docs/static/ranking",
+    "description": "Impress Watchのアクセスランキングのパス。"
+  },
+
+  "extractNewsImpressWatchLifeAtHomePath": {
+    "message": "/summary/lifeathome",
+    "description": "Impress Watchの在宅ワーク特集のパス。"
+  },
+
+  "extractNewsImpressWatchHeadlinePath": {
+    "message": "/headline",
+    "description": "Impress Watchのヘッドラインのパス。"
+  },
+
+  "extractNewsImpressWatchTrendingPath": {
+    "message": "/extra/trending",
+    "description": "Impress Watchの今読まれている記事のパス。"
+  },
+
+  "extractNewsImpressWatchCategorizedPath": {
+    "message": "/category",
+    "description": "Impress Watchのカテゴリーで絞り込まれたパス。"
+  },
+
+  "extractNewsImpressWatchCategoryListHtml": {
+    "message": "/list.html",
+    "description": "Impress Watchのカテゴリーリストのパス。"
+  },
+
+  "extractNewsITmediaNewsName": {
+    "message": "ITmedia NEWS",
+    "description": "ITmedia NEWSの名称。"
+  },
+
+  "extractNewsITmediaNewsTitleSuffixRegularExpression": {
+    "message": " (?:[-|]|by) ITmedia NEWS$$",
+    "description": "Impress Watchのタイトルサフィックス。"
+  },
+
+  "extractNewsITmediaNewsUrlHostServerPatterns": {
+    "message": "www",
+    "description": "ITmedia NEWS URLのホストサーバーのパターン。"
+  },
+
+  "extractNewsITmediaNewsUrlDomain": {
+    "message": "itmedia.co.jp",
+    "description": "ITmedia NEWS URLのドメイン。"
+  },
+
+  "extractNewsITmediaNewsUrlRootDirectoryPath": {
+    "message": "/news",
+    "description": "ITmedia NEWS URLのルートディレクトリのパス。"
+  },
+
+  "extractNewsITmediaNewsTopics": {
+    "message": "インターネット,IT,ビジネス,通信,モバイル",
+    "description": "ITmedia NEWSサイトのトピックス。"
+  },
+
+  "extractNewsITmediaNewsArticlesRegularExpression": {
+    "message": "news[0-9]+\\.html$$",
+    "description": "ITmedia NEWSの記事の正規表現。"
+  },
+
+  "extractNewsITmediaNewsCategoryRootPath": {
+    "message": "/subtop",
+    "description": "ITmedia NEWSのカテゴリーのルートパス。"
+  },
+
+  "extractNewsITmediaNewsCategoryPaths": {
+    "message": "/bursts,/industry,/products,/technology,/security,/studio,/society,/nettopics,/lifestyle,/aiplus,/clouduser,/quantum",
+    "description": "ITmedia NEWSのカテゴリーパス。"
+  },
+
+  "extractNewsITmediaNewsCategoryIds": {
+    "message": "Bursts,Industry,Products,Technology,Security,Studio,Society,Nettopics,Lifestyle,Aiplus,Clouduser,Quantum",
+    "description": "ITmedia NEWSのカテゴリーID。"
+  },
+
+  "extractNewsITmediaNewsBurstsCategoryPath": {
+    "message": "/bursts",
+    "description": "ITmedia NEWSの速報カテゴリーのパス。"
+  },
+
+  "extractNewsITmediaNewsBurstsCategoryTopics": {
+    "message": "",
+    "description": "ITmedia NEWSの速報カテゴリーのトピックス。"
+  },
+
+  "extractNewsITmediaNewsIndustryCategoryPath": {
+    "message": "/industry",
+    "description": "ITmedia NEWSの業界・製品動向カテゴリーのパス。"
+  },
+
+  "extractNewsITmediaNewsIndustryCategoryTopics": {
+    "message": "",
+    "description": "ITmedia NEWSの業界・製品動向カテゴリーのトピックス。"
+  },
+
+  "extractNewsITmediaNewsProductsCategoryTopics": {
+    "message": "",
+    "description": "ITmedia NEWSの製品動向カテゴリーのトピックス。"
+  },
+
+  "extractNewsITmediaNewsTechnologyCategoryTopics": {
+    "message": "サイエンス,テクノロジー",
+    "description": "ITmedia NEWSの科学・テクノロジーカテゴリーのトピックス。"
+  },
+
+  "extractNewsITmediaNewsSecurityCategoryTopics": {
+    "message": "セキュリティ",
+    "description": "ITmedia NEWSのセキュリティカテゴリーのトピックス。"
+  },
+
+  "extractNewsITmediaNewsStudioCategoryTopics": {
+    "message": "グラフィック,音楽,ゲーム",
+    "description": "ITmedia NEWSのSTUDIOカテゴリーのトピックス。"
+  },
+
+  "extractNewsITmediaNewsStudioCategoryPath": {
+    "message": "/studio",
+    "description": "ITmedia NEWSのSTUDIOカテゴリーのパス。"
+  },
+
+  "extractNewsITmediaNewsSocietyCategoryTopics": {
+    "message": "国内,社会",
+    "description": "ITmedia NEWSの社会とITカテゴリーのトピックス。"
+  },
+
+  "extractNewsITmediaNewsNettopicsCategoryTopics": {
+    "message": "社会,ライフ,トレンド",
+    "description": "ITmedia NEWSのネットの話題カテゴリーのトピックス。"
+  },
+
+  "extractNewsITmediaNewsLifestyleCategoryPath": {
+    "message": "/lifestyle",
+    "description": "ITmedia NEWSのくらテクカテゴリーのパス。"
+  },
+
+  "extractNewsITmediaNewsLifestyleCategoryTopics": {
+    "message": "ライフ,映画,アニメ,マンガ,ゲーム",
+    "description": "ITmedia NEWSのくらテクカテゴリーのトピックス。"
+  },
+
+  "extractNewsITmediaNewsArchiveCategoryPath": {
+    "message": "/archive",
+    "description": "ITmedia NEWSの過去記事カテゴリーのパス。"
+  },
+
+  "extractNewsITmediaNewsArchiveCategoryTopics": {
+    "message": "",
+    "description": "ITmedia NEWSの過去記事カテゴリーのトピックス。"
+  },
+
+  "extractNewsITmediaNewsAiplusCategoryPath": {
+    "message": "/aiplus",
+    "description": "ITmedia NEWSのAI+カテゴリーのパス。"
+  },
+
+  "extractNewsITmediaNewsAiplusCategoryTopics": {
+    "message": "人工知能",
+    "description": "ITmedia NEWSのAI+カテゴリーのトピックス。"
+  },
+
+  "extractNewsITmediaNewsClouduserCategoryPath": {
+    "message": "/clouduser",
+    "description": "ITmedia NEWSのCloud USERカテゴリーのパス。"
+  },
+
+  "extractNewsITmediaNewsClouduserCategoryTopics": {
+    "message": "クラウド",
+    "description": "ITmedia NEWSのCloud USERカテゴリーのトピックス。"
+  },
+
+  "extractNewsITmediaNewsQuantumCategoryPath": {
+    "message": "/features/quantum",
+    "description": "ITmedia NEWSの量子コンピューターカテゴリーのパス。"
+  },
+
+  "extractNewsITmediaNewsQuantumCategoryTopics": {
+    "message": "テクノロジー",
+    "description": "ITmedia NEWSの量子コンピューターカテゴリーのトピックス。"
+  },
+
+  "extractNewsITmediaNewsArticleTypeAll": {
+    "message": "全て",
+    "description": "ITmedia NEWSの全ての記事タイプ。"
+  },
+
+  "extractNewsSradName": {
+    "message": "スラド",
+    "description": "スラドの名称。"
+  },
+
+  "extractNewsSradTitleSuffixRegularExpression": {
+    "message": " [-|] スラド(?: .+)?$$",
+    "description": "スラドのタイトルサフィックスの正規表現."
+  },
+
+  "extractNewsSradUrlHostServerPatterns": {
+    "message": ",*",
+    "description": "スラドURLのホストサーバーのパターン。"
+  },
+
+  "extractNewsSradUrlDomain": {
+    "message": "srad.jp",
+    "description": "スラドURLのドメイン。"
+  },
+
+  "extractNewsSradUrlRootDirectoryPath": {
+    "message": "",
+    "description": "スラドURLのルートディレクトリのパス。"
+  },
+
+  "extractNewsSradStoriesPathRegularExpression": {
+    "message": "^/(?:index2.pl|story/(?:[0-9]{2}/){0,3})?$$",
+    "description": "スラドのストーリーのパスの正規表現。"
+  },
+
+  "extractNewsSradStoryArchivePath": {
+    "message": "/story",
+    "description": "スラドのストーリーアーカイブのパス。"
+  },
+
+  "extractNewsSradStoryTopics": {
+    "message": "Linux ビジネス,Windows Azure,おもちゃ,お金,アップグレード,アップル,アナウンス,アニメ・マンガ,アメリカオンライン,アメリカ合衆国,インタビュー,インターネット,インターネットエクスプローラ,エイプリルフール,オーストラリア,オープンソース,カナダ,ガンダム,クラウド,クリスマス,グラフィック,ゲーム,サイエンス,サン・マイクロシステムズ,スター・ウォーズ,スター・トレック,ストレージ,スパコン,スポーツ,スラッシュコード,スラッシュドット,スラッシュバック,スラド,セキュリティ,ソフトウェア,ターボリナックス,テクノロジー,テレビ,データベース,ニュース,ネットスケープ,ネットワーク,ノートPC,ハンドヘルド,ハードウェア,ハードウェアハック,バイオテック,バグ,パテント,ビジネス,ビール,プライバシ,プリンター,プログラミング,ボットネット,マイクロソフト,メディア,モニター,モバイル,リンク,レッドハット,ロボット,ワーム,中国,交通,人工知能,仮想化,任天堂,入力デバイス,医療,原子力,国際宇宙ステーション,地球,地震,変なモノ,娯楽,宇宙,広告,情報漏洩,携帯通信,携帯電話,政府,政治,教育,数学,日本,日記,映画,暗号,書籍,月,検閲,法廷,海賊行為,火星,犯罪,統計,英国,著作権,論説,軍事,通信,電力,音楽",
+    "description": "スラドのストーリートピック。"
+  },
+
+  "extractNewsSradStoryTopicKeywords": {
+    "message": "linuxbiz,azure,toys,money,upgrades,apple,announce,anime,aol,usa,interview,internet,ie,aprilfool,australia,opensource,canada,gundam,cloud,xmas,graphics,games,science,sun,starwars,strek,storage,hpc,sports,slash,slashdot,slashback,srad,security,software,turbolinux,tech,tv,database,news,netscape,network,portables,pilot,hardware,hardwarehack,biotech,bug,patents,business,beer,privacy,printers,programming,botnet,microsoft,media,monitors,mobile,links,redhat,robot,worms,china,transport,ai,virtualization,nintendo,input,medicine,nuclear,iss,earth,earthquake,humor,entertainment,space,advertising,leakage,keitai,cellphone,government,politics,ed,math,japan,journal,movies,encryption,books,moon,censorship,doj,piracy,mars,crime,stats,unitedkingdom,copyright,editorial,military,communications,power,music",
+    "description": "スラドのストーリートピックのキーワード。"
+  },
+
+  "extractNewsSradStoryTopicRegularExpression": {
+    "message": "^([^ !・]+)(?:(?:・(マンガ))| is Not Unix|!)?$$",
+    "description": "スラドのストーリートピックの正規表現."
+  },
+
+  "extractNewsSradStoryBoxNames": {
+    "message": "thisday,mainpage_commentcount_widget",
+    "description": "スラドのストーリーのリンクボックス名称。"
+  },
+
+  "extractNewsSiteLanguages": {
+    "message": "Japanese,English",
+    "description": "ニュースサイトの言語。"
+  },
+
+  "extractNewsJapaneseSiteIds": {
+    "message": "YahooJapanNews,ImpressWatch,ITmediaNews,Srad",
+    "description": "日本語ニュースサイトのID。"
+  },
+
+  "extractNewsJapaneseCommentSiteIds": {
+    "message": "YahooJapanNews,Srad",
+    "description": "日本語コメントがあるニュースサイトのID。"
+  },
+
+  "extractNewsJapaneseHostFaviconSiteIds": {
+    "message": "ImpressWatch",
+    "description": "日本語のホストごとのFaviconがあるニュースサイトのID。"
+  },
+
+  "extractNewsJapaneseTopicWordJoinedRegularExpression": {
+    "message": "[/・]",
+    "description": "日本語ニュースサイトでトピックの単語を結合する正規表現。"
+  },
+
+  "extractNewsJapaneseWordSeparators": {
+    "message": " ×—‘ ’“ ”…　、。「」『』【】かがでとにのはへもやよらりを・！＂＃＄％＆＇（），－．／：；＜＝＞？＠［］｜～￠￡",
+    "description": "日本語で単語の前後における分離文字（格助詞と並立助詞を含む）。"
+  },
+
+  "extractNewsSocietyFilteringCategoryName": {
+    "message": "国内",
+    "description": "国内に対するフィルタリングのカテゴリー名。"
+  },
+
+  "extractNewsSocietyFilteringCategoryTopics": {
+    "message": "国内,政治,社会",
+    "description": "国内に対するフィルタリングのカテゴリートピック。"
+  },
+
+  "extractNewsWorldFilteringCategoryName": {
+    "message": "国際",
+    "description": "国際に対するフィルタリングのカテゴリー名。"
+  },
+
+  "extractNewsWorldFilteringCategoryTopics": {
+    "message": "国際",
+    "description": "国際に対するフィルタリングのカテゴリートピック。"
+  },
+
+  "extractNewsBusinessFilteringCategoryName": {
+    "message": "経済",
+    "description": "経済に対するフィルタリングのカテゴリー名。"
+  },
+
+  "extractNewsBusinessFilteringCategoryTopics": {
+    "message": "経済,ビジネス,マネー",
+    "description": "経済に対するフィルタリングのカテゴリー名。"
+  },
+
+  "extractNewsTechnologyFilteringCategoryName": {
+    "message": "テクノロジー",
+    "description": "テクノロジーに対するフィルタリングのカテゴリー名。"
+  },
+
+  "extractNewsTechnologyFilteringCategoryTopics": {
+    "message": "テクノロジー,IT,科学",
+    "description": "テクノロジーに対するフィルタリングのカテゴリートピック。"
+  },
+
+  "extractNewsSportsFilteringCategoryName": {
+    "message": "スポーツ",
+    "description": "スポーツに対するフィルタリングのカテゴリー名。"
+  },
+
+  "extractNewsSportsFilteringCategoryTopics": {
+    "message": "スポーツ",
+    "description": "スポーツに対するフィルタリングのカテゴリートピック。"
+  },
+
+  "extractNewsEntertainmentFilteringCategoryName": {
+    "message": "エンタメ",
+    "description": "エンターテイメントに対するフィルタリングのカテゴリー名。"
+  },
+
+  "extractNewsEntertainmentFilteringCategoryTopics": {
+    "message": "エンタメ",
+    "description": "エンターテイメントに対するフィルタリングのカテゴリートピック。"
+  },
+
+  "extractNewsLifeFilteringCategoryName": {
+    "message": "ライフ",
+    "description": "ライフに対するフィルタリングのカテゴリー名。"
+  },
+
+  "extractNewsLifeFilteringCategoryTopics": {
+    "message": "ライフ",
+    "description": "ライフに対するフィルタリングのカテゴリートピック。"
+  },
+
+  "extractNewsAllFilteringCategoryName": {
+    "message": "すべて",
+    "description": "すべての話題に対するフィルタリングのカテゴリー名。"
+  },
+
+  "extractNewsTextConcatenation": {
+    "message": "、",
+    "description": "テキストを連結する文字列。"
+  },
+
+  "extractNewsHalfWidthCharacters": {
+    "message": "!\"#$$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}^⦅⦆｡｢｣､·ﾞﾟ¢£¬¯¦¥",
+    "description": "全角に対応する半角文字"
+  },
+
+  "extractNewsFullwidthCharacters": {
+    "message": "！＂＃＄％＆＇（）＊＋，－．／０１２３４５６７８９：；＜＝＞？＠ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ［＼］＾＿ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ｛｜｝～｟｠。「」、・゛゜￠￡￢￣￤￥",
+    "description": "半角に対応する全角文字"
+  },
+
+  "extractNewsSettingNameMaxWidthExceeded": {
+    "message": "設定名称は全角$1文字以内にして下さい。",
+    "description": "設定名称の最大幅を超えていることに対するメッセージ。"
+  },
+
+  "extractNewsRegularExpressionMaxUTF16CharacterLengthExceeded": {
+    "message": "正規表現はUTF-16エンコーディングで$1文字以内にして下さい。",
+    "description": "正規表現でUTF-16エンコーディングで最大文字長を超えていることに対するメッセージ。"
+  },
+
+  "extractNewsNewsSelectionNotSavedAnyMore": {
+    "message": "選択設定はこれ以上保存されません。",
+    "description": "ニュース選択の最大数を超える保存に対するメッセージ。"
+  },
+
+  "extractNewsFilteringCategoryNotSavedOverMaxCount": {
+    "message": "フィルタリングカテゴリーは$1個までにして下さい。",
+    "description": "フィルタリングカテゴリーの最大数を超える保存に対するメッセージ。"
+  },
+
+  "extractNewsFilteringTargetNotSavedOverMaxCount": {
+    "message": "フィルタリング対象は$1個までにして下さい。",
+    "description": "フィルタリング対象の最大数を超える保存に対するメッセージ。"
+  },
+
+  "extractNewsSettingNotInitialized": {
+    "message": "タブの設定が初期化されていません。このページを再読み込みして下さい。",
+    "description": "設定が初期化されていないことに対するメッセージ。"
+  },
+
+  "regularExpressionControlEscapeNotFollowedByAlphabet": {
+    "message": "\\c の後はアルファベットを指定して下さい。",
+    "description": "正規表現でコントロールのエスケープに対するメッセージ。"
+  },
+
+  "regularExpressionControlEscapeNotCompleted": {
+    "message": "コントロールエスケープは完了していません。",
+    "description": "正規表現でコントロールのエスケープに対するメッセージ。"
+  },
+
+  "regularExpressionHexadecimalEscapeNotFollowedByHexadecimalDigits": {
+    "message": "\\x の後は十六進数を指定して下さい。",
+    "description": "正規表現で十六進数のエスケープに対するメッセージ。"
+  },
+
+  "regularExpressionHexadecimalEscapeNotCompleted": {
+    "message": "十六進数エスケープは完了していません。",
+    "description": "正規表現で十六進数のエスケープに対するメッセージ。"
+  },
+
+  "regularExpressionUnicodeEscapeNotFollowedByHexDigits": {
+    "message": "\\u の後は十六進数を指定して下さい。",
+    "description": "正規表現でUnicodeのエスケープに対するメッセージ。"
+  },
+
+  "regularExpressionUnicodeValueNotSpecifiedByFourOrFiveHexDigits": {
+    "message": "Unicodeの値は４桁から５桁の十六進数を指定して下さい。",
+    "description": "正規表現でUnicodeのエスケープに対するメッセージ。"
+  },
+
+  "regularExpressionUnicodeEscapeNotCompleted": {
+    "message": "Unicodeエスケープは完了していません。",
+    "description": "正規表現でUnicodeのエスケープに対するメッセージ。"
+  },
+
+  "regularExpressionUnicodePropertyEscapesUnsupported": {
+    "message": "Unicodeプロパティエスケープ（\\p や \\P）はサポートしていません。",
+    "description": "正規表現でUnicodeプロパティのエスケープに対するメッセージ。"
+  },
+
+  "regularExpressionGroupNameEscapeNotFollowedByLeftAngleBracket": {
+    "message": "\\k の後は右山括弧を指定して下さい。",
+    "description": "正規表現でグループ名のエスケープに対するメッセージ。"
+  },
+
+  "regularExpressionGroupNotCompleted": {
+    "message": "グループは右丸括弧が足りずに完了していません。",
+    "description": "正規表現でグループに対するメッセージ。"
+  },
+
+  "regularExpressionNonCapturingOrNamedCapturingGroupNotStartedCorrectly": {
+    "message": "非キャプチャか、名前付きキャプチャのグループが正しく開始していません。",
+    "description": "正規表現でグループに対するメッセージ。"
+  },
+
+  "regularExpressionAssertionUnsupported": {
+    "message": "先読み、後読みアサーションはサポートしていません。",
+    "description": "正規表現でアサーションに対するメッセージ。"
+  },
+
+  "regularExpressionNonAlphanumericGroupNameUnupported": {
+    "message": "英数字以外を含むグループ名はサポートしていません。",
+    "description": "正規表現でグループ名に対するメッセージ。"
+  },
+
+  "regularExpressionGroupNameNotSpecified": {
+    "message": "グループ名を指定して下さい。",
+    "description": "正規表現でグループ名に対するメッセージ。"
+  },
+
+  "regularExpressionGroupNameNotCompleted": {
+    "message": "グループ名は右山括弧が足りずに完了していません。",
+    "description": "正規表現でグループ名に対するメッセージ。"
+  },
+
+  "regularExpressionCharacterRangeNotHyphenatedFromLessToMoreValue": {
+    "message": "文字範囲は小さい値から大きい値へとハイフンで繋いで下さい。",
+    "description": "正規表現で文字集合に対するメッセージ。"
+  },
+
+  "regularExpressionCharacterSetNotSpecified": {
+    "message": "文字集合を指定して下さい。",
+    "description": "正規表現で文字集合に対するメッセージ。"
+  },
+
+  "regularExpressionCharacterSetNotCompleted": {
+    "message": "文字集合は右角括弧が足りずに完了していません。",
+    "description": "正規表現で文字集合に対するメッセージ。"
+  },
+
+  "regularExpressionOccurrenceNumberNotSpecifiedByNumerics": {
+    "message": "出現回数は数値を指定して下さい。",
+    "description": "正規表現で出現回数に対するメッセージ。"
+  },
+
+  "regularExpressionOccurrenceNumberNotSpecified": {
+    "message": "出現回数を指定して下さい。",
+    "description": "正規表現で出現回数に対するメッセージ。"
+  },
+
+  "regularExpressionOccurrenceNumberNotSpecifiedByValueRange": {
+    "message": "出現回数は $1 から $2 までの値を指定して下さい。",
+    "description": "正規表現で出現回数に対するメッセージ。"
+  },
+
+  "regularExpressionOccurrenceNumberNotArrangedFromLessToMoreValue": {
+    "message": "出現回数は小さい値から大きい値の順に並べて下さい。",
+    "description": "正規表現で出現回数に対するメッセージ。"
+  },
+
+  "regularExpressionOccurrenceNumberNotCompleted": {
+    "message": "出現回数は右波括弧が足りずに完了していません。",
+    "description": "正規表現で出現回数に対するメッセージ。"
+  },
+
+  "regularExpressionQuantifierNotPrecededByCharacterOrGroup": {
+    "message": "数量詞の前は文字やグループを指定して下さい。",
+    "description": "正規表現で数量詞に対するメッセージ。"
+  },
+
+  "regularExpressionEscapeCharacterNotFollowedByCharacter": {
+    "message": "最後のエスケープ文字の後には一文字が必要です。",
+    "description": "正規表現でエスケープ文字に対するメッセージ。"
+  },
+
+  "fileImportLineError": {
+    "message": "インポートは途中でエラーが発生して終了しました。",
+    "description": "インポートファイルの行エラーに対するメッセージ。"
+  },
+
+  "fileImportLine": {
+    "message": "行：$1： ",
+    "description": "インポートファイルで行のメッセージの前置き。"
+  },
+
+  "fileImportLineFilteringIdNotSpecified": {
+    "message": "フィルタリングIDが指定されていません。",
+    "description": "インポート行でフィルタリングIDが指定されていないことの説明。"
+  },
+
+  "fileImportLineNonAlphanumericFilteringId": {
+    "message": "英数字以外を含むフィルタリングID 「$1」",
+    "description": "インポート行で英数字以外を含むフィルタリングIDの説明。"
+  },
+
+  "fileImportLineDuplicateFilteringId": {
+    "message": "重複するフィルタリングID 「$1」",
+    "description": "インポート行で重複するフィルタリングIDの説明。"
+  },
+
+  "fileImportLineFilteringDataNotSpecified": {
+    "message": "フィルタリングのデータが指定されていません。",
+    "description": "インポート行でフィルタリングのデータが指定されていないことの説明。"
+  },
+
+  "fileImportLineUnknownFilteringTargetName": {
+    "message": "不明なフィルタリング対象名 「$1」",
+    "description": "インポート行で不明なフィルタリング対象名の説明。"
+  },
+
+  "fileImportLineUnknownFilteringWordMatching": {
+    "message": "不明なフィルタリング単語マッチング 「$1」",
+    "description": "インポート行で不明なフィルタリング単語マッチングの説明。"
+  },
+
+  "fileImportLineSettingNameNotEnclosedByDoubleQuotes": {
+    "message": "設定名称をダブルクォートで囲って下さい。",
+    "description": "インポート行で設定名称が引用符で囲まれていないことの説明。"
+  },
+
+  "fileImportLineIncorrectRegularExpression": {
+    "message": "正規表現が間違っています。",
+    "description": "インポート行で間違った正規表現の説明。"
+  },
+
+  "fileImportLineOpenedUrlNotSpecified": {
+    "message": "ページを開くURLを指定して下さい。",
+    "description": "インポート行でページを開くURLが指定されていないことの説明。"
+  },
+
+  "fileImportLineTooMuchNewsSelectionDataLines": {
+    "message": "ニュース選択に対してデータ行が多過ぎます。",
+    "description": "インポート行でニュース選択に対して多過ぎるデータ行の説明。"
+  },
+
+  "fileImportDataNotIncluded": {
+    "message": "インポートファイルにデータがありません。",
+    "description": "インポートファイルにデータが含まれていないことに対するメッセージ。"
+  },
+
+  "contextMenuExtractNewsSettings": {
+    "message": "ExtractNews 設定",
+    "description": "拡張機能で設定を変更するコンテキストメニュー。"
+  },
+
+  "contextMenuSelectNewsTopic": {
+    "message": "「%s」を話題として選択",
+    "description": "選択テキストの話題を選択するコンテキストメニュー。"
+  },
+
+  "contextMenuSelectNewsTopicAdditionally": {
+    "message": "「%s」を選択する話題に追加",
+    "description": "選択テキストの話題を追加で選択するコンテキストメニュー。"
+  },
+
+  "contextMenuSelectNewsSender": {
+    "message": "「%s」を発信元として選択",
+    "description": "選択テキストの発信者を選択するコンテキストメニュー。"
+  },
+
+  "contextMenuSelectNewsSenderAdditionally": {
+    "message": "「%s」を選択する発信元に追加",
+    "description": "選択テキストの発信者を追加で選択するコンテキストメニュー。"
+  },
+
+  "contextMenuExcludeNewsTopic": {
+    "message": "「%s」の話題を除外",
+    "description": "選択テキストの話題を除外するコンテキストメニュー。"
+  },
+
+  "contextMenuExcludeNewsTopicAdditionally": {
+    "message": "「%s」を除外する話題に追加",
+    "description": "選択テキストの話題を追加で除外するコンテキストメニュー。"
+  },
+
+  "contextMenuDisableTabLink": {
+    "message": "タブのリンクを無効化する",
+    "description": "タブのリンクを一時的に無効化するコンテキストメニュー。"
+  },
+
+  "contextMenuDisableTabNewsSelection": {
+    "message": "タブの選択設定を無効化する",
+    "description": "タブのニュース選択を無効化するコンテキストメニュー。"
+  },
+
+  "contextMenuSaveTabNewsSelection": {
+    "message": "タブの選択設定を保存",
+    "description": "タブのニュース選択を保存するコンテキストメニュー。"
+  },
+
+  "contextMenuClearTabSelectedTopic": {
+    "message": "選択した話題をクリア",
+    "description": "タブで選択した話題をクリアするコンテキストメニュー。"
+  },
+
+  "contextMenuClearTabSelectedSender": {
+    "message": "選択した発信元をクリア",
+    "description": "タブで選択した発信元をクリアするコンテキストメニュー。"
+  },
+
+  "contextMenuClearTabNewsExclusion": {
+    "message": "除外した話題をクリア",
+    "description": "タブで除外した話題をクリアするコンテキストメニュー。"
+  },
+
+  "contextMenuDisableFiltering": {
+    "message": "フィルタリング設定を無効化する",
+    "description": "フィルタリング設定を無効化するコンテキストメニュー。"
+  },
+
+  "contextMenuHideComment": {
+    "message": "このサイトのコメントを隠す",
+    "description": "このサイトでコメントを隠すコンテキストメニュー。"
+  },
+
+  "contextMenuDebugExtension": {
+    "message": "拡張機能をデバッグする",
+    "description": "拡張機能をデバッグするコンテキストメニュー。"
+  },
+
+  "browserActionShowNewsSelections": {
+    "message": "ニュース選択を表示します",
+    "description": "ブラウザアクションにより、ニュース選択を表示するツールチップ。"
+  },
+
+  "browserActionNewsSelection": {
+    "message": "ニュース選択",
+    "description": "ヘッダーでのニュース選択のタイトル。"
+  },
+
+  "browserActionHowToAct": {
+    "message": "設定の操作",
+    "description": "ニュース選択に対する操作画面のタイトル。"
+  },
+
+  "browserActionOpenInPresentTab": {
+    "message": "現在のタブで開く",
+    "description": "ニュース選択を現在のタブで開くラベル。"
+  },
+
+  "browserActionOpenInNewTab": {
+    "message": "新しいタブで開く",
+    "description": "ニュース選択を新しいタブで開くラベル。"
+  },
+
+  "browserActionEdit": {
+    "message": "編集...",
+    "description": "ニュース選択を編集するラベル。"
+  },
+
+  "browserActionRemove": {
+    "message": "削除",
+    "description": "ニュース選択を削除するラベル。"
+  },
+
+  "browserActionNewsSelectionNotExist": {
+    "message": "選択設定はありません。",
+    "description": "ニュース選択がないことを示すラベル。"
+  },
+
+  "browserActionNewsSelectionNowEditing": {
+    "message": "現在、編集中です。",
+    "description": "ニュース選択が編集中であることを示すラベル。"
+  },
+
+  "editNewsSelection": {
+    "message": "ニュース選択",
+    "description": "ニュース選択に対する編集ラベル。"
+  },
+
+  "editSettingName": {
+    "message": "設定名称",
+    "description": "ニュース選択の設定名称に対する編集ラベル。"
+  },
+
+  "editInputTitle": {
+    "message": "タイトルを入力して下さい。",
+    "description": "ニュース選択の設定名称を入力するメッセージ。"
+  },
+
+  "editSelectedTopic": {
+    "message": "選択する話題",
+    "description": "ニュース選択の選択する話題に対する編集ラベル。"
+  },
+
+  "editSelectedSender": {
+    "message": "選択する発信元",
+    "description": "ニュース選択の選択する発信元に対する編集ラベル。"
+  },
+
+  "editInputRegularExpression": {
+    "message": "正規表現を入力して下さい。\n改行とインデントの空白は削除されます。",
+    "description": "設定で選択されるニュースの話題や発信元の正規表現を入力するメッセージ。"
+  },
+
+  "editLocalize": {
+    "message": "全半角変換",
+    "description": "ニュース選択の正規表現をローカライズするオプションボタン。"
+  },
+
+  "editOpenedUrl": {
+    "message": "ページを開くURL",
+    "description": "ニュース選択のページを開くURLに対する編集ラベル。"
+  },
+
+  "editSave": {
+    "message": "保存",
+    "description": "ニュース選択を保存するオプションボタン。"
+  },
+
+  "editRemove": {
+    "message": "削除",
+    "description": "ニュース選択を削除するオプションボタン。"
+  },
+
+  "optionGeneral": {
+    "message": "一般設定",
+    "description": "一般設定のオプションラベル。"
+  },
+
+  "optionFiltering": {
+    "message": "フィルタリング",
+    "description": "フィルタリングに対する設定のオプションラベル。"
+  },
+
+  "optionSelection": {
+    "message": "ニュース選択",
+    "description": "ニュース選択対する設定のオプションラベル。"
+  },
+
+  "optionEnablingSite": {
+    "message": "サイトの有効化",
+    "description": "サイトにニュース選択を適用させるオプションラベル。"
+  },
+
+  "optionAdvanced": {
+    "message": "上級者向け",
+    "description": "上級者向けオプションのオプションラベル。"
+  },
+
+  "optionDisableFiltering": {
+    "message": "フィルタリング設定を無効化する",
+    "description": "フィルタリング設定を無効化するオプションラベル。"
+  },
+
+  "optionDebugExtension": {
+    "message": "拡張機能をデバッグする",
+    "description": "拡張機能をデバッグするオプションラベル。"
+  },
+
+  "optionDataFiltering": {
+    "message": "フィルタリングの設定",
+    "description": "フィルタリングの設定に対するオプションラベル。"
+  },
+
+  "optionDataSelection": {
+    "message": "ニュース選択の設定",
+    "description": "ニュース選択の設定に対するオプションラベル。"
+  },
+
+  "optionDataDescription": {
+    "message": "は画面下部で編集したり、ファイルを使ってインポートやエクスポートしたりできます。ただし、変更・追加されたデータは「保存」ボタンを押すまでは更新されません。",
+    "description": "設定を更新するオプションの説明。"
+  },
+
+  "optionDataReplacement": {
+    "message": "ファイルのデータで置き換え",
+    "description": "フィルタリングやニュース選択の設定をファイルのデータで置き換えるオプションラベル。"
+  },
+
+  "optionImport": {
+    "message": "インポート",
+    "description": "フィルタリング対象をファイルからインポートするオプションボタン。"
+  },
+
+  "optionExport": {
+    "message": "エクスポート",
+    "description": "フィルタリング対象をファイルへエクスポートするオプションボタン。"
+  },
+
+  "optionSave": {
+    "message": "保存",
+    "description": "フィルタリング対象を保存するオプションボタン。"
+  },
+
+  "optionFilteringCategoryName": {
+    "message": "カテゴリー名",
+    "description": "フィルタリングのカテゴリー名のオプションラベル。"
+  },
+
+  "optionFilteringCategoryTopics": {
+    "message": "カテゴリートピック",
+    "description": "フィルタリングのカテゴリートピックのオプションラベル。"
+  },
+
+  "optionInputFilteringCategoryTopics": {
+    "message": "トピックをコンマ区切りで入力して下さい",
+    "description": "フィルタリングカテゴリーのトピックを入力するメッセージ。"
+  },
+
+  "optionTargetAccept": {
+    "message": "受け入れる",
+    "description": "フィルタリング対象により、ニュースの話題を受け入れるオプションラベル。"
+  },
+
+  "optionTargetDrop": {
+    "message": "拒否する",
+    "description": "フィルタリング対象により、ニュースの話題を拒否するオプションラベル。"
+  },
+
+  "optionTargetReturn": {
+    "message": "ブロック外へ",
+    "description": "フィルタリング対象により、ブロックをスキップするオプションラベル。"
+  },
+
+  "optionTargetTerminateBlock": {
+    "message": "ブロックの終端",
+    "description": "フィルタリングブロックを終了するオプションラベル。"
+  },
+
+  "optionInputTargetWords": {
+    "message": "単語をコンマ区切りで入力して下さい",
+    "description": "フィルタリング対象の単語を入力するメッセージ。"
+  },
+
+  "optionTargetMatchWordBeginning": {
+    "message": "単語の開始とマッチ",
+    "description": "フィルタリング対象に対して単語の開始とマッチするオプションラベル。"
+  },
+
+  "optionTargetMatchWordEnd": {
+    "message": "単語の終了とマッチ",
+    "description": "フィルタリング対象に対して単語の終了とマッチするオプションラベル。"
+  },
+
+  "optionTargetWordNegative": {
+    "message": "単語の否定",
+    "description": "フィルタリング対象に対して単語の否定とマッチするオプションタイトル。"
+  },
+
+  "optionTargetAnyWordMatched": {
+    "message": "どんな単語ともマッチします。",
+    "description": "フィルタリング対象に対してどんな単語ともマッチするオプションの説明。"
+  },
+
+  "optionInsert": {
+    "message": "挿入",
+    "description": "フィルタリング対象やニュース選択を挿入するオプションボタン。"
+  },
+
+  "optionAppend": {
+    "message": "追加",
+    "description": "ニュース選択を追加するオプションボタン。"
+  },
+
+  "optionLocalize": {
+    "message": "全半角変換",
+    "description": "フィルタリング対象やニュース選択をローカライズするオプションボタン。"
+  },
+
+  "optionUp": {
+    "message": "上へ",
+    "description": "フィルタリング対象やニュース選択を上へ移動するオプションボタン。"
+  },
+
+  "optionDown": {
+    "message": "下へ",
+    "description": "フィルタリング対象やニュース選択を下へ移動するオプションボタン。"
+  },
+
+  "optionEdit": {
+    "message": "編集",
+    "description": "ニュース選択を編集するオプションボタン。"
+  },
+
+  "optionRemove": {
+    "message": "削除",
+    "description": "フィルタリング対象やニュース選択を削除するオプションボタン。"
+  },
+
+  "optionNewsSelection": {
+    "message": "ニュース選択",
+    "description": "ニュース選択に対するオプションラベル。"
+  },
+
+  "optionSettingName": {
+    "message": "設定名称",
+    "description": "ニュース選択の設定名称に対するオプションラベル。"
+  },
+
+  "optionInputTitle": {
+    "message": "タイトルを入力して下さい。",
+    "description": "ニュース選択の設定名称を入力するメッセージ。"
+  },
+
+  "optionSelectedTopic": {
+    "message": "選択する話題",
+    "description": "ニュース選択の選択する話題に対するオプションラベル。"
+  },
+
+  "optionSelectedSender": {
+    "message": "選択する発信元",
+    "description": "ニュース選択の選択する発信元に対するオプションラベル。"
+  },
+
+  "optionInputRegularExpression": {
+    "message": "正規表現を入力して下さい。\n改行とインデントの空白は削除されます。",
+    "description": "設定で選択されるニュースの話題や発信元の正規表現を入力するメッセージ。"
+  },
+
+  "optionOpenedUrl": {
+    "message": "ページを開くURL",
+    "description": "ニュース選択のページを開くURLに対するオプションラベル。"
+  },
+
+  "optionApply": {
+    "message": "適用",
+    "description": "ニュース選択を適用するオプションボタン。"
+  },
+
+  "optionDelete": {
+    "message": "一括削除",
+    "description": "リストでチェックされたニュース選択を削除するオプションボタン。"
+  }
+}

@@ -1,0 +1,956 @@
+{
+  "extensionName": {
+    "message": "ExtractNews",
+    "description": "Name of the extension."
+  },
+
+  "extensionDescription": {
+    "message": "ExtractNews assists you to discover an interesting news, hiding boring topics.",
+    "description": "Description of the add-on."
+  },
+
+  "extensionFontFamily": {
+    "message": "Helvetica",
+    "description": "Font family used by this add-on."
+  },
+
+  "extractNewsYahooName": {
+    "message": "Yahoo!",
+    "description": "Name of Yahoo!."
+  },
+
+  "extractNewsYahooTitlePrefixRegularExpression": {
+    "message": "^Yahoo [A-Z][a-z]+ - ",
+    "description": "Regular expression of the title prefix on Yahoo!."
+  },
+
+  "extractNewsYahooTitleSuffixRegularExpression": {
+    "message": "(?:, .+ and .+)? (?:[-|]|for) Yahoo(?: [A-Z][a-z]+(:? .+)?)?$$",
+    "description": "Regular expression of the title suffix on Yahoo!."
+  },
+
+  "extractNewsYahooUrlHostServerPatterns": {
+    "message": "www,news,finance,money,sports",
+    "description": "Host server patterns of Yahoo! URL."
+  },
+
+  "extractNewsYahooUrlDomain": {
+    "message": "yahoo.com",
+    "description": "Domain of Yahoo! URL."
+  },
+
+  "extractNewsYahooUrlRootDirectoryPath": {
+    "message": "",
+    "description": "Root directory path of Yahoo! URL."
+  },
+
+  "extractNewsYahooSiteCategories": {
+    "message": ",News,Finance,Money,Sports,Entertainment,Life",
+    "description": "Categories of Yahoo! site."
+  },
+
+  "extractNewsYahooSiteCategoryTopics": {
+    "message": "News US Society Politics World Health Science Finance Business IT Technology Money Sports NFL Entertainment Life,News US Society Politics World Health Science,Finance Business Markets Politics IT Technology Games,Money Business Travel Investing,Sports NFL NBA MLB NHL NCAA Golf Soccer Tennis Boxing Motorsports,Entertainment Paley TV Movies Music Celebrity,Life Lifestyle Well-being Education Style Beauty",
+    "description": "Category's topics of Yahoo! site."
+  },
+
+  "extractNewsYahooSiteNames": {
+    "message": "Yahoo!,Yahoo! News,Yahoo! Finance,Yahoo! Money,Yahoo! Sports,Yahoo! Entertainment,Yahoo! Life",
+    "description": "Names of Yahoo! site."
+  },
+
+  "extractNewsYahooNewsHostServer": {
+    "message": "news",
+    "description": "Host server of Yahoo! News."
+  },
+
+  "extractNewsYahooFinanceHostServer": {
+    "message": "finance",
+    "description": "Host server of Yahoo! Finance."
+  },
+
+  "extractNewsYahooFinanceAuthorPath": {
+    "message": "/author",
+    "description": "Path including authors of Yahoo! Finance."
+  },
+
+  "extractNewsYahooMoneyHostServer": {
+    "message": "money",
+    "description": "Host server of Yahoo! Money."
+  },
+
+  "extractNewsYahooSportsHostServer": {
+    "message": "sports",
+    "description": "Host server of Yahoo! Sports."
+  },
+
+  "extractNewsYahooEntertainmentPath": {
+    "message": "/entertainment",
+    "description": "Path of Yahoo! Entertainment."
+  },
+
+  "extractNewsYahooLifePath": {
+    "message": "/lifestyle",
+    "description": "Path of Yahoo! Life."
+  },
+
+  "extractNewsYahooCategoryLabels": {
+    "message": "News,Politics,U.S.,World,Business,Technology,Science,Entertainment,Sports,Health,Lifestyle,Style,Celebrity",
+    "description": "Category labels of Yahoo!."
+  },
+
+  "extractNewsYahooAdvertisingLabels": {
+    "message": "Ad,広告",
+    "description": "Advertising labels of Yahoo!."
+  },
+
+  "extractNewsSlashdotName": {
+    "message": "Slashdot",
+    "description": "Name of Slashdot."
+  },
+
+  "extractNewsSlashdotTitleSuffixRegularExpression": {
+    "message": " (?:[-|]|for|on) Slashdot$$",
+    "description": "Regular expression of the title suffix on Slashdot."
+  },
+
+  "extractNewsSlashdotUrlHostServerPatterns": {
+    "message": ",*",
+    "description": "Host server patterns of Slashdot URL."
+  },
+
+  "extractNewsSlashdotUrlDomain": {
+    "message": "slashdot.org",
+    "description": "Domain of Slashdot URL."
+  },
+
+  "extractNewsSlashdotUrlRootDirectoryPath": {
+    "message": "",
+    "description": "Root directory path of Slashdot URL."
+  },
+
+  "extractNewsSlashdotStoryPathRegularExpression": {
+    "message": "^/story(?:/[0-9]{2}){3}/[0-9]{6,7}(?:/|$$)",
+    "description": "Regular expression of the path of a story on Slashdot."
+  },
+
+  "extractNewsSlashdotStoriesPathRegularExpression": {
+    "message": "^/(?:index2.pl)?$$",
+    "description": "Regular expression of the path of stories on Slashdot."
+  },
+
+  "extractNewsSlashdotStoryArchivePath": {
+    "message": "/archive.pl",
+    "description": "Path of the story archive on Slashdot."
+  },
+
+  "extractNewsSlashdotTaggedStoriesPath": {
+    "message": "/tag",
+    "description": "Path of tagged stories on Slashdot."
+  },
+
+  "extractNewsSlashdotStoryViewQueryKey": {
+    "message": "view",
+    "description": "Query key to specify the value of a story view on Slashdot."
+  },
+
+  "extractNewsSlashdotStoryFilterQueryKey": {
+    "message": "fhfilter",
+    "description": "Query key to specify the value of a story filter on Slashdot."
+  },
+
+  "extractNewsSlashdotStoryOpQueryKey": {
+    "message": "op",
+    "description": "Query key to specify the value of a story op on Slashdot."
+  },
+
+  "extractNewsSlashdotStoryKeywordQueryKey": {
+    "message": "keyword",
+    "description": "Query key to specify the value of a story keyword on Slashdot."
+  },
+
+  "extractNewsSlashdotStoryTopics": {
+    "message": "America Online,Almighty Buck,Ask Slashdot,AT&T,Christmas Cheer,Courts,Data Storage,Desktop (Apple),Electronic Frontier Foundation,First Person Shooters (Games),Handhelds,Hardware Hacking,Laugh,Input Devices,Internet Explorer,Lord of the Rings,Media,Media (Apple),NES (Games),Networking (Apple),Operating Systems,OS 9,OS X,PlayStation (Games),Portables (Apple),Portables (Games),Real Time Strategy (Games),Red Hat Software,Robotics,Role Playing (Games),Silicon Graphics,Social Networks,Slashdot.org,Sun Microsystems,Technology (Apple),Television,Toys,United Kingdom,United States,User Journal,Utilities (Apple),VA,Wireless (Apple),Wireless Networking,X,XBox (Games)",
+    "description": "Story topics on Slashdot."
+  },
+
+  "extractNewsSlashdotStoryTopicKeywords": {
+    "message": "aol,money,ask,att,xmas,court,storage,mac,eff,fps,handheld,hardhack,humor,inputdev,msie,lotr,themedia,applemedia,nes,applenetworking,os,macos9,macosx,playstation,macbook,portablegames,rts,redhat,robot,rpg,sgi,social,meta,sun,appletechnology,tv,toy,uk,usa,journal,appleutilities,vasoftware,applewireless,wireless,xwindows,xbox",
+    "description": "The keyword of story topics on Slashdot."
+  },
+
+  "extractNewsSlashdotStoryTopicRegularExpression": {
+    "message": "^(?:The |It's funny. +)?((?:[-&0-9A-Za-z]+)(?: [0-9A-Za-hj-z][0-9A-Za-z]*)*)(?: \\(([0-9A-Za-z]+)\\)| is Not Unix| Prequels|[!.])?$$",
+    "description": "Regular expression of the topic of Slashdot story."
+  },
+
+  "extractNewsSlashdotStorySourceEnclosingStart": {
+    "message": "(",
+    "description": "The start of enclosing the soucrce of a story on Slashdot."
+  },
+
+  "extractNewsSlashdotStorySourceEnclosingEnd": {
+    "message": ")",
+    "description": "The end of enclosing the soucrce of a story Slashdot."
+  },
+
+  "extractNewsSlashdotStoryLinkArrowRegularExpression": {
+    "message": "^←|→$$",
+    "description": "Regular expression of arrow linked to the previous and next page of a story Slashdot."
+  },
+
+  "extractNewsSlashdotStoryBoxNames": {
+    "message": "mostdiscussed,srandblock,thisday",
+    "description": "Names of the story box on Slashdot."
+  },
+
+  "extractNewsSlashdotStoryBoxTitleForComments": {
+    "message": "Hot Comments",
+    "description": "Title of the story box for comments on Slashdot."
+  },
+
+  "extractNewsSlashdotStoryArchiveOptions": {
+    "message": "Topic,Section,Chronological Order,Last Week",
+    "description": "Options of the story archive on Slashdot."
+  },
+
+  "extractNewsSlashdotStoryArchiveYearRegularExpression": {
+    "message": "^(?:20[0-9]{2}|199[89])$$",
+    "description": "Regular expression of the year of a story on Slashdot."
+  },
+
+  "extractNewsSlashdotStoryArchiveTitleRegularExpression": {
+    "message": "(?:[A-Z][&A-Za-z]*(?: [0-9A-Z][()0-9A-Za-z]+)*)? Stories(?: for (?:Last 7 days|20[0-9]{2}|199[89]))?$$",
+    "description": "Regular Expression of the title of a story archive on Slashdot."
+  },
+
+  "extractNewsSiteLanguages": {
+    "message": "English",
+    "description": "Languages of news site."
+  },
+
+  "extractNewsEnglishSiteIds": {
+    "message": "Yahoo,Slashdot",
+    "description": "IDs of news site in English."
+  },
+
+  "extractNewsEnglishCommentSiteIds": {
+    "message": "Slashdot",
+    "description": "IDs whose news site has comments in English."
+  },
+
+  "extractNewsEnglishHostFaviconSiteIds": {
+    "message": "",
+    "description": "IDs whose news site has favicons for each host in English."
+  },
+
+  "extractNewsEnglishTopicWordJoinedRegularExpression": {
+    "message": " & |/",
+    "description": "Regular expression by which topic words are joined on news site in English."
+  },
+
+  "extractNewsEnglishWordSeparators": {
+    "message": " !\"#$&'(),-./:;<=>?@[]|",
+    "description": "Separators in front or back of a word in English."
+  },
+
+  "extractNewsFilteringIds": {
+    "message": "Society,World,Business,Technology,Sports,Entertainment,Life,All",
+    "description": "IDs of the filtering."
+  },
+
+  "extractNewsSocietyFilteringCategoryName": {
+    "message": "Society",
+    "description": "Category name of the filtering for society."
+  },
+
+  "extractNewsSocietyFilteringCategoryTopics": {
+    "message": "Society,News,Politics",
+    "description": "Category topics of the filtering for society."
+  },
+
+  "extractNewsWorldFilteringCategoryName": {
+    "message": "World",
+    "description": "Category name of the filtering for world."
+  },
+
+  "extractNewsWorldFilteringCategoryTopics": {
+    "message": "World",
+    "description": "Category topics of the filtering for world."
+  },
+
+  "extractNewsBusinessFilteringCategoryName": {
+    "message": "Business",
+    "description": "Category name of the filtering for business."
+  },
+
+  "extractNewsBusinessFilteringCategoryTopics": {
+    "message": "Business,Finance,Money",
+    "description": "Category topics of the filtering for business."
+  },
+
+  "extractNewsTechnologyFilteringCategoryName": {
+    "message": "Technology",
+    "description": "Category name of the filtering for technology."
+  },
+
+  "extractNewsTechnologyFilteringCategoryTopics": {
+    "message": "Technology,IT,Science",
+    "description": "Category topics of the filtering for technology."
+  },
+
+  "extractNewsSportsFilteringCategoryName": {
+    "message": "Sports",
+    "description": "Category name of the filtering for sports."
+  },
+
+  "extractNewsSportsFilteringCategoryTopics": {
+    "message": "Sports",
+    "description": "Category topics of the filtering for sports."
+  },
+
+  "extractNewsEntertainmentFilteringCategoryName": {
+    "message": "Entertainment",
+    "description": "Category name of the filtering for entertainment."
+  },
+
+  "extractNewsEntertainmentFilteringCategoryTopics": {
+    "message": "Entertainment",
+    "description": "Category topics of the filtering for entertainment."
+  },
+
+  "extractNewsLifeFilteringCategoryName": {
+    "message": "Life",
+    "description": "Category name of the filtering for life."
+  },
+
+  "extractNewsLifeFilteringCategoryTopics": {
+    "message": "Life",
+    "description": "Category topics of the filtering for life."
+  },
+
+  "extractNewsAllFilteringCategoryName": {
+    "message": "All",
+    "description": "Category name of the filtering for all topics."
+  },
+
+  "extractNewsTextConcatenation": {
+    "message": ", ",
+    "description": "String by which texts are concatenated."
+  },
+
+  "extractNewsHalfwidthCharacters": {
+    "message": "",
+    "description": "Halfwidth characters corresponding to fullwidth characters."
+  },
+
+  "extractNewsFullwidthCharacters": {
+    "message": "",
+    "description": "Fullwidth characters corresponding to halfwidth characters."
+  },
+
+  "extractNewsSettingNameMaxWidthExceeded": {
+    "message": "Setting name must not exceed $1 characters.",
+    "description": "Message for exceeding the maximum width of a setting name."
+  },
+
+  "extractNewsRegularExpressionMaxUTF16CharacterLengthExceeded": {
+    "message": "Regular expression must not exceed $1 characters by UTF-16 encoding.",
+    "description": "Message for exceeding the maximum character length by UTF-16 encoding in a regular expression."
+  },
+
+  "extractNewsNewsSelectionNotSavedAnyMore": {
+    "message": "News selection is not saved any more.",
+    "description": "Message for saving over the maximum count of news selections."
+  },
+
+  "extractNewsFilteringCategoryNotSavedOverMaxCount": {
+    "message": "Filtering category is not saved over $1.",
+    "description": "Message for saving over the maximum count of filtering categories."
+  },
+
+  "extractNewsFilteringTargetNotSavedOverMaxCount": {
+    "message": "Filtering target is not saved over $1.",
+    "description": "Message for saving over the maximum count of filtering targets."
+  },
+
+  "extractNewsSettingNotInitialized": {
+    "message": "Setting has not been initialized yet. Reload this page, please.",
+    "description": "Message for news setting which is not initialized."
+  },
+
+  "regularExpressionControlEscapeNotFollowedByAlphabet": {
+    "message": "\\c must be followed by an alphabet.",
+    "description": "Message for a control escape in the regular expression."
+  },
+
+  "regularExpressionControlEscapeNotCompleted": {
+    "message": "Control escape has not been completed.",
+    "description": "Message for a control escape in the regular expression."
+  },
+
+  "regularExpressionHexadecimalEscapeNotFollowedByHexadecimalDigits": {
+    "message": "\\x must be followed by hexadecimal digits.",
+    "description": "Message for a hexadecimal escape in the regular expression."
+  },
+
+  "regularExpressionHexadecimalEscapeNotCompleted": {
+    "message": "Hexadecimal escape has not been completed.",
+    "description": "Message for a hexadecimal escape in the regular expression."
+  },
+
+  "regularExpressionUnicodeEscapeNotFollowedByHexDigits": {
+    "message": "\\u must be followed by hexadecimal digits.",
+    "description": "Message for a Unicode escape in the regular expression."
+  },
+
+  "regularExpressionUnicodeValueNotSpecifiedByFourOrFiveHexDigits": {
+    "message": "Unicode value must be specified by four or five hexadecimal digits.",
+    "description": "Message for a Unicode escape in the regular expression."
+  },
+
+  "regularExpressionUnicodeEscapeNotCompleted": {
+    "message": "Unicode escape has not been completed.",
+    "description": "Message for a Unicode escape in the regular expression."
+  },
+
+  "regularExpressionUnicodePropertyEscapesUnsupported": {
+    "message": "Unicode property escapes (\\p or \\P) are unsupported.",
+    "description": "Message for Unicode property escapes in the regular expression."
+  },
+
+  "regularExpressionGroupNameEscapeNotFollowedByLeftAngleBracket": {
+    "message": "\\k must be followed by left angle bracket.",
+    "description": "Message for a group name escape in the regular expression."
+  },
+
+  "regularExpressionGroupNotCompleted": {
+    "message": "Group has not been completed by right parenthesis.",
+    "description": "Message for a group in the regular expression."
+  },
+
+  "regularExpressionNonCapturingOrNamedCapturingGroupNotStartedCorrectly": {
+    "message": "Non-capturing or named capturing group has started incorrectly.",
+    "description": "Message for a group in the regular expression."
+  },
+
+  "regularExpressionAssertionUnsupported": {
+    "message": "Lookahead/Lookbehind assertions are unsupported.",
+    "description": "Message for assertions in the regular expression."
+  },
+
+  "regularExpressionNonAlphanumericGroupNameUnupported": {
+    "message": "Non-alphanumeric group name is unsupported.",
+    "description": "Message for a group name in the regular expression."
+  },
+
+  "regularExpressionGroupNameNotSpecified": {
+    "message": "Group name has not been specified.",
+    "description": "Message for a group name in the regular expression."
+  },
+
+  "regularExpressionGroupNameNotCompleted": {
+    "message": "Group name has not been completed by right angle blacket.",
+    "description": "Message for a group name in the regular expression."
+  },
+
+  "regularExpressionCharacterSetNotSpecified": {
+    "message": "Character set has not been specified.",
+    "description": "Message for a character set in the regular expression."
+  },
+
+  "regularExpressionCharacterRangeNotHyphenatedFromLessToMoreValue": {
+    "message": "Character range must be hyphenated from the less to the more value.",
+    "description": "Message for a character set in the regular expression."
+  },
+
+  "regularExpressionCharacterSetNotCompleted": {
+    "message": "Character set has not been completed by right blacket.",
+    "description": "Message for a character set in the regular expression."
+  },
+
+  "regularExpressionOccurrenceNumberSpecifiedByNumerics": {
+    "message": "Occurrence number must be specified by numerics.",
+    "description": "Message for occurrence number in the regular expression."
+  },
+
+  "regularExpressionOccurrenceNumberNotSpecified": {
+    "message": "Occurrence number has not been specified.",
+    "description": "Message for occurrence number in the regular expression."
+  },
+
+  "regularExpressionOccurrenceNumberNotSpecifiedByValueRange": {
+    "message": "Occurrence number must be specified by a range between $1 and $2.",
+    "description": "Message for occurrence number in the regular expression."
+  },
+
+  "regularExpressionOccurrenceNumberNotArrangedFromLessToMoreValue": {
+    "message": "Occurrence number must be arranged from the less to the more value.",
+    "description": "Message for occurrence number in the regular expression."
+  },
+
+  "regularExpressionOccurrenceNumberNotCompleted": {
+    "message": "Occurrence number has not been completed by right brace.",
+    "description": "Message for occurrence number in the regular expression."
+  },
+
+  "regularExpressionQuantifierNotPrecededByCharacterOrGroup": {
+    "message": "Quantifier must be preceded by a character or group.",
+    "description": "Message for quantifiers in the regular expression."
+  },
+
+  "regularExpressionEscapeCharacterNotFollowedByCharacter": {
+    "message": "The last \\ must be followed by a character.",
+    "description": "Message for an escape character in the regular expression."
+  },
+
+  "fileImportLineError": {
+    "message": "Import is finished by a line error in the specified file.",
+    "description": "Message for a line error in the import file."
+  },
+
+  "fileImportLine": {
+    "message": "Line: $1: ",
+    "description": "Message prefix of a line in the import file."
+  },
+
+  "fileImportLineFilteringIdNotSpecified": {
+    "message": "Filtering ID has not been specified.",
+    "description": "Description of no filtering ID on a import line."
+  },
+
+  "fileImportLineDuplicateFilteringId": {
+    "message": "Duplicate filtering ID '$1'",
+    "description": "Description of duplicate filtering ID on a import line."
+  },
+
+  "fileImportLineNonAlphanumericFilteringId": {
+    "message": "Non-alphanumeric filtering ID '$1'",
+    "description": "Description of non-alphanumeric filtering ID on a import line."
+  },
+
+  "fileImportLineFilteringDataNotSpecified": {
+    "message": "Filtering data has not been specified.",
+    "description": "Description of no filtering data on a import line."
+  },
+
+  "fileImportLineUnknownFilteringTargetName": {
+    "message": "Unknown filtering target name '$1'",
+    "description": "Description of an unknown filtering target name on a import line."
+  },
+
+  "fileImportLineUnknownFilteringWordMatching": {
+    "message": "Unknown filtering word matching '$1'",
+    "description": "Description of an unknown filtering word matching on a import line."
+  },
+
+  "fileImportLineSettingNameNotEnclosedByDoubleQuotes": {
+    "message": "Setting name has not been enclosed by double quotes.",
+    "description": "Description of not enclosing the setting name by quotes on a import line."
+  },
+
+  "fileImportLineIncorrectRegularExpression": {
+    "message": "Regular expression is incorrect.",
+    "description": "Description of incorrect regular expression on a import line."
+  },
+
+  "fileImportLineOpenedUrlNotSpecified": {
+    "message": "Opened URL has not been specified.",
+    "description": "Description of no opened URL on a import line."
+  },
+
+  "fileImportLineTooMuchNewsSelectionDataLines": {
+    "message": "Too much data lines for news selection.",
+    "description": "Description of too much data lines for a news selection on a import line."
+  },
+
+  "fileImportDataNotIncluded": {
+    "message": "No data is included in import file.",
+    "description": "Message for including no data in the import file."
+  },
+
+  "contextMenuExtractNewsSettings": {
+    "message": "ExtractNews Settings",
+    "description": "Contenxt menu to change the setting on this extension."
+  },
+
+  "contextMenuSelectNewsTopic": {
+    "message": "Select '%s' as news topic",
+    "description": "Contenxt menu to select a news topic of selected text."
+  },
+
+  "contextMenuSelectNewsTopicAdditionally": {
+    "message": "Add '%s' to selected topics",
+    "description": "Contenxt menu to select a news topic of selected text additionally."
+  },
+
+  "contextMenuSelectNewsSender": {
+    "message": "Select '%s' as news sender",
+    "description": "Contenxt menu to select a news sender of selected text."
+  },
+
+  "contextMenuSelectNewsSenderAdditionally": {
+    "message": "Add '%s' to selected senders",
+    "description": "Contenxt menu to select a news sender of selected text additionally."
+  },
+
+  "contextMenuExcludeNewsTopic": {
+    "message": "Exclude '%s' from news topics",
+    "description": "Contenxt menu to exclude a news topic of selected text."
+  },
+
+  "contextMenuExcludeNewsTopicAdditionally": {
+    "message": "Add '%s' to excluded topics",
+    "description": "Contenxt menu to exclude a news topic of selected text additionally."
+  },
+
+  "contextMenuDisableTabLink": {
+    "message": "Disable tab's links",
+    "description": "Contenxt menu to disable links temprally on the tab."
+  },
+
+  "contextMenuDisableTabNewsSelection": {
+    "message": "Disable tab's news selection",
+    "description": "Contenxt menu to disable news selection on the tab."
+  },
+
+  "contextMenuSaveTabNewsSelection": {
+    "message": "Save tab's news selection",
+    "description": "Contenxt menu to save a news selection on the tab."
+  },
+
+  "contextMenuClearTabSelectedTopic": {
+    "message": "Clear selected topics",
+    "description": "Contenxt menu to clear selected topics from news selection on the tab."
+  },
+
+  "contextMenuClearTabSelectedSender": {
+    "message": "Clear selected senders",
+    "description": "Contenxt menu to clear selected senders from news selection on the tab."
+  },
+
+  "contextMenuClearTabNewsExclusion": {
+    "message": "Clear excluded topics",
+    "description": "Contenxt menu to clear excluded topics on the tab."
+  },
+
+  "contextMenuDisableFiltering": {
+    "message": "Disable word filterings",
+    "description": "Contenxt menu to disable word filterings."
+  },
+
+  "contextMenuHideComment": {
+    "message": "Hide comments on this site",
+    "description": "Contenxt menu to hide comments on the site."
+  },
+
+  "contextMenuDebugExtension": {
+    "message": "Debug this extension",
+    "description": "Contenxt menu to debug the extension."
+  },
+
+  "browserActionShowNewsSelections": {
+    "message": "Show news selections",
+    "description": "Tooltip to show news selections by the browser action."
+  },
+
+  "browserActionNewsSelection": {
+    "message": "News selection",
+    "description": "Title of news selections on the header."
+  },
+
+  "browserActionHowToAct": {
+    "message": "How to act",
+    "description": "Title of handling interface for a news selection."
+  },
+
+  "browserActionOpenInPresentTab": {
+    "message": "Open in this tab",
+    "description": "Label to open a news selection in the present tab."
+  },
+
+  "browserActionOpenInNewTab": {
+    "message": "Open in new tab",
+    "description": "Label to open a news selection in new tab."
+  },
+
+  "browserActionEdit": {
+    "message": "Edit...",
+    "description": "Label to edit a news selection."
+  },
+
+  "browserActionRemove": {
+    "message": "Remove",
+    "description": "Label to remove a news selection."
+  },
+
+  "browserActionNewsSelectionNotExist": {
+    "message": "No news selection exist.",
+    "description": "Label to indicate that no news selection exist."
+  },
+
+  "browserActionNewsSelectionNowEditing": {
+    "message": "Now editing...",
+    "description": "Label to indicate that a news selection is editing."
+  },
+
+  "editNewsSelection": {
+    "message": "News selection",
+    "description": "Edit label for a news selection."
+  },
+
+  "editSettingName": {
+    "message": "Setting Name",
+    "description": "Edit label for the setting name of a news selection."
+  },
+
+  "editInputTitle": {
+    "message": "Input a title.",
+    "description": "Message to input the setting name of a news selection."
+  },
+
+  "editSelectedTopic": {
+    "message": "Selected Topic",
+    "description": "Edit label for the selected topic of a news selection."
+  },
+
+  "editSelectedSender": {
+    "message": "Selected Sender",
+    "description": "Edit label for the selected sender of a news selection."
+  },
+
+  "editInputRegularExpression": {
+    "message": "Input a regular expression.\nLine feeds and indent spaces are deleted.",
+    "description": "Message to input the regular expression of a selected topic or sender."
+  },
+
+  "editLocalize": {
+    "message": "Localize",
+    "description": "Edit button to localize the regular expression of a news selection."
+  },
+
+  "editOpenedUrl": {
+    "message": "Opened URL",
+    "description": "Edit label for the URL of a page opened by a news selection."
+  },
+
+  "editSave": {
+    "message": "Save",
+    "description": "Edit button to save the news selection."
+  },
+
+  "editRemove": {
+    "message": "Remove",
+    "description": "Edit button to remove the news selection."
+  },
+
+  "optionGeneral": {
+    "message": "General",
+    "description": "Option label of general settings."
+  },
+
+  "optionFiltering": {
+    "message": "Filtering",
+    "description": "Option label of settings for word filterings."
+  },
+
+  "optionSelection": {
+    "message": "Selection",
+    "description": "Option label of settings for news selections."
+  },
+
+  "optionEnablingSite": {
+    "message": "Enabling Site",
+    "description": "Option label of enabling sites to apply news slections."
+  },
+
+  "optionAdvanced": {
+    "message": "Advanced",
+    "description": "Option label of advanced options."
+  },
+
+  "optionDisableFiltering": {
+    "message": "Disable the setting of word filterings",
+    "description": "Option label to disable the setting of word filterings."
+  },
+
+  "optionDebugExtension": {
+    "message": "Debug this extension",
+    "description": "Option label to debug the extension."
+  },
+
+  "optionDataFiltering": {
+    "message": "The setting of word filterings",
+    "description": "Option label for the setting of word filterings."
+  },
+
+  "optionDataSelection": {
+    "message": "The setting of news selections",
+    "description": "Option label for the setting of news selections."
+  },
+
+  "optionDataDescription": {
+    "message": " could be edited on the below pane, and imported from or exported to a local file. But, changed or additional data are not updated until you click 'Save' button.",
+    "description": "Option description to update the setting."
+  },
+
+  "optionDataReplacement": {
+    "message": "Replace with file's data",
+    "description": "Option label to replace the setting of word filterings or news selections with file's data."
+  },
+
+  "optionExport": {
+    "message": "Export",
+    "description": "Option button to export filtering targets to a file."
+  },
+
+  "optionImport": {
+    "message": "Import",
+    "description": "Option button to import filtering targets from a file."
+  },
+
+  "optionSave": {
+    "message": "Save",
+    "description": "Option button to save filtering targets."
+  },
+
+  "optionFilteringCategoryName": {
+    "message": "Category Name",
+    "description": "Option label of filtering category's name."
+  },
+
+  "optionFilteringCategoryTopics": {
+    "message": "Category Topics",
+    "description": "Option label of filtering category's topics."
+  },
+
+  "optionInputFilteringCategoryTopics": {
+    "message": "Input topics separated by commas.",
+    "description": "Message to input topics of a filtering category."
+  },
+
+  "optionTargetAccept": {
+    "message": "ACCEPT",
+    "description": "Option label to accept news topics by a filtering target."
+  },
+
+  "optionTargetDrop": {
+    "message": "DROP",
+    "description": "Option label to drop news topics by a filtering target."
+  },
+
+  "optionTargetReturn": {
+    "message": "RETURN",
+    "description": "Option label to skip a block by a filtering target."
+  },
+
+  "optionTargetTerminateBlock": {
+    "message": "Terminate block",
+    "description": "Option label to terminate a filtering block."
+  },
+
+  "optionInputTargetWords": {
+    "message": "Input words separated by commas.",
+    "description": "Message to input words of a filtering target."
+  },
+
+  "optionTargetMatchWordBeginning": {
+    "message": "Match word beginning",
+    "description": "Option label to match word beginning for a filtering target."
+  },
+
+  "optionTargetMatchWordEnd": {
+    "message": "Match word end",
+    "description": "Option label to match word end for a filtering target."
+  },
+
+  "optionTargetWordNegative": {
+    "message": "Word negative",
+    "description": "Option title to match word negative for a filtering target."
+  },
+
+  "optionTargetAnyWordMatched": {
+    "message": "Any word is matched.",
+    "description": "Option description to match any word for a filtering target."
+  },
+
+  "optionInsert": {
+    "message": "Insert",
+    "description": "Option button to insert a filtering target or news selection."
+  },
+
+  "optionAppend": {
+    "message": "Append",
+    "description": "Option button to append a news selection."
+  },
+
+  "optionLocalize": {
+    "message": "Localize",
+    "description": "Option button to localize a filtering target or news selection."
+  },
+
+  "optionUp": {
+    "message": "Up",
+    "description": "Option button to move a filtering target or news selection up."
+  },
+
+  "optionDown": {
+    "message": "Down",
+    "description": "Option button to move a filtering target or news selection down."
+  },
+
+  "optionEdit": {
+    "message": "Edit",
+    "description": "Option button to edit a news selection."
+  },
+
+  "optionRemove": {
+    "message": "Remove",
+    "description": "Option button to remove a filtering target or news selection."
+  },
+
+  "optionNewsSelection": {
+    "message": "News selection",
+    "description": "Option label for a news selection."
+  },
+
+  "optionSettingName": {
+    "message": "Setting Name",
+    "description": "Option label for the setting name of a news selection."
+  },
+
+  "optionInputTitle": {
+    "message": "Input a title.",
+    "description": "Message to input the setting name of a news selection."
+  },
+
+  "optionSelectedTopic": {
+    "message": "Selected Topic",
+    "description": "Option label for the selected topic of a news selection."
+  },
+
+  "optionSelectedSender": {
+    "message": "Selected Sender",
+    "description": "Option label for the selected sender of a news selection."
+  },
+
+  "optionInputRegularExpression": {
+    "message": "Input a regular expression.\nLine feeds and indent spaces are deleted.",
+    "description": "Message to input the regular expression of a selected topic or sender."
+  },
+
+  "optionOpenedUrl": {
+    "message": "Opened URL",
+    "description": "Option label for the URL of a page opened by a news selection."
+  },
+
+  "optionApply": {
+    "message": "Apply",
+    "description": "Option button to apply a news selection."
+  },
+
+  "optionDelete": {
+    "message": "Delete",
+    "description": "Option button to delete news selections checked on the list."
+  }
+}

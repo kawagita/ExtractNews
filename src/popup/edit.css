@@ -1,0 +1,154 @@
+* {
+  margin: 0px;
+  padding: 0px;
+  font-weight: normal;
+}
+
+body {
+  font-size: 16px;
+  background-color: #737373;
+}
+
+div {
+  justify-content: flex-start;
+  align-items: flex-start;
+  flex-flow: row wrap;
+  display: flex;
+}
+
+li {
+  list-style-type: none;
+}
+
+input {
+  margin: 10px 8px;
+}
+
+button {
+  border-width: 3px;
+  border-radius: 5px;
+  color: #616161;
+  background-color: #f9f9f9;
+}
+
+button:focus {
+  color: #000000;
+  border-color: #ffcc33;
+  background-color: #ffcc33;
+}
+
+button.pointed {
+  outline: 3px dotted #ffcc33;
+}
+
+#NewsSelection {
+  flex-flow: column nowrap;
+  align-items: center;
+}
+
+#NewsSelection > div {
+}
+
+#NewsSelection > div:first-child {
+  padding: 10px 40px;
+  width: 380px;
+}
+
+#NewsSelection > div:last-child {
+  margin-bottom: 20px;
+  width: 460px;
+  justify-content: flex-end;
+}
+
+#NewsSelection > div:last-child button {
+  margin: 0px 3px;
+  padding: 4px 8px;
+  width: 100px;
+  letter-spacing: 1px;
+}
+
+.edit_pane {
+  margin: 25px 0px;
+  padding: 20px 0px 10px 0px;
+  border-radius: 5px;
+  background-color: #f0f0f0;
+}
+
+.edit_pane label {
+  margin: 0px 2px;
+  font-size: 16px;
+}
+
+#SettingName {
+  margin: 10px 0px;
+  flex-flow: column nowrap;
+}
+
+#SettingName input {
+  margin: 10px 0px;
+  padding: 0px 8px;
+  height: 26px;
+  width: 270px;
+  border-radius: 5px;
+}
+
+#SettingName input:focus {
+  background-color: #ffffa0;
+}
+
+.regexp {
+  margin: 5px 0px;
+  width: 100%;
+  flex-flow: column nowrap;
+}
+
+.regexp textarea {
+  margin: 7px 0px;
+  padding: 8px;
+  height: 50px;
+  width: 360px;
+  border-radius: 5px;
+  font-size: 14px;
+  word-wrap: break-word;
+  resize: none;
+}
+
+.regexp textarea:focus {
+  background-color: #ffffa0;
+}
+
+.regexp div {
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.regexp button {
+  margin: 0px;
+  padding: 2px 8px;
+  font-size: 14px;
+}
+
+.regexp .localize {
+  visibility: hidden;
+}
+
+#OpenedUrl {
+  margin-top: 10px;
+  flex-flow: column nowrap;
+}
+
+#OpenedUrl select {
+  margin: 10px 0px;
+  padding: 0px 8px;
+  height: 28px;
+  min-width: 290px;
+  max-width: 380px;
+  border-radius: 5px;
+  font-size: 14px;
+  overflow: hidden;
+}
+
+#OpenedUrl select:focus {
+  background-color: #ffffa0;
+}

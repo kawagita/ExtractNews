@@ -1,0 +1,490 @@
+/*
+ *  Define functions and constant variables for the popup window.
+ *  Copyright (C) 2021 Yoshinori Kawagita.
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+"use strict";
+
+/*
+ * Functions and constant variables to open or close the edit or dialog window.
+ */
+ExtractNews.Popup = (() => {
+    const _Popup = {
+        // Query string added to URL of the edit window or dialog
+        QUERY_OPENER_TAB_ID: "openerTabId",
+        QUERY_NEWS_SELECTION_INDEX_STRINGS: "newsSelectionIndexStrings"
+      };
+
+    // Returns the query string created for the specified name and value.
+
+    function _getQueryString(name, value) {
+      var queryString = name + "=";
+      if ((typeof value) == "number") {
+        queryString += String(value);
+      } else {
+        queryString += value.join(",");
+      }
+      return queryString;
+    }
+
+    const QUERY_KEYS = [
+        _Popup.QUERY_OPENER_TAB_ID,
+        _Popup.QUERY_NEWS_SELECTION_INDEX_STRINGS
+      ];
+
+    /*
+     * Returns the map of parameters parsed from the query string
+     * of the specified URL.
+     */
+    function getQueryMap(url) {
+      if (url == undefined) {
+        throw newNullPointerException("url");
+      } else if ((typeof url) != "string") {
+        throw newIllegalArgumentException("url");
+      } else if (url == "") {
+        throw newEmptyStringException("url");
+      }
+      var queryIndex = url.indexOf("?") + 1;
+      var queryMap = new Map();
+      var queryParams = new URLSearchParams(url.substring(queryIndex));
+
+      QUERY_KEYS.forEach((queryKey) => {
+          if (queryParams.has(queryKey)) {
+            var queryValue = queryParams.get(queryKey);
+            switch (queryKey) {
+            case _Popup.QUERY_OPENER_TAB_ID:
+              queryMap.set(queryKey, Number(queryValue));
+              break;
+            case _Popup.QUERY_NEWS_SELECTION_INDEX_STRINGS:
+              var queryArray;
+              if (queryValue != "") {
+                queryArray = queryValue.split(",");
+              } else {
+                queryArray = new Array();
+              }
+              queryMap.set(queryKey, queryArray);
+              break;
+            }
+          }
+        });
+      return queryMap;
+    }
+
+    _Popup.getQueryMap = getQueryMap;
+
+    /*
+     * Finds the tab of the specified ID from all tabs opened on the browser
+     * and returns the promise fulfilled with its information.
+     */
+    function searchTab(tabId) {
+      return callAsynchronousAPI(browser.tabs.query, { }).then((tabs) => {
+          for (let i = 0; i < tabs.length; i++) {
+            if (tabId == tabs[i].id) {
+              return Promise.resolve(tabs[i]);
+            }
+          }
+          return Promise.resolve();
+        })
+    }
+
+    /*
+     * Gets the active tab on the current window and returns the promise
+     * fulfilled with its information.
+     */
+    function getWindowActiveTab() {
+      return callAsynchronousAPI(browser.tabs.query, {
+          currentWindow: true,
+          active: true
+        }).then((tabs) => {
+          return Promise.resolve(tabs[0]);
+        });
+    }
+
+    _Popup.searchTab = searchTab;
+    _Popup.getWindowActiveTab = getWindowActiveTab;
+
+    /*
+     * Returns the message to edit a news selection.
+     */
+    function _getEditMessage(messageIdPrefix, id) {
+      return browser.i18n.getMessage(messageIdPrefix + id);
+    }
+
+    // Returns the element to edit a news selection.
+
+    function _getEditElement(messageIdPrefix, id, tagName) {
+      var element = document.getElementById(id);
+      var label = element.querySelector("label");
+      if (label != null) {
+        label.textContent = _getEditMessage(messageIdPrefix, id);
+      }
+      if (tagName != undefined) {
+        element = element.querySelector(tagName);
+      }
+      return element;
+    }
+
+    /*
+     * Returns an object to edit a news selection on the pane, which consists
+     * of an inupt element for the setting name, the array of objects to input
+     * the regular expression of selected topics and senders, and a select
+     * element for the URL of news pages.
+     */
+    function getNewsSelectionEditPane(editTabId) {
+      var editMessageIdPrefix = "option";
+      var editPane = {
+          nameInput: undefined,
+          regexps: undefined,
+          localizedButtons: new Array(),
+          urlSelect: undefined,
+          _openerTabNewsOpenedUrl: undefined
+        };
+      if (editTabId != undefined) {
+        if (! Number.isInteger(editTabId)) {
+          throw newIllegalArgumentException("editTabId");
+        } else if (editTabId == browser.tabs.TAB_ID_NONE) {
+          throw newInvalidParameterException(editTabId);
+        }
+        // Receive the URL of a news page opened on a tab of the specified ID.
+        browser.runtime.onMessage.addListener((message) => {
+            if (message.command == ExtractNews.COMMAND_SETTING_INFORM) {
+              editPane._openerTabNewsOpenedUrl = message.newsOpenedUrl;
+            }
+          });
+        ExtractNews.sendRuntimeMessage({
+            command: ExtractNews.COMMAND_SETTING_REQUEST,
+            tabId: editTabId
+          });
+        editMessageIdPrefix = "edit";
+      }
+      var editUILanguage = browser.i18n.getUILanguage();
+      var editNameInput =
+        _getEditElement(editMessageIdPrefix, "SettingName", "input");
+      var editSelectedTopicDiv =
+        _getEditElement(editMessageIdPrefix, "SelectedTopic");
+      var editSelectedSenderDiv =
+        _getEditElement(editMessageIdPrefix, "SelectedSender");
+      var editRegexps = new Array();
+      var editUrlSelect =
+        _getEditElement(editMessageIdPrefix, "OpenedUrl", "select");
+      editPane.nameInput = editNameInput;
+      editPane.regexps = editRegexps;
+      editPane.urlSelect = editUrlSelect;
+
+      editNameInput.maxLength = _Alert.SETTING_NAME_MAX_WIDTH;
+      editNameInput.placeholder =
+        _getEditMessage(editMessageIdPrefix, "InputTitle");
+      Array.of(
+        editSelectedTopicDiv,
+        editSelectedSenderDiv).forEach((editRegexpDiv) => {
+        if (editUILanguage.startsWith("ja")) {
+            // Enable the button to localize a regular expression.
+            var editLocalizedButton = editRegexpDiv.querySelector(".localize");
+            editLocalizedButton.textContent =
+              _getEditMessage(editMessageIdPrefix, "Localize");
+            editLocalizedButton.value = String(editRegexps.length);
+            editLocalizedButton.style.visibility = "visible";
+            editPane.localizedButtons.push(editLocalizedButton);
+          }
+          var editTextarea = editRegexpDiv.querySelector("textarea");
+          var editRegexp = {
+              name: editRegexpDiv.querySelector("label").textContent,
+              textarea: editTextarea,
+              errorChecked: false
+            };
+          editTextarea.maxLength = _Alert.REGEXP_MAX_UTF16_CHARACTER_LENGTH;
+          editTextarea.placeholder =
+            _getEditMessage(editMessageIdPrefix, "InputRegularExpression");
+          editTextarea.addEventListener("input", (event) => {
+              for (let i = 0; i < editPane.regexps.length; i++) {
+                if (event.target == editPane.regexps[i].textarea) {
+                  editPane.regexps[i].errorChecked = false;
+                  break;
+                }
+              }
+            });
+          editRegexps.push(editRegexp);
+        });
+      return editPane;
+    }
+
+    function _addEditOpenedUrl(editUrlSelect, openedUrl) {
+      var editUrlOption = document.createElement("option");
+      editUrlOption.value = openedUrl;
+      editUrlOption.text = openedUrl;
+      editUrlSelect.appendChild(editUrlOption);
+      return editUrlOption;
+    }
+
+    /*
+     * Sets the URL of pages opened by a news selection into the select element
+     * in the specified object to edit it on the pane.
+     */
+    function setNewsSelectionEditUrlSelect(editPane, editDisplayedUrl = "") {
+      if (editPane == undefined) {
+        throw newNullPointerException("editPane");
+      }
+      var openerTabNewsOpenedUrl = editPane._openerTabNewsOpenedUrl;
+      var editUrlSelect = editPane.urlSelect;
+      var editInsertedUrls = new Array();
+      if (editDisplayedUrl != "") { // Existing news selection
+        if (editDisplayedUrl != URL_ABOUT_BLANK) {
+          editInsertedUrls.push(editDisplayedUrl);
+        }
+        if (openerTabNewsOpenedUrl != undefined
+          && openerTabNewsOpenedUrl != editDisplayedUrl) {
+          editInsertedUrls.push(openerTabNewsOpenedUrl);
+        }
+        editInsertedUrls = editInsertedUrls.sort();
+      } else if (openerTabNewsOpenedUrl != undefined) { // On a news site
+        editInsertedUrls.push(openerTabNewsOpenedUrl);
+        editDisplayedUrl = openerTabNewsOpenedUrl;
+      } else { // "New" news selection on the tab of no news site
+        editDisplayedUrl = URL_ABOUT_BLANK;
+      }
+      ExtractNews.getNewsSitePages().forEach((newsSitePage) => {
+          var newsSitePageUrl = newsSitePage.getUrl();
+          var editUrlOption =
+            _addEditOpenedUrl(editUrlSelect, newsSitePageUrl);
+          if (editInsertedUrls != undefined) {
+            for (let i = 0; i < editInsertedUrls.length; i++) {
+              var editInsertedUrl = editInsertedUrls[i];
+              if (editInsertedUrl != undefined
+                && newsSitePage.containsUrl(editInsertedUrl)) {
+                // Append the option element including an inserted URL
+                // in the news site to the next of its URL.
+                if (editInsertedUrl != newsSitePageUrl) {
+                  editUrlOption =
+                    _addEditOpenedUrl(editUrlSelect, editInsertedUrl);
+                  if (editInsertedUrl == editDisplayedUrl) {
+                    editUrlOption.selected = true;
+                  }
+                } else {
+                  editUrlOption.selected = true;
+                }
+                editInsertedUrls[i] = undefined;
+              }
+            }
+          }
+        });
+      var editUrlOption = _addEditOpenedUrl(editUrlSelect, URL_ABOUT_BLANK);
+      if (editDisplayedUrl == URL_ABOUT_BLANK) {
+        editUrlOption.selected = true;
+      }
+    }
+
+    /*
+     * Clears the URL of pages opened by a news selection into the select
+     * element in the specified object to edit it on the pane.
+     */
+    function clearNewsSelectionEditUrlSelect(editPane) {
+      if (editPane == undefined) {
+        throw newNullPointerException("editPane");
+      }
+      var editUrlSelect = editPane.urlSelect;
+      var editUrlOptions = Array.from(editUrlSelect.children);
+      for (let i = 0; i < editUrlOptions.length; i++) {
+        editUrlSelect.removeChild(editUrlOptions[i]);
+      }
+    }
+
+    _Popup.getNewsSelectionEditPane = getNewsSelectionEditPane;
+    _Popup.setNewsSelectionEditUrlSelect = setNewsSelectionEditUrlSelect;
+    _Popup.clearNewsSelectionEditUrlSelect = clearNewsSelectionEditUrlSelect;
+
+    // URL of edit window only opened on the extension
+    const EDIT_WINDOW_URL = browser.runtime.getURL("popup/edit.html");
+
+    /*
+     * Creates the window to edit a news selection for the specified indexes
+     * and the promise with fulfilled with its tab ID or rejected. If the array
+     * has a negative or multiple indexes, edit for new setting.
+     */
+    function openNewsSelectionEditWindow(indexStrings = new Array()) {
+      if (! Array.isArray(indexStrings)) {
+        throw newIllegalArgumentException("indexStrings");
+      }
+      return getWindowActiveTab().then((tab) => {
+          return callAsynchronousAPI(browser.windows.create, {
+              url: EDIT_WINDOW_URL + "?"
+                + _getQueryString(_Popup.QUERY_OPENER_TAB_ID, tab.id)
+                + "&" + _getQueryString(
+                  _Popup.QUERY_NEWS_SELECTION_INDEX_STRINGS, indexStrings),
+              type: "popup",
+              height: 575,
+              width: 540
+            });
+        });
+    }
+
+    /*
+     * Checks whether the window to edit a news selection has been opened
+     * and returns the promise fulfilled with its tab ID if exists, otherwise,
+     * browser.tabs.TAB_ID_NONE.
+     */
+    function queryNewsSelectionEditWindow() {
+      return callAsynchronousAPI(browser.tabs.query, { }).then((tabs) => {
+          for (let i = 0; i < tabs.length; i++) {
+            if (tabs[i].url.startsWith(EDIT_WINDOW_URL)) {
+              return Promise.resolve(tabs[i].id);
+            }
+          }
+          return Promise.resolve(browser.tabs.TAB_ID_NONE);
+        });
+    }
+
+    /*
+     * Closes the window to edit a news selection and returns the promise.
+     */
+    function closeNewsSelectionEditWindow() {
+      return queryNewsSelectionEditWindow().then((editWindowTabId) => {
+          if (editWindowTabId != browser.tabs.TAB_ID_NONE) {
+            return callAsynchronousAPI(browser.tabs.remove, editWindowTabId);
+          }
+          return Promise.resolve();
+        });
+    }
+
+    _Popup.openNewsSelectionEditWindow = openNewsSelectionEditWindow;
+    _Popup.queryNewsSelectionEditWindow = queryNewsSelectionEditWindow;
+    _Popup.closeNewsSelectionEditWindow = closeNewsSelectionEditWindow;
+
+    /*
+     * Applies the setting of news selections in the specified array to a tab
+     * and returns the promise.
+     */
+    function openNewsSelectionsInTab(tabOpen, newsSelections) {
+      if (! Array.isArray(newsSelections)) {
+        throw newIllegalArgumentException("newsSelections");
+      } else if (newsSelections.length == 0) {
+        throw newEmptyArrayException("newsSelections");
+      }
+      var tabGettingPromise;
+      var newsSelectionObjects = new Array();
+      newsSelections.forEach((newsSelection) => {
+          newsSelectionObjects.push(newsSelection.toObject());
+        });
+      //                            In this tab   In new tab
+      //
+      // Enabled site               Current URL   Opened URL
+      // Disabled or no news site   Opened URL    Opened URL
+      //
+      // Divide by the state of a site on the active tab, and apply news
+      // selections to the current URL on enabled sites if open in this tab,
+      // otherwise, update by the opened URL of its.
+      if (tabOpen) {
+        tabGettingPromise = callAsynchronousAPI(browser.tabs.create, {
+            active: false,
+            url: URL_ABOUT_BLANK
+          });
+      } else {
+        tabGettingPromise = getWindowActiveTab();
+      }
+      return tabGettingPromise.then((tab) => {
+          var tabUpdated = true;
+          if (! tabOpen) {
+            var newsSitePage = ExtractNews.getNewsSitePage(tab.url);
+            if (newsSitePage != undefined) {
+              // Update the active tab by the opened URL of news selections
+              // if its site is not enabled.
+              tabUpdated =
+                ! ExtractNews.isNewsSiteEnabled(newsSitePage.getSiteId());
+            }
+            if (tabUpdated && newsSelections[0].openedUrl == URL_ABOUT_BLANK) {
+              return Promise.resolve();
+            }
+          }
+          return ExtractNews.sendRuntimeMessage({
+              command: ExtractNews.COMMAND_SETTING_SELECT,
+              tabId: tab.id,
+              tabOpen: tabOpen,
+              tabUpdated: tabUpdated,
+              newsSelectionObjects: newsSelectionObjects
+            }).then(() => {
+              if (tabUpdated) {
+                return callAsynchronousAPI(browser.tabs.update, tab.id, {
+                    active: ! tabOpen,
+                    url: newsSelections[0].openedUrl
+                  });
+              }
+              return Promise.resolve();
+            });
+        });
+    }
+
+    _Popup.openNewsSelectionsInTab = openNewsSelectionsInTab;
+
+    // URL of the warning dialog opened for each tab
+    const MESSAGE_DIALOG_URL = browser.runtime.getURL("popup/dialog.html");
+
+    function _checkTabId(tabId) {
+      if (! Number.isInteger(tabId)) {
+        throw newIllegalArgumentException("tabId");
+      } else if (tabId == browser.tabs.TAB_ID_NONE) {
+        throw newInvalidParameterException(tabId);
+      }
+    }
+
+    /*
+     * Opens the dialog to display the string of a message and description to
+     * a tab of the specified ID and returns the promise with fulfilled with
+     * its tab ID or rejected.
+     *
+     * NOTE: Emphasises are set by matching characters enclosed with the first
+     *       "(" and ")" in the specified regular expression.
+     */
+    function openMessageDialog(tabId, dialogSearchTabId) {
+      _checkTabId(tabId);
+      var dialogSearchPromise;
+      if (dialogSearchTabId != undefined) {
+        _checkTabId(dialogSearchTabId);
+        dialogSearchPromise = searchTab(dialogSearchTabId).then((tab) => {
+            if (tab != undefined) {
+              return Promise.resolve(dialogSearchTabId);
+            }
+            // Open new dialog if has already been closed by [X] button.
+            return Promise.resolve(browser.tabs.TAB_ID_NONE);
+          });
+      } else {
+        dialogSearchPromise = Promise.resolve(browser.tabs.TAB_ID_NONE);
+      }
+      return dialogSearchPromise.then((dialogTabId) => {
+          if (dialogTabId != browser.tabs.TAB_ID_NONE) {
+            return callAsynchronousAPI(
+              browser.tabs.get, dialogTabId).then((tab) => {
+                return callAsynchronousAPI(
+                  browser.windows.update, tab.windowId, { focused: true });
+              }).then(() => {
+                return Promise.resolve(dialogTabId);
+              });
+          }
+          return callAsynchronousAPI(browser.windows.create, {
+              url: MESSAGE_DIALOG_URL + "?"
+                + _getQueryString(_Popup.QUERY_OPENER_TAB_ID, tabId),
+              type: "popup",
+              height: 220,
+              width: 450
+            }).then((windowInfo) => {
+              return Promise.resolve(windowInfo.tabs[0].id);
+            });
+        });
+    }
+
+    _Popup.openMessageDialog = openMessageDialog;
+
+    return _Popup;
+  })();

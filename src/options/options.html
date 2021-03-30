@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="options.css"/>
+</head>
+<body tabindex="-1">
+  <header>
+    <div>
+      <img src="../icons/tulku-48.png">
+      <h1>ExtractNews</h1>
+    </div>
+    <ol id="OptionMenu">
+      <li id="General" tabindex="1"></li>
+      <li id="Filtering" tabindex="2"></li>
+      <li id="Selection" tabindex="3"></li>
+    </ol>
+  </header>
+  <section id="Options" class="general">
+    <div id="GeneralOption">
+      <div id="EnablingSite">
+        <h3></h3>
+        <div>
+        </div>
+      </div>
+      <div id="Advanced">
+        <h3></h3>
+        <div>
+          <div id="DisableFiltering" class="checked_option">
+            <input type="checkbox">
+            <label></label>
+          </div>
+          <div id="DebugExtension" class="checked_option">
+            <input type="checkbox">
+            <label></label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="DataUpdate">
+      <p>
+      <div>
+        <div id="DataReplacement" class="checked_option">
+          <input type="checkbox" tabindex="4">
+          <label><label>
+        </div>
+        <div id="DataButtonGroup">
+          <button id="Import" tabindex="5"></button>
+          <button id="Export" tabindex="6"></button>
+          <button id="Save" tabindex="7"></button>
+        </div>
+      </div>
+    </div>
+    <div id="FilteringOption">
+      <hr>
+      <div id="FilteringCategory">
+        <div id="FilteringCategoryName">
+          <label></label>
+          <select></select>
+        </div>
+        <div id="FilteringCategoryTopics">
+          <label></label>
+          <input>
+        </div>
+      </div>
+      <div class="block">
+      </div>
+    </div>
+    <div id="SelectionOption">
+      <hr>
+      <div id="SelectionEdit">
+        <div class="edit_header">
+          <span></span>
+          <span class="close" tabindex="15">&#x274c;</span>
+        </div>
+        <div class="edit_pane">
+          <div id="SettingName">
+            <label></label>
+            <input tabindex="8">
+          </div>
+          <div id="SelectedTopic" class="regexp">
+            <div>
+              <label></label>
+              <button class="localize" tabindex="10"></button>
+            </div>
+            <textarea tabindex="9"></textarea>
+          </div>
+          <div id="SelectedSender" class="regexp">
+            <div>
+              <label></label>
+              <button class="localize" tabindex="12"></button>
+            </div>
+            <textarea tabindex="11"></textarea>
+          </div>
+          <div id="OpenedUrl">
+            <label></label>
+            <select tabindex="13"></select>
+          </div>
+          <div>
+            <button id="Apply" tabindex="14"></button>
+          </div>
+        </div>
+      </div>
+      <div id="SelectionList">
+        <div class="page_header">
+          <div>
+            <input type="checkbox" tabindex="8">
+            <button id="Delete" tabindex="9"></button>
+          </div>
+          <ol id="SelectionPageList">
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+  <script src="../debug.js"></script>
+  <script src="../extractnews.js"></script>
+  <script src="../storage.js"></script>
+  <script src="../text.js"></script>
+  <script src="../alert.js"></script>
+  <script src="../event.js"></script>
+  <script src="../file.js"></script>
+  <script src="../popup/popup.js"></script>
+  <script src="filtering.js"></script>
+  <script src="selection.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+* {
+  margin: 0px;
+  padding: 0px;
+}
+
+body {
+  padding: 10px;
+  flex-direction: column;
+  display: flex;
+  background-color: #cfcfcf;
+}
+
+#DialogMessageBox {
+  padding: 20px 25px;
+  align-content: space-between;
+  flex-direction: column;
+  display: flex;
+  border: solid 1px #dfdfdf;
+  border-radius: 5px 5px;
+  box-shadow: 1px 2px 3px rgba(0, 0, 0, 0.3);
+  background-color: #f0f0f0;
+}
+
+#DialogMessageBox div {
+  padding-bottom: 10px;
+  flex-direction: row;
+  align-content: flex-start;
+  display: flex;
+}
+
+img {
+  height: 48px;
+  width: 48px;
+}
+
+label {
+  margin: 2px 15px;
+  font-size: 16px;
+}
+
+p {
+  padding: 15px 5px 0px 5px;
+  font-size: 14px;
+  word-wrap: break-word;
+}
+
+span {
+  padding: 0px 5px;
+  font-weight: bold;
+  font-size: 16px;
+  color: #ff6600;
+  letter-spacing: 1px;
+}
+
+button {
+  border-width: 3px;
+  border-radius: 5px;
+  color: #616161;
+  background-color: #f9f9f9;
+}
+
+button:focus {
+  color: #000000;
+  border-color: #ffcc33;
+  background-color: #ffcc33;
+}
+
+#DialogButtonGroup {
+  margin: 15px 0px;
+  justify-content: flex-end;
+  display: flex;
+}
+
+#DialogButtonGroup button {
+  margin: 0px 3px;
+  padding: 4px 8px;
+  width: 100px;
+  letter-spacing: 1px;
+}
