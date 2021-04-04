@@ -400,8 +400,7 @@ if (Site.isLocalized()) {
   newsOpenedUrlParser.parseHostName();
   newsOpenedUrlParser.parseRootDirectory();
 
-  // Adds the common topics to the array of topic words, firstly.
-  Site.addNewsTopicWords(splitITmediaNewsString("Topics"));
+  Site.addNewsTopicWords(splitITmediaNewsString("CommonTopicWords"));
 
   if (newsOpenedUrlParser.match(ARTICLES_REGEXP) != null) { // Articles
     newsCategoryId = _getPankuzuCategoryId();
@@ -472,18 +471,18 @@ if (Site.isLocalized()) {
   Site.addNewsDesign(new ITmediaNewsTopics(".colBoxTopRanking"));
 
   // Add topics for a category of this page to the array of topic words.
-  var newsCategoryTopicsString = "";
+  var newsCategoryTopicWordsString = "";
   if (newsCategoryId != "") {
-    newsCategoryTopicsString =
-      getITmediaNewsString(newsCategoryId + "CategoryTopics");
+    newsCategoryTopicWordsString =
+      getITmediaNewsString(newsCategoryId + "CategoryTopicWords");
   }
-  if (newsCategoryTopicsString != "") {
-    Site.addNewsTopicWords(newsCategoryTopicsString.split(","));
+  if (newsCategoryTopicWordsString != "") {
+    Site.addNewsTopicWords(newsCategoryTopicWordsString.split(","));
   } else { // Top page or Burst or Archive category
     for (let i = 0; i < CATEGORY_IDS.length; i++) {
       // Add topics for all categories to the array of topic words.
       Site.addNewsTopicWords(
-        splitITmediaNewsString(CATEGORY_IDS[i] + "CategoryTopics"));
+        splitITmediaNewsString(CATEGORY_IDS[i] + "CategoryTopicWords"));
     }
   }
 

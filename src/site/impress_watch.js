@@ -382,7 +382,7 @@ class ImpressWatchMainObservedTopics extends NewsDesign {
 if (Site.isLocalized()) {
   const SITE_HOST_SERVERS = splitImpressWatchString("SiteHostServers");
   const SITE_NAMES = splitImpressWatchString("SiteNames");
-  const SITE_TOPICS = splitImpressWatchString("SiteTopics");
+  const SITE_TOPIC_WORDS = splitImpressWatchString("SiteTopicWords");
 
   const DOCUMENTS_REGEXP = getImpressWatchRegExp("Documents");
   const KODOMO_IT_PATH = getImpressWatchString("KodomoItPath");
@@ -399,9 +399,9 @@ if (Site.isLocalized()) {
   newsOpenedUrlParser.parseHostName();
   newsSiteIndex = SITE_HOST_SERVERS.indexOf(newsOpenedUrlParser.hostServer);
   if (newsSiteIndex >= 0) { // INTERNET Watch, PC Watch, ..., and Watch Video
-    Site.addNewsTopicWords(SITE_TOPICS[newsSiteIndex].split(" "));
+    Site.addNewsTopicWords(SITE_TOPIC_WORDS[newsSiteIndex].split(" "));
   } else { // Impress Watch
-    Site.addNewsTopicWords(splitImpressWatchString("Topics"));
+    Site.addNewsTopicWords(splitImpressWatchString("TopicWords"));
   }
 
   if (newsOpenedUrlParser.match(DOCUMENTS_REGEXP) != null) { // Articles
@@ -445,7 +445,7 @@ if (Site.isLocalized()) {
     }
   } else if (newsOpenedUrlParser.parse(KODOMO_IT_PATH)) { // Kodomo IT
     Site.addNewsDesign(new ImpressWatchKodomoItList());
-    Site.addNewsTopicWords(splitImpressWatchString("KodomoItTopics"));
+    Site.addNewsTopicWords(splitImpressWatchString("KodomoItTopicWords"));
   } else if (newsOpenedUrlParser.parse(BACK_NUMBER_PATH)) { // Back number
     if (newsOpenedUrlParser.parse(
       getImpressWatchString("BackNumberTopPath"))) {

@@ -49,9 +49,9 @@
     "description": "Categories of Yahoo! site."
   },
 
-  "extractNewsYahooSiteCategoryTopics": {
-    "message": "News US Society Politics World Health Science Finance Business IT Technology Money Sports NFL Entertainment Life,News US Society Politics World Health Science,Finance Business Markets Politics IT Technology Games,Money Business Travel Investing,Sports NFL NBA MLB NHL NCAA Golf Soccer Tennis Boxing Motorsports,Entertainment Paley TV Movies Music Celebrity,Life Lifestyle Well-being Education Style Beauty",
-    "description": "Category's topics of Yahoo! site."
+  "extractNewsYahooSiteCategoryTopicWords": {
+    "message": "Politics Society U.S. World Money Business Science Technology IT Entertainment Sports NFL Life Health Medicine,U.S. Society Politics World Science Health Medicine,Politics Money Business Market IT Technology Game,Money Business Travel,Sports NFL NBA MLB NHL NCAA Golf Soccer Tennis Boxing Motorsports,Entertainment TV Movies Music,Life Health Medicine Education Trend",
+    "description": "Topic wards for each category of Yahoo! site."
   },
 
   "extractNewsYahooSiteNames": {
@@ -169,19 +169,199 @@
     "description": "Query key to specify the value of a story keyword on Slashdot."
   },
 
-  "extractNewsSlashdotStoryTopics": {
-    "message": "America Online,Almighty Buck,Ask Slashdot,AT&T,Christmas Cheer,Courts,Data Storage,Desktop (Apple),Electronic Frontier Foundation,First Person Shooters (Games),Handhelds,Hardware Hacking,Laugh,Input Devices,Internet Explorer,Lord of the Rings,Media,Media (Apple),NES (Games),Networking (Apple),Operating Systems,OS 9,OS X,PlayStation (Games),Portables (Apple),Portables (Games),Real Time Strategy (Games),Red Hat Software,Robotics,Role Playing (Games),Silicon Graphics,Social Networks,Slashdot.org,Sun Microsystems,Technology (Apple),Television,Toys,United Kingdom,United States,User Journal,Utilities (Apple),VA,Wireless (Apple),Wireless Networking,X,XBox (Games)",
-    "description": "Story topics on Slashdot."
-  },
-
   "extractNewsSlashdotStoryTopicKeywords": {
-    "message": "aol,money,ask,att,xmas,court,storage,mac,eff,fps,handheld,hardhack,humor,inputdev,msie,lotr,themedia,applemedia,nes,applenetworking,os,macos9,macosx,playstation,macbook,portablegames,rts,redhat,robot,rpg,sgi,social,meta,sun,appletechnology,tv,toy,uk,usa,journal,appleutilities,vasoftware,applewireless,wireless,xwindows,xbox",
+    "message": "it,amd,aol,att,cda,storage,mac,drm,e3,eff,eplus,eu,fps,gnome,gnu,gnustep,gui,handheld,hardhack,hp,ibm,imac,inputdev,msie,ios,iss,kde,linuxbusiness,lotr,applemedia,nasa,nes,applenetworking,opensource,os,macos9,macosx,pcgames,php,playstation,macbook,portablegames,rts,redhat,robot,rpg,scifi,sgi,social,starwars,sun,suse,appletechnology,tv,money,court,gimp,internet,matrix,themedia,military,toy,uk,usa,appleutilities,vasoftware,applewireless,wireless,xwindows,xbox,yahoo",
     "description": "The keyword of story topics on Slashdot."
   },
 
+  "extractNewsSlashdotStoryTopics": {
+    "message": "IT,AMD,America Online,AT&T,CDA,Data Storage,Desktops (Apple),DRM,E3,Electronic Frontier Foundation,ePlus,EU,First Person Shooters (Games),GNOME,GNU is Not Unix,GNUStep,GUI,Handhelds,Hardware Hacking,HP,IBM,iMac,Input Devices,Internet Explorer,IOS,ISS,KDE,Linux Business,Lord of the Rings,Media (Apple),NASA,NES (Games),Networking (Apple),Open Source,Operating Systems,OS 9,OS X,PC Games (Games),PHP,PlayStation (Games),Portables (Apple),Portables (Games),Real Time Strategy (Games),Red Hat Software,Robotics,Role Playing (Games),Sci-Fi,Silicon Graphics,Social Networks,Star Wars Prequels,Sun Microsystems,SuSE,Technology (Apple),Television,The Almighty Buck,The Courts,The Gimp,The Internet,The Matrix,The Media,The Military,Toys,United Kingdom,United States,Utilities (Apple),VA,Wireless (Apple),Wireless Networking,X,XBox (Games),Yahoo!",
+    "description": "Story topics on Slashdot."
+  },
+
   "extractNewsSlashdotStoryTopicRegularExpression": {
-    "message": "^(?:The |It's funny. +)?((?:[-&0-9A-Za-z]+)(?: [0-9A-Za-hj-z][0-9A-Za-z]*)*)(?: \\(([0-9A-Za-z]+)\\)| is Not Unix| Prequels|[!.])?$$",
+    "message": "^([- !&.0-9A-Za-z]+)(:? +\\((.+)\\))?$$",
     "description": "Regular expression of the topic of Slashdot story."
+  },
+
+  "extractNewsSlashdotCommonTopicWords": {
+    "message": "Politics,Society,Business,Science,Technology,Life,Medicine",
+    "description": "Common topic words on Slashdot."
+  },
+
+  "extractNewsSlashdotTopicIds": {
+    "message": "World,Money,IT,Communication,Internet,Security,Hardware,PC,Mobile,Software,OS,Build,OpenSource,Cloud,AI,Game,Entertainment",
+    "description": "Topic IDs on Slashdot."
+  },
+
+  "extractNewsSlashdotWorldStoryTopics": {
+    "message": "Politics,Australia,Canada,ch,China,EU,Japan,The Military,United Kingdom,United States",
+    "description": "Story topics for the world on Slashdot."
+  },
+
+  "extractNewsSlashdotWorldTopicWords": {
+    "message": "World,Australia,Canada,China,EU,Japan,U.K.,U.S.",
+    "description": "Topic words for the world on Slashdot."
+  },
+
+  "extractNewsSlashdotMoneyStoryTopics": {
+    "message": "Bitcoin,Digital,Encryption,Facebook,Patents,The Almighty Buck",
+    "description": "Story topics for the money on Slashdot."
+  },
+
+  "extractNewsSlashdotMoneyTopicWords": {
+    "message": "Money",
+    "description": "Topic words for the money on Slashdot."
+  },
+
+  "extractNewsSlashdotITStoryTopics": {
+    "message": "Apache,Apple,BSD,Build,Developers,Devices,Hardware,IT,Linux,Mobile,Search,Advertising,AI,AMD,America Online,Amiga,Android,AT&T,Be,Bitcoin,Blackberry,Botnet,Bug,Caldera,Cellphones,Chrome,Chromium,Cloud,Comdex,Compaq,Corel,Data Storage,Databases,Debian,Desktops,Digital,Displays,Electronic Frontier Foundation,Emulation,Encryption,Enlightenment,ePlus,Facebook,Firefox,GNOME,GNU is Not Unix,GNUStep,Google,Graphics,GUI,Handhelds,Hardware Hacking,HP,IBM,iMac,Input Devices,Intel,Internet Explorer,IOS,Iphone,Java,KDE,Linux Business,Linuxcare,Mandriva,Media,Microsoft,Mozilla,Netscape,Network,Networking,Novell,Open Source,Opera,Operating Systems,Oracle,OS 9,OS X,Perl,PHP,Portables,Printer,Programming,Python,Red Hat Software,Ruby,Safari,Security,Shark,Silicon Graphics,Social Networks,Software,SourceForge,Spam,Sun Microsystems,Supercomputing,SuSE,The Gimp,The Internet,Transmeta,TurboLinux,Twitter,Ubuntu,Unix,Upgrades,Utilities,VA,Verizon,Virtualization,Wikipedia,Windows,Wine,Wireless,Wireless Networking,Worms,X,Ximian,Yahoo!,Youtube",
+    "description": "Story topics for the IT on Slashdot."
+  },
+
+  "extractNewsSlashdotITTopicWords": {
+    "message": "IT",
+    "description": "Topic words for the IT on Slashdot."
+  },
+
+  "extractNewsSlashdotCommunicationStoryTopics": {
+    "message": "AT&T,Communications,Verizon",
+    "description": "Story topics for the commumication on Slashdot."
+  },
+
+  "extractNewsSlashdotCommunicationTopicWords": {
+    "message": "Communication",
+    "description": "Topic words for the communication on Slashdot."
+  },
+
+  "extractNewsSlashdotInternetStoryTopics": {
+    "message": "Apache,Search,Advertising,Bitcoin,Botnet,Chrome,Chromium,Cloud,Data Storage,Facebook,Firefox,Google,Internet Explorer,Links,Netscape,Network,Networking,Opera,Safari,Social Networks,SourceForge,The Internet,Twitter,Wikipedia,Wireless,Wireless Networking,Yahoo!,Youtube",
+    "description": "Story topics for the internet on Slashdot."
+  },
+
+  "extractNewsSlashdotInternetTopicWords": {
+    "message": "Internet",
+    "description": "Topic words for the internet on Slashdot."
+  },
+
+  "extractNewsSlashdotSecurityStoryTopics": {
+    "message": "Botnet,Bug,Encryption,Network,Networking,Privacy,Security,Spam,Upgrades,Wireless Networking,Worms",
+    "description": "Story topics for the security on Slashdot."
+  },
+
+  "extractNewsSlashdotSecurityTopicWords": {
+    "message": "Security",
+    "description": "Topic words for the security on Slashdot."
+  },
+
+  "extractNewsSlashdotHardwareStoryTopics": {
+    "message": "Apple,Devices,Hardware,Mobile,Amiga,AMD,Blackberry,Cellphones,Compaq,Data Storage,Desktops,Digital,Displays,Graphics,Handhelds,Hardware Hacking,HP,IBM,iMac,Input Devices,Intel,Iphone,Portables,Printer,Silicon Graphics,Sun Microsystems",
+    "description": "Story topics for the hardware on Slashdot."
+  },
+
+  "extractNewsSlashdotHardwareTopicWords": {
+    "message": "Hardware",
+    "description": "Topic words for the hardware on Slashdot."
+  },
+
+  "extractNewsSlashdotPCStoryTopics": {
+    "message": "Apple,Amiga,Compaq,HP,IBM,iMac,Intel",
+    "description": "Story topics for the personal computer on Slashdot."
+  },
+
+  "extractNewsSlashdotPCTopicWords": {
+    "message": "PC",
+    "description": "Topic words for the personal computer on Slashdot."
+  },
+
+  "extractNewsSlashdotMobileStoryTopics": {
+    "message": "Mobile,Android,Blackberry,Cellphones,Handhelds,IOS,Iphone,Java,Portables",
+    "description": "Story topics for the mobile on Slashdot."
+  },
+
+  "extractNewsSlashdotMobileTopicWords": {
+    "message": "Mobile",
+    "description": "Topic words for the mobile on Slashdot."
+  },
+
+  "extractNewsSlashdotSoftwareStoryTopics": {
+    "message": "Apache,Apple,BSD,Linux,Android,Be,Bug,Caldera,Chrome,Chromium,Corel,Databases,Debian,Emulation,Enlightenment,Firefox,GNOME,GNU is Not Unix,GNUStep,Google,GUI,Internet Explorer,IOS,Java,KDE,Mandriva,Microsoft,Mozilla,Netscape,Open Source,Opera,Operating Systems,Oracle,OS 9,OS X,Perl,PHP,Piracy,Python,Red Hat Software,Ruby,Safari,Shark,Software,Sun Microsystems,SuSE,The Gimp,TurboLinux,Ubuntu,Unix,Upgrades,Utilities,VA,Virtualization,Windows,Wine,X,Ximian",
+    "description": "Story topics for the software on Slashdot."
+  },
+
+  "extractNewsSlashdotSoftwareTopicWords": {
+    "message": "Software",
+    "description": "Topic words for the software on Slashdot."
+  },
+
+  "extractNewsSlashdotOSStoryTopics": {
+    "message": "BSD,Linux,Android,Be,Caldera,Chrome,Debian,IOS,Linux Business,Linuxcare,Mandriva,Operating Systems,OS 9,OS X,Red Hat Software,SuSE,TurboLinux,Ubuntu,Unix,Upgrades,VA,Windows",
+    "description": "Story topics for operating system on Slashdot."
+  },
+
+  "extractNewsSlashdotOSTopicWords": {
+    "message": "OS",
+    "description": "Topic words for the operating system on Slashdot."
+  },
+
+  "extractNewsSlashdotBuildStoryTopics": {
+    "message": "Build,Developers,GNOME,GUI,GNUStep,Java,KDE,Perl,PHP,Programming,Python,Ruby,SourceForge,Ximian",
+    "description": "Story topics for the build on Slashdot."
+  },
+
+  "extractNewsSlashdotBuildTopicWords": {
+    "message": "Build",
+    "description": "Topic words for the build on Slashdot."
+  },
+
+  "extractNewsSlashdotOpenSourceStoryTopics": {
+    "message": "Apache,BSD,Linux,Caldera,Debian,Electronic Frontier Foundation,Enlightenment,Firefox,GNOME,GNU is Not Unix,GNUStep,KDE,Mandriva,Mozilla,Netscape,Open Source,Red Hat Software,SuSE,The Gimp,TurboLinux,Ubuntu,VA,Wine",
+    "description": "Story topics for the open source on Slashdot."
+  },
+
+  "extractNewsSlashdotOpenSourceTopicWords": {
+    "message": "Open Source",
+    "description": "Topic words for the open source on Slashdot."
+  },
+
+  "extractNewsSlashdotCloudStoryTopics": {
+    "message": "Cloud,Data Storage",
+    "description": "Story topics for the cloud service on Slashdot."
+  },
+
+  "extractNewsSlashdotCloudTopicWords": {
+    "message": "Cloud",
+    "description": "Topic words for the cloud service on Slashdot."
+  },
+
+  "extractNewsSlashdotAIStoryTopics": {
+    "message": "AI,Robotics,Supercomputing",
+    "description": "Story topics for the network on Slashdot."
+  },
+
+  "extractNewsSlashdotAITopicWords": {
+    "message": "AI",
+    "description": "Topic words for the network on Slashdot."
+  },
+
+  "extractNewsSlashdotGameStoryTopics": {
+    "message": "Games,Classic Games,E3,Emulation,First Person Shooters,GameCube,NES,Nintendo,PC Games,PlayStation,Portables,Quake,Real Time Strategy,Role Playing,Shark,Sony,Wii,XBox",
+    "description": "Story topics for the game on Slashdot."
+  },
+
+  "extractNewsSlashdotGameTopicWords": {
+    "message": "Game",
+    "description": "Topic words for the game on Slashdot."
+  },
+
+  "extractNewsSlashdotEntertainmentStoryTopics": {
+    "message": "Entertainment,Anime,Books,DRM,Graphics,Lord of the Rings,Media,Movies,Music,Piracy,Sci-Fi,Sony,Star Wars Prequels,Television,The Matrix",
+    "description": "Story topics for the entertainment on Slashdot."
+  },
+
+  "extractNewsSlashdotEntertainmentTopicWords": {
+    "message": "Entertainment,TV,Movies,Anime",
+    "description": "Topic words for the entertainment on Slashdot."
   },
 
   "extractNewsSlashdotStorySourceEnclosingStart": {

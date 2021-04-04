@@ -48,12 +48,13 @@ const YAHOO_JAPAN_NEWS_LIVE_MOVIE_TITLE =
   getYahooJapanNewsString("LiveMovieTitle");
 
 const YAHOO_JAPAN_NEWS_CATEGORIES = splitYahooJapanNewsString("Categories");
-const YAHOO_JAPAN_NEWS_CATEGORY_TOPICS_MAP = new Map();
+const YAHOO_JAPAN_NEWS_TOPIC_WORDS_MAP = new Map();
 
 {
-  splitYahooJapanNewsString("CategoryTopics").forEach((topics, index) => {
-      YAHOO_JAPAN_NEWS_CATEGORY_TOPICS_MAP.set(
-        YAHOO_JAPAN_NEWS_CATEGORIES[index], topics.split(" "));
+  const TOPIC_WORDS = splitYahooJapanNewsString("CategoryTopicWords");
+  TOPIC_WORDS.forEach((topicWords, index) => {
+      YAHOO_JAPAN_NEWS_TOPIC_WORDS_MAP.set(
+        YAHOO_JAPAN_NEWS_CATEGORIES[index], topicWords.split(" "));
     });
 }
 
@@ -490,7 +491,7 @@ if (Site.isLocalized()) {
                   for (const category of YAHOO_JAPAN_NEWS_CATEGORIES) {
                     if (category == headingTopic) {
                       Site.addNewsTopicWords(
-                        YAHOO_JAPAN_NEWS_CATEGORY_TOPICS_MAP.get(category));
+                        YAHOO_JAPAN_NEWS_TOPIC_WORDS_MAP.get(category));
                       break;
                     }
                   }
@@ -550,7 +551,7 @@ if (Site.isLocalized()) {
     // Add topics for categories of this page to the array of topic words.
     newsCategorySet.forEach((newsCategory) => {
         Site.addNewsTopicWords(
-          YAHOO_JAPAN_NEWS_CATEGORY_TOPICS_MAP.get(newsCategory));
+          YAHOO_JAPAN_NEWS_TOPIC_WORDS_MAP.get(newsCategory));
       });
     newsOpenedUrl = newsOpenedUrlParser.toString();
   }

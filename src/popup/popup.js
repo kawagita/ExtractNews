@@ -138,6 +138,12 @@ ExtractNews.Popup = (() => {
       return element;
     }
 
+    const NEWS_SITE_URL_SET = new Set();
+
+    ExtractNews.getNewsSitePages().forEach((newsSitePage) => {
+        NEWS_SITE_URL_SET.add(newsSitePage.getUrl());
+      });
+
     /*
      * Returns an object to edit a news selection on the pane, which consists
      * of an inupt element for the setting name, the array of objects to input
@@ -145,32 +151,18 @@ ExtractNews.Popup = (() => {
      * element for the URL of news pages.
      */
     function getNewsSelectionEditPane(editTabId) {
+      if (editTabId != undefined && ! Number.isInteger(editTabId)) {
+        throw newIllegalArgumentException("editTabId");
+      }
       var editMessageIdPrefix = "option";
       var editPane = {
           nameInput: undefined,
           regexps: undefined,
           localizedButtons: new Array(),
           urlSelect: undefined,
-          _openerTabNewsOpenedUrl: undefined
+          _openerTabNewsOpenedUrl: undefined,
+          _newsOpenedUrl: undefined
         };
-      if (editTabId != undefined) {
-        if (! Number.isInteger(editTabId)) {
-          throw newIllegalArgumentException("editTabId");
-        } else if (editTabId == browser.tabs.TAB_ID_NONE) {
-          throw newInvalidParameterException(editTabId);
-        }
-        // Receive the URL of a news page opened on a tab of the specified ID.
-        browser.runtime.onMessage.addListener((message) => {
-            if (message.command == ExtractNews.COMMAND_SETTING_INFORM) {
-              editPane._openerTabNewsOpenedUrl = message.newsOpenedUrl;
-            }
-          });
-        ExtractNews.sendRuntimeMessage({
-            command: ExtractNews.COMMAND_SETTING_REQUEST,
-            tabId: editTabId
-          });
-        editMessageIdPrefix = "edit";
-      }
       var editUILanguage = browser.i18n.getUILanguage();
       var editNameInput =
         _getEditElement(editMessageIdPrefix, "SettingName", "input");
@@ -185,6 +177,33 @@ ExtractNews.Popup = (() => {
       editPane.regexps = editRegexps;
       editPane.urlSelect = editUrlSelect;
 
+      if (editTabId != undefined) {
+        // Receive the URL of news page opened on the tab of the specified ID.
+        browser.runtime.onMessage.addListener((message) => {
+            if (message.command != ExtractNews.COMMAND_SETTING_INFORM) {
+              return;
+            }
+            if (! NEWS_SITE_URL_SET.has(message.newsOpenedUrl)
+              && (editPane._newsOpenedUrl == undefined
+                || editPane._newsOpenedUrl != message.newsOpenedUrl)) {
+              // Insert the opener tab's URL which is not one of news sites or
+              // added by setNewsSelectionEditUrlSelect() to the top of select
+              // element on the edit pane.
+              var openerTabUrlOption = document.createElement("option");
+              openerTabUrlOption.value = message.newsOpenedUrl;
+              openerTabUrlOption.text = message.newsOpenedUrl;
+              editPane.urlSelect.insertBefore(
+                openerTabUrlOption, editPane.urlSelect.firstElementChild);
+              openerTabUrlOption.selected = true;
+              editPane._openerTabNewsOpenedUrl = message.newsOpenedUrl;
+            }
+          });
+        ExtractNews.sendRuntimeMessage({
+            command: ExtractNews.COMMAND_SETTING_REQUEST,
+            tabId: editTabId
+          });
+        editMessageIdPrefix = "edit";
+      }
       editNameInput.maxLength = _Alert.SETTING_NAME_MAX_WIDTH;
       editNameInput.placeholder =
         _getEditMessage(editMessageIdPrefix, "InputTitle");
@@ -234,55 +253,55 @@ ExtractNews.Popup = (() => {
      * Sets the URL of pages opened by a news selection into the select element
      * in the specified object to edit it on the pane.
      */
-    function setNewsSelectionEditUrlSelect(editPane, editDisplayedUrl = "") {
+    function setNewsSelectionEditUrlSelect(editPane, newsOpenedUrl = "") {
       if (editPane == undefined) {
         throw newNullPointerException("editPane");
       }
-      var openerTabNewsOpenedUrl = editPane._openerTabNewsOpenedUrl;
       var editUrlSelect = editPane.urlSelect;
-      var editInsertedUrls = new Array();
-      if (editDisplayedUrl != "") { // Existing news selection
-        if (editDisplayedUrl != URL_ABOUT_BLANK) {
-          editInsertedUrls.push(editDisplayedUrl);
+      var newsOpenedUrlAppended = false;
+      if (newsOpenedUrl != "") {
+        if (newsOpenedUrl != URL_ABOUT_BLANK) {
+          newsOpenedUrlAppended = ! NEWS_SITE_URL_SET.has(newsOpenedUrl);
         }
-        if (openerTabNewsOpenedUrl != undefined
-          && openerTabNewsOpenedUrl != editDisplayedUrl) {
-          editInsertedUrls.push(openerTabNewsOpenedUrl);
-        }
-        editInsertedUrls = editInsertedUrls.sort();
-      } else if (openerTabNewsOpenedUrl != undefined) { // On a news site
-        editInsertedUrls.push(openerTabNewsOpenedUrl);
-        editDisplayedUrl = openerTabNewsOpenedUrl;
-      } else { // "New" news selection on the tab of no news site
-        editDisplayedUrl = URL_ABOUT_BLANK;
+        editPane._newsOpenedUrl = newsOpenedUrl;
+      } else { // Editing "New" news selection
+        newsOpenedUrl = URL_ABOUT_BLANK;
       }
+      // Put URLs to the select element on the edit pane in below order.
+      //
+      //   https://devices.slashdot.org          - Opener tab if exists
+      //   https://www.yahoo.com
+      //   https://www.yahoo.com/entertainment/  - Opened URL if exists
+      //   https://slashdot.org
+      //   about:blank
+      //
+      // The priority which the URL is selected firstly in the select element
+      // is in the order of the opened URL, opener tab, and "about:blank".
+      // If an opener tab is the same as the opened URL or one of news sites,
+      // removed or not added by this function or event listner. 
       ExtractNews.getNewsSitePages().forEach((newsSitePage) => {
-          var newsSitePageUrl = newsSitePage.getUrl();
-          var editUrlOption =
-            _addEditOpenedUrl(editUrlSelect, newsSitePageUrl);
-          if (editInsertedUrls != undefined) {
-            for (let i = 0; i < editInsertedUrls.length; i++) {
-              var editInsertedUrl = editInsertedUrls[i];
-              if (editInsertedUrl != undefined
-                && newsSitePage.containsUrl(editInsertedUrl)) {
-                // Append the option element including an inserted URL
-                // in the news site to the next of its URL.
-                if (editInsertedUrl != newsSitePageUrl) {
-                  editUrlOption =
-                    _addEditOpenedUrl(editUrlSelect, editInsertedUrl);
-                  if (editInsertedUrl == editDisplayedUrl) {
-                    editUrlOption.selected = true;
-                  }
-                } else {
-                  editUrlOption.selected = true;
-                }
-                editInsertedUrls[i] = undefined;
+          var newsSiteUrl = newsSitePage.getUrl();
+          var editUrlOption = _addEditOpenedUrl(editUrlSelect, newsSiteUrl);
+          if (newsOpenedUrlAppended) {
+            if (newsSitePage.containsUrl(newsOpenedUrl)) {
+              // Append the option element for the specified opened URL to
+              // the next of news site which contains it.
+              editUrlOption = _addEditOpenedUrl(editUrlSelect, newsOpenedUrl);
+              if (newsOpenedUrl == editPane._openerTabNewsOpenedUrl) {
+                // Remove the opener tab's URL from the top if inserted ahead.
+                editUrlSelect.removeChild(editUrlSelect.firstElementChild);
               }
+              editUrlOption.selected = true;
+              newsOpenedUrlAppended = false;
             }
+          } else if (newsOpenedUrl == newsSiteUrl) {
+            editUrlOption.selected = true;
           }
         });
       var editUrlOption = _addEditOpenedUrl(editUrlSelect, URL_ABOUT_BLANK);
-      if (editDisplayedUrl == URL_ABOUT_BLANK) {
+      if (editPane._newsOpenedUrl == URL_ABOUT_BLANK
+        || (editPane._newsOpenedUrl == undefined
+          && editPane._openerTabNewsOpenedUrl == undefined)) {
         editUrlOption.selected = true;
       }
     }
@@ -300,6 +319,7 @@ ExtractNews.Popup = (() => {
       for (let i = 0; i < editUrlOptions.length; i++) {
         editUrlSelect.removeChild(editUrlOptions[i]);
       }
+      editPane._newsOpenedUrl = undefined;
     }
 
     _Popup.getNewsSelectionEditPane = getNewsSelectionEditPane;

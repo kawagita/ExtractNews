@@ -62,7 +62,12 @@ ExtractNews.Daemon = (() => {
      */
     function _tabFlagsForEach(callback) {
       _tabFlagsMap.forEach((tabFlags, tabId) => {
-          callback(tabId, _tabNewsSettingMap.get(tabId).siteId, tabFlags);
+          var tabSiteId = undefined;
+          var tabNewsSetting = _tabNewsSettingMap.get(tabId);
+          if (tabNewsSetting != undefined) {
+            tabSiteId = tabNewsSetting.siteId;
+          }
+          callback(tabId, tabSiteId, tabFlags);
         });
     }
 

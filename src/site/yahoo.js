@@ -650,7 +650,7 @@ class YahooNavigation extends NewsDesign {
 {
   const SITE_NAMES = splitYahooString("SiteNames");
   const SITE_CATEGORIES = splitYahooString("SiteCategories");
-  const SITE_CATEGORY_TOPICS = splitYahooString("SiteCategoryTopics");
+  const SITE_CATEGORY_TOPIC_WORDS = splitYahooString("SiteCategoryTopicWords");
 
   const ENTERTAINMENT_PATH = getYahooString("EntertainmentPath");
   const LIFE_PATH = getYahooString("LifePath");
@@ -802,10 +802,10 @@ class YahooNavigation extends NewsDesign {
     newsOpenedUrlParser.parseAll();
   }
 
-  SITE_CATEGORY_TOPICS.forEach((categoryTopics, index) => {
+  SITE_CATEGORY_TOPIC_WORDS.forEach((categoryTopicWords, index) => {
       if (newsSiteCategory == SITE_CATEGORIES[index]) {
         newsTitle = SITE_NAMES[index];
-        Site.addNewsTopicWords(categoryTopics.split(" "));
+        Site.addNewsTopicWords(categoryTopicWords.split(" "));
       }
     });
 
