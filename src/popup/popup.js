@@ -102,6 +102,14 @@ ExtractNews.Popup = (() => {
     }
 
     /*
+     * Gets the tab of the specified ID and returns the promise fulfilled with
+     * its information.
+     */
+    function getTab(tabId) {
+      return callAsynchronousAPI(browser.tabs.get, tabId);
+    }
+
+    /*
      * Gets the active tab on the current window and returns the promise
      * fulfilled with its information.
      */
@@ -115,6 +123,7 @@ ExtractNews.Popup = (() => {
     }
 
     _Popup.searchTab = searchTab;
+    _Popup.getTab = getTab;
     _Popup.getWindowActiveTab = getWindowActiveTab;
 
     /*
@@ -484,8 +493,7 @@ ExtractNews.Popup = (() => {
       }
       return dialogSearchPromise.then((dialogTabId) => {
           if (dialogTabId != browser.tabs.TAB_ID_NONE) {
-            return callAsynchronousAPI(
-              browser.tabs.get, dialogTabId).then((tab) => {
+            return getTab(dialogTabId).then((tab) => {
                 return callAsynchronousAPI(
                   browser.windows.update, tab.windowId, { focused: true });
               }).then(() => {

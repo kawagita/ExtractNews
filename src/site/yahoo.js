@@ -43,7 +43,7 @@ function getYahooRegExp(id) {
 }
 
 const YAHOO_CATEGORY_LABELS = new Set(splitYahooString("CategoryLabels"));
-const YAHOO_ADVERTISING_LABELS =
+const YAHOO_ADVERTISING_LABEL_SET =
   new Set(splitYahooString("AdvertisingLabels"));
 
 const YAHOO_TOP_PANELS_ITEM_0 = "item-0";
@@ -67,7 +67,7 @@ const YAHOO_NAVIGAGION = "YDC-Nav";
 /*
  * A big panel and filmstrip displayed in the top on Yahoo!.
  */
-class YahooTopPanels extends NewsDesign {
+class YahooTopPanels extends Design.NewsDesign {
   constructor() {
     super({
         parentProperties: Array.of({
@@ -76,7 +76,7 @@ class YahooTopPanels extends NewsDesign {
                 newsParents.push(element.parentNode);
               }
           }),
-        topicProperties: ONESELF_QUERY_PROPERTIES
+        topicProperties: Design.ONESELF_QUERY_PROPERTIES
       });
   }
 
@@ -115,7 +115,7 @@ class YahooTopPanels extends NewsDesign {
 /*
  * The top panels displayed and other panels observed on Yahoo! Life.
  */
-class YahooLifePanels extends NewsDesign {
+class YahooLifePanels extends Design.NewsDesign {
   constructor() {
     super({
         parentProperties: Array.of({
@@ -133,13 +133,13 @@ class YahooLifePanels extends NewsDesign {
                 newsItems.push(element);
               }
           }),
-        senderProperties: ONESELF_QUERY_PROPERTIES,
+        senderProperties: Design.ONESELF_QUERY_PROPERTIES,
         itemTextProperty: {
             senderSearchFirst: true,
             topicFollowing: true,
             topicFollowingTagName: "div"
           },
-        observedProperties: ONESELF_QUERY_PROPERTIES,
+        observedProperties: Design.ONESELF_QUERY_PROPERTIES,
         observedItemProperties: Array.of({
             setNewsElement: (element, newsItems) => {
                 element.querySelectorAll("li").forEach((newsItem) => {
@@ -154,14 +154,14 @@ class YahooLifePanels extends NewsDesign {
     if (newsParent.tagName == "SECTION") {
       return Array.of(newsParent);
     }
-    return EMPTY_NEWS_ELEMENTS;
+    return new Array();
   }
 }
 
 /*
  * Articles defined by the class name "article-cluster-boundary" on Yahoo!.
  */
-class YahooArticleClusters extends NewsDesign {
+class YahooArticleClusters extends Design.NewsDesign {
   constructor() {
     super({
         parentProperties: Array.of({
@@ -183,10 +183,10 @@ class YahooArticleClusters extends NewsDesign {
                 }
               }
           }),
-        topicProperties: ONESELF_QUERY_PROPERTIES,
+        topicProperties: Design.ONESELF_QUERY_PROPERTIES,
         itemTextProperty: {
             topicSearchProperties: Array.of({
-                skippedTextRegexp: NEWS_VIDEO_TIME_REGEXP
+                skippedTextRegexp: Design.NEWS_VIDEO_TIME_REGEXP
               })
           }
       });
@@ -226,7 +226,7 @@ class YahooArticleClusters extends NewsDesign {
 /*
  * The stream of news topics with the category and media name on Yahoo!.
  */
-class YahooStream extends NewsDesign {
+class YahooStream extends Design.NewsDesign {
   constructor(id) {
     super({
         parentProperties: Array.of({
@@ -254,9 +254,9 @@ class YahooStream extends NewsDesign {
                 }
               }
           }),
-        senderProperties: ONESELF_QUERY_PROPERTIES,
-        observerOptions: SUBTREE_OBSERVER_OPTIONS,
-        observedProperties: ONESELF_QUERY_PROPERTIES,
+        senderProperties: Design.ONESELF_QUERY_PROPERTIES,
+        observerOptions: Design.SUBTREE_OBSERVER_OPTIONS,
+        observedProperties: Design.ONESELF_QUERY_PROPERTIES,
         observedItemProperties: Array.of({
             setNewsElement: (element, newsItems) => {
                 if (element.classList.contains(YAHOO_JS_STREAM_CONTENT)) {
@@ -304,7 +304,7 @@ class YahooStream extends NewsDesign {
           senderFollowing: true,
           senderFollowingTagName: "h3",
           senderSearchProperties: Array.of({
-              advertisingTexts: YAHOO_ADVERTISING_LABELS
+              advertisingTextSet: YAHOO_ADVERTISING_LABEL_SET
             })
         };
     } else if (! newsItem.classList.contains(YAHOO_STREAM_RELATED_ITEM)) {
@@ -327,7 +327,7 @@ class YahooStream extends NewsDesign {
         senderSearchProperties: Array.of({
             tagName: "a"
           }, {
-            advertisingTexts: YAHOO_ADVERTISING_LABELS
+            advertisingTextSet: YAHOO_ADVERTISING_LABEL_SET
           })
       };
   }
@@ -344,13 +344,13 @@ function _isClusterArticle(newsItem) {
  * The content viewer of some articles with the list of panels displayed in
  * the side or bottom when a news item is clicked on Yahoo!.
  */
-class YahooContentViewer extends NewsDesign {
+class YahooContentViewer extends Design.NewsDesign {
   constructor() {
     super({
         itemUnfixed: true,
-        topicProperties: ONESELF_QUERY_PROPERTIES,
-        observerOptions: SUBTREE_OBSERVER_OPTIONS,
-        observedProperties: ONESELF_QUERY_PROPERTIES
+        topicProperties: Design.ONESELF_QUERY_PROPERTIES,
+        observerOptions: Design.SUBTREE_OBSERVER_OPTIONS,
+        observedProperties: Design.ONESELF_QUERY_PROPERTIES
       });
     this.articleIds = new Array();
   }
@@ -371,7 +371,7 @@ class YahooContentViewer extends NewsDesign {
         });
       return newsParents;
     }
-    return EMPTY_NEWS_ELEMENTS;
+    return new Array();
   }
 
   getNewsItemElements(newsParent) {
@@ -419,7 +419,7 @@ class YahooContentViewer extends NewsDesign {
           topicFollowingTagName: "div",
           senderSearchProperties: Array.of({
               altTextUsed: true,
-              advertisingTexts: YAHOO_ADVERTISING_LABELS
+              advertisingTextSet: YAHOO_ADVERTISING_LABEL_SET
             })
         };
     }
@@ -430,7 +430,7 @@ class YahooContentViewer extends NewsDesign {
         topicSearchProperties: Array.of({
             tagName: "a"
           }, {
-            advertisingTexts: YAHOO_ADVERTISING_LABELS
+            advertisingTextSet: YAHOO_ADVERTISING_LABEL_SET
           })
       };
   }
@@ -470,7 +470,7 @@ class YahooContentViewer extends NewsDesign {
           var addedList = addedNode.querySelector("ul");
           if (addedList == null
             || ! addedList.classList.contains(YAHOO_SIMPLE_LIST)) {
-            return EMPTY_NEWS_ELEMENTS;
+            return new Array();
           }
           newsParent = addedList;
         }
@@ -492,7 +492,7 @@ class YahooContentViewer extends NewsDesign {
       }
       return newsItems;
     }
-    return EMPTY_NEWS_ELEMENTS
+    return new Array();
   }
 
   isObservedNewsItemsCleared(removedNodes) {
@@ -533,13 +533,13 @@ function _hasProviderLogo(newsItem) {
  * and "Recomended Stories" displayed in the side or bottom of articles, and
  * the list of panels like Yahoo! Life categories.
  */
-class YahooSimpleList extends NewsDesign {
+class YahooSimpleList extends Design.NewsDesign {
   constructor() {
     super({
         parentProperties: Array.of({
             selectorsForAll: "." + YAHOO_SIMPLE_LIST
           }),
-        observedItemProperties: ONESELF_QUERY_PROPERTIES
+        observedItemProperties: Design.ONESELF_QUERY_PROPERTIES
       });
   }
 
@@ -580,7 +580,7 @@ class YahooSimpleList extends NewsDesign {
             })
         };
     }
-    return ITEM_FIRST_TEXT_PROPERTY;
+    return undefined;
   }
 
   getObservedNodes(newsParent) {
@@ -592,7 +592,7 @@ class YahooSimpleList extends NewsDesign {
         return Array.of(newsParent);
       }
     }
-    return EMPTY_NEWS_ELEMENTS;
+    return new Array();
   }
 }
 
@@ -604,13 +604,13 @@ const YAHOO_SPORTS_HOST_SERVER = getYahooString("SportsHostServer");
 /*
  * The navigation of news topics displayed in the header on Yahoo!.
  */
-class YahooNavigation extends NewsDesign {
+class YahooNavigation extends Design.NewsDesign {
   constructor(parentId) {
     super({
         parentProperties:  Array.of({
             selectors: "#" + parentId
           }),
-        topicProperties: ONESELF_QUERY_PROPERTIES
+        topicProperties: Design.ONESELF_QUERY_PROPERTIES
       });
   }
 
@@ -643,35 +643,24 @@ class YahooNavigation extends NewsDesign {
   }
 }
 
-
 // Displays news designs arranged by a selector which selects and excludes news
 // topics or senders, waiting regular expressions from the background script.
 
 {
-  const SITE_NAMES = splitYahooString("SiteNames");
-  const SITE_CATEGORIES = splitYahooString("SiteCategories");
-  const SITE_CATEGORY_TOPIC_WORDS = splitYahooString("SiteCategoryTopicWords");
-
-  const ENTERTAINMENT_PATH = getYahooString("EntertainmentPath");
-  const LIFE_PATH = getYahooString("LifePath");
-
-  var newsTitle = Site.NAME;
-  var newsOpenedUrlParser = new Site.OpenedUrlParser(document.URL);
-  var newsSiteHomeOpened =
-    newsOpenedUrlParser.parseHostName()
-    && newsOpenedUrlParser.parseDirectory();
   var newsSiteCategory = "";
+  var newsOpenedUrlParser = new Site.OpenedUrlParser(document.URL);
+  newsOpenedUrlParser.parseHostName()
 
   if (newsOpenedUrlParser.matchHtmlDocument() != null) { // Articles
     Site.addNewsDesigns(new YahooSimpleList());
   } else {
-    if (newsSiteHomeOpened
+    if (newsOpenedUrlParser.parseDirectory()
       || newsOpenedUrlParser.hostServer != URL_DEFAULT_HOST_SERVER
-      || ! newsOpenedUrlParser.parse(LIFE_PATH)) {
+      || ! newsOpenedUrlParser.parse(getYahooString("LifePath"))) {
       Site.addNewsDesigns(
         new YahooTopPanels(),
         new YahooStream("YDC-Stream"),
-        new NewsDesign({
+        new Design.NewsDesign({
             parentProperties: Array.of({
                 selectorsForAll: ".vp-playlist-strip"
               }),
@@ -684,17 +673,17 @@ class YahooNavigation extends NewsDesign {
         // The list of panels like Yahoo! Life categories
         new YahooSimpleList());
       if (newsOpenedUrlParser.hostServer != URL_DEFAULT_HOST_SERVER
-        || ! newsOpenedUrlParser.parse(ENTERTAINMENT_PATH)) {
+        || ! newsOpenedUrlParser.parse(getYahooString("EntertainmentPath"))) {
         switch(newsOpenedUrlParser.hostServer) {
         case YAHOO_NEWS_HOST_SERVER: // Yahoo! News
           Site.addNewsDesigns(
             new YahooNavigation(YAHOO_NAVIGAGION),
-            new NewsDesign({
+            new Design.NewsDesign({
                 parentProperties: Array.of({
                     selectors: ".news-tabs-RR"
                   }),
-                itemProperties: ONESELF_QUERY_PROPERTIES,
-                topicProperties: ONESELF_QUERY_PROPERTIES
+                itemProperties: Design.ONESELF_QUERY_PROPERTIES,
+                topicProperties: Design.ONESELF_QUERY_PROPERTIES
               }));
           newsSiteCategory = "News";
           break;
@@ -707,17 +696,17 @@ class YahooNavigation extends NewsDesign {
             new YahooStream("Fin-Stream"),
             new YahooStream("Col1-1-Stream"),
             new YahooStream("Col1-2-Stream"),
-            new NewsDesign({
+            new Design.NewsDesign({
                 parentProperties: Array.of({
                     selectors: "#Col2-2-Stream",
                   }),
-                topicProperties: ONESELF_QUERY_PROPERTIES,
+                topicProperties: Design.ONESELF_QUERY_PROPERTIES,
                 itemTextProperty: {
                     topicSearchFirst: true,
                     senderFollowing: true,
                     senderFollowingTagName: "h3",
                     senderSearchProperties: Array.of({
-                        advertisingTexts: YAHOO_ADVERTISING_LABELS
+                        advertisingTextSet: YAHOO_ADVERTISING_LABEL_SET
                       })
                   }
               }));
@@ -735,14 +724,14 @@ class YahooNavigation extends NewsDesign {
             new YahooNavigation("YDC-SecondaryNav"),
             new YahooArticleClusters(),
             new YahooStream("Col1-3-SportsStream"),
-            new NewsDesign({
+            new Design.NewsDesign({
                 parentProperties: Array.of({
                     selectors: ".photo-galleries",
                   }),
                 itemProperties: Array.of({
                     selectorsForAll: "a",
                   }),
-                topicProperties: ONESELF_QUERY_PROPERTIES
+                topicProperties: Design.ONESELF_QUERY_PROPERTIES
               }),
             new YahooStream("Col1-1-SportsStream"),
             new YahooStream("Col1-2-SportsStream"));
@@ -752,38 +741,36 @@ class YahooNavigation extends NewsDesign {
           Site.addNewsDesigns(
             new YahooNavigation("ybar-navigation"),
             new YahooStream(),
-            new NewsDesign({
+            new Design.NewsDesign({
               parentProperties: Array.of({
                   selectors: ".trending-list",
                 }),
-              topicProperties: ONESELF_QUERY_PROPERTIES,
+              topicProperties: Design.ONESELF_QUERY_PROPERTIES,
               itemTextProperty: {
                   topicSearchProperties: Array.of({
-                      skippedTextRegexp: NEWS_RANKING_NUMBER_REGEXP
+                      skippedTextRegexp: Design.NEWS_RANKING_NUMBER_REGEXP
                     })
                 }
             }),
-            new NewsDesign({
+            new Design.NewsDesign({
                 parentProperties: Array.of({
                     selectors: "#Col2-1-Channels",
                   }),
-                itemProperties: ONESELF_QUERY_PROPERTIES,
-                senderProperies: ONESELF_QUERY_PROPERTIES,
+                itemProperties: Design.ONESELF_QUERY_PROPERTIES,
+                senderProperies: Design.ONESELF_QUERY_PROPERTIES,
                 itemTextProperty: {
                     senderSearchFirst: true,
                     senderSearchFromLast: true,
                     topicFollowing: true
                   }
               }));
-          if (newsOpenedUrlParser.parse(
-            getYahooString("FinanceAuthorPath"))) {
+          if (newsOpenedUrlParser.parse(getYahooString("FinanceAuthorPath"))) {
             newsSiteCategory = "Finance";
           }
           break;
         }
       } else { // Yahoo! Entertainment
         Site.addNewsDesign(new YahooNavigation(YAHOO_NAVIGAGION));
-        newsSiteHomeOpened = newsOpenedUrlParser.parseDirectory();
         newsSiteCategory = "Entertainment";
       }
     } else { // Yahoo! Life
@@ -793,7 +780,6 @@ class YahooNavigation extends NewsDesign {
         new YahooContentViewer());
       if (newsOpenedUrlParser.parseDirectory()) {
         Site.addNewsDesign(new YahooLifePanels());
-        newsSiteHomeOpened = true;
       } else {
         Site.addNewsDesign(new YahooSimpleList());
       }
@@ -802,29 +788,13 @@ class YahooNavigation extends NewsDesign {
     newsOpenedUrlParser.parseAll();
   }
 
+  const SITE_CATEGORIES = splitYahooString("SiteCategories");
+  const SITE_CATEGORY_TOPIC_WORDS = splitYahooString("SiteCategoryTopicWords");
+
   SITE_CATEGORY_TOPIC_WORDS.forEach((categoryTopicWords, index) => {
       if (newsSiteCategory == SITE_CATEGORIES[index]) {
-        newsTitle = SITE_NAMES[index];
         Site.addNewsTopicWords(categoryTopicWords.split(" "));
       }
     });
-
-  if (! newsSiteHomeOpened) {
-    newsTitle += Site.NAME_CONCATENATION;
-    // Adds the part of a page title to the name of a home or category home.
-    var titleText = document.querySelector("title").textContent.trim();
-    var titleMatch = titleText.match(getYahooRegExp("TitleSuffix"));
-    if (titleMatch != null) { // Before " - Yahoo", " | Yahoo", or " for Yahoo"
-      newsTitle += titleText.substring(0, titleMatch.index);
-    } else {
-      titleMatch = titleText.match(getYahooRegExp("TitlePrefix"));
-      if (titleMatch != null) { // After "Yahoo - " or  "Yahoo XXX - "
-        newsTitle += titleText.substring(titleMatch[0].length);
-      } else { // Whole text
-        newsTitle += titleText;
-      }
-    }
-  }
-
-  Site.displayNewsDesigns(newsTitle, newsOpenedUrlParser.toString());
+  Site.displayNewsDesigns(newsOpenedUrlParser.toString());
 }

@@ -25,6 +25,100 @@
 ExtractNews.Storage = (() => {
     const _Storage = { };
 
+    function _checkSiteId(siteId) {
+      if (siteId == undefined) {
+        throw newNullPointerException("siteId");
+      } else if ((typeof siteId) != "string") {
+        throw newIllegalArgumentException("siteId");
+      }
+    }
+
+    // Key to read and write the flag whether the site is enabled.
+    const ENABLED_KEY = "Enabled";
+
+    /*
+     * Reads IDs of enabled news sites from the local storage and returns
+     * the promise fulfilled with the array of its or rejected.
+     */
+    function readEnabledNewsSiteIds() {
+      const readingPromises = new Array();
+      ExtractNews.getNewsSitePages().forEach((newsSitePage) => {
+          var siteId = newsSitePage.getSiteId();
+          var siteEnabledKey = siteId + ENABLED_KEY;
+          readingPromises.push(
+              ExtractNews.readStorage(siteEnabledKey).then((items) => {
+                  var enabledSiteId = undefined;
+                  var siteEnabled = items[siteEnabledKey];
+                  if (siteEnabled | siteEnabled == undefined) {
+                    enabledSiteId = siteId;
+                  }
+                  return Promise.resolve(enabledSiteId);
+                })
+            );
+        });
+      return Promise.all(readingPromises).then((enabledSiteIds) => {
+          for (let i = enabledSiteIds.length - 1; i >= 0; i--) {
+            if (enabledSiteIds[i] == undefined) {
+              enabledSiteIds.splice(i, 1);
+            }
+          }
+          return Promise.resolve(enabledSiteIds);
+        });
+    }
+
+    /*
+     * Writes the specified flag to enable the news site of the specified ID
+     * into the local storage and returns the promise.
+     */
+    function writeNewsSiteEnabled(siteId, siteEnabled) {
+      _checkSiteId(siteId);
+      if ((typeof siteEnabled) != "boolean") {
+        throw newIllegalArgumentException("siteEnabled");
+      }
+      var siteEnabledKey = siteId + ENABLED_KEY;
+      return ExtractNews.writeStorage({
+          [siteEnabledKey]: siteEnabled
+        });
+    }
+
+    _Storage.readEnabledNewsSiteIds = readEnabledNewsSiteIds;
+    _Storage.writeNewsSiteEnabled = writeNewsSiteEnabled;
+
+
+    // Key to read and write the flag whether the filtering is disabled.
+    const FILTERING_DISABLED_KEY = "FilteringDisabled";
+
+    /*
+     * Reads the flag to disable the filtering from the local storage
+     * and returns the promise fulfilled with its value or rejected.
+     */
+    function readNewsFilteringDisabled() {
+      return ExtractNews.readStorage(FILTERING_DISABLED_KEY).then((items) => {
+          var filteringDisabled = items[FILTERING_DISABLED_KEY];
+          if (filteringDisabled == undefined) {
+            filteringDisabled = false;
+          }
+          return Promise.resolve(filteringDisabled);
+        });
+    }
+
+    /*
+     * Writes the specified flag to disable the filtering into the local
+     * storage and returns the promise.
+     */
+    function writeNewsFilteringDisabled(filteringDisabled) {
+      if ((typeof filteringDisabled) != "boolean") {
+        throw newIllegalArgumentException("filteringDisabled");
+      }
+      return ExtractNews.writeStorage({
+          [FILTERING_DISABLED_KEY]: filteringDisabled
+        });
+    }
+
+    _Storage.readNewsFilteringDisabled = readNewsFilteringDisabled;
+    _Storage.writeNewsFilteringDisabled = writeNewsFilteringDisabled;
+
+
     // Key to read and write filtering IDs, or filterings by suffixing with its
     const FILTERING_KEY = "Filtering";
 
@@ -33,7 +127,7 @@ ExtractNews.Storage = (() => {
      * the promise fulfilled with the array of its or rejected.
      */
     function readNewsFilteringIds() {
-      return ExtractNews.readStorageArea(FILTERING_KEY).then((items) => {
+      return ExtractNews.readStorage(FILTERING_KEY).then((items) => {
           var filteringIdsString = items[FILTERING_KEY];
           if (filteringIdsString == undefined) {
             filteringIdsString =
@@ -53,7 +147,7 @@ ExtractNews.Storage = (() => {
       } else if (filteringIds.length == 0) {
         return Promise.resolve();
       }
-      return ExtractNews.writeStorageArea({
+      return ExtractNews.writeStorage({
           [FILTERING_KEY]: filteringIds.join(",")
         });
     }
@@ -75,7 +169,7 @@ ExtractNews.Storage = (() => {
       filteringIds.forEach((filteringId) => {
           var newsFilteringKey = FILTERING_KEY + filteringId;
           readingPromises.push(
-            ExtractNews.readStorageArea(newsFilteringKey).then((items) => {
+            ExtractNews.readStorage(newsFilteringKey).then((items) => {
                 var filtering;
                 if (items[newsFilteringKey] != undefined) {
                   filtering =
@@ -115,7 +209,7 @@ ExtractNews.Storage = (() => {
       newsFilteringMap.forEach((filtering, filteringId) => {
           var newsFilteringKey = FILTERING_KEY + filteringId;
           writingPromises.push(
-            ExtractNews.writeStorageArea({
+            ExtractNews.writeStorage({
                 [newsFilteringKey]: filtering.toObject()
               }));
         });
@@ -134,7 +228,7 @@ ExtractNews.Storage = (() => {
       filteringIds.forEach((filteringId) => {
           var newsFilteringKey = FILTERING_KEY + filteringId;
           removingPromises.push(
-            ExtractNews.removeStorageArea(newsFilteringKey));
+            ExtractNews.removeStorage(newsFilteringKey));
         });
       return Promise.all(removingPromises);
     }
@@ -152,7 +246,7 @@ ExtractNews.Storage = (() => {
      * the promise fulfilled with its value or rejected.
      */
     function readNewsSelectionCount() {
-      return ExtractNews.readStorageArea(SELECTION_COUNT_KEY).then((items) => {
+      return ExtractNews.readStorage(SELECTION_COUNT_KEY).then((items) => {
           var newsSelectionCount = 0;
           if (items[SELECTION_COUNT_KEY] != undefined) {
             newsSelectionCount = items[SELECTION_COUNT_KEY];
@@ -192,7 +286,7 @@ ExtractNews.Storage = (() => {
       return readNewsSelectionCount().then((newsSelectionCount) => {
           _checkIndex(index, newsSelectionCount - 1);
           var indexString = ExtractNews.SELECTION_INDEX_STRINGS[index];
-          return ExtractNews.readStorageArea(indexString).then((items) => {
+          return ExtractNews.readStorage(indexString).then((items) => {
               return Promise.resolve(
                 new ExtractNews.Selection(items[indexString]));
             });
@@ -216,7 +310,7 @@ ExtractNews.Storage = (() => {
           for (let i = 0; i < indexStrings.length; i++) {
             _checkIndexString(indexStrings[i], newsSelectionCount - 1);
           }
-          return ExtractNews.readStorageArea(indexStrings);
+          return ExtractNews.readStorage(indexStrings);
         }).then((items) => {
           var newsSelections = new Array();
           for (let i = 0; i < indexStrings.length; i++) {
@@ -251,12 +345,12 @@ ExtractNews.Storage = (() => {
           }
           _checkIndex(index, writtenMaxIndex + 1);
           var indexString = ExtractNews.SELECTION_INDEX_STRINGS[index];
-          return ExtractNews.writeStorageArea({
+          return ExtractNews.writeStorage({
               [indexString]: newsSelection.toObject()
             });
         }).then(() => {
           if (index >= writtenMaxIndex) {
-            return ExtractNews.writeStorageArea({
+            return ExtractNews.writeStorage({
                 [SELECTION_COUNT_KEY]: index + 1
               });
           }
@@ -275,7 +369,7 @@ ExtractNews.Storage = (() => {
               [indexString]: newsSelectionObjects[i]
             });
         }
-        return ExtractNews.writeStorageArea(newsSelectionItems);
+        return ExtractNews.writeStorage(newsSelectionItems);
       }
       return Promise.resolve();
     }
@@ -312,7 +406,7 @@ ExtractNews.Storage = (() => {
           }
           return _writeNewsSelectionObject(indexStrings, newsSelectionObjects);
         }).then(() => {
-          return ExtractNews.writeStorageArea({
+          return ExtractNews.writeStorage({
               [SELECTION_COUNT_KEY]: writtenMaxIndex
             });
         });
@@ -388,7 +482,7 @@ ExtractNews.Storage = (() => {
           retainedNewsSelectionSize = retainedIndexStrings.length;
 
           // Read news selections retained in the local storage.
-          return ExtractNews.readStorageArea(retainedIndexStrings);
+          return ExtractNews.readStorage(retainedIndexStrings);
         }).then((items) => {
           // Overwrite retained news selections into the first position
           // of removed indexes.
@@ -408,9 +502,9 @@ ExtractNews.Storage = (() => {
             trailingIndexSrings.push(
               ExtractNews.SELECTION_INDEX_STRINGS[trailingIndex++]);
           }
-          return ExtractNews.removeStorageArea(trailingIndexSrings);
+          return ExtractNews.removeStorage(trailingIndexSrings);
         }).then(() => {
-          return ExtractNews.writeStorageArea({
+          return ExtractNews.writeStorage({
               [SELECTION_COUNT_KEY]:
                 removedFirstIndex + retainedNewsSelectionSize
             });
@@ -427,9 +521,9 @@ ExtractNews.Storage = (() => {
           for (let i = 0; i < newsSelectionCount; i++) {
             indexStrings.push(ExtractNews.SELECTION_INDEX_STRINGS[i]);
           }
-          return ExtractNews.removeStorageArea(indexStrings);
+          return ExtractNews.removeStorage(indexStrings);
         }).then(() => {
-          return ExtractNews.writeStorageArea({
+          return ExtractNews.writeStorage({
               [SELECTION_COUNT_KEY]: 0
             });
         });
@@ -438,163 +532,6 @@ ExtractNews.Storage = (() => {
     _Storage.removeNewsSelection = removeNewsSelection;
     _Storage.removeNewsSelections = removeNewsSelections;
     _Storage.removeNewsSelectionAll = removeNewsSelectionAll;
-
-    /*
-     * Moves a news selection for index strings up into the local storage
-     * and returns the promise.
-     */
-    function moveNewsSelectionUp(index) {
-      return moveNewsSelectionsUp([ String(index) ]);
-    }
-
-    /*
-     * Moves news selections for index strings in the specified sorted array up
-     * into the local storage and returns the promise.
-     */
-    function moveNewsSelectionsUp(indexStrings) {
-      if (! Array.isArray(indexStrings)) {
-        throw newIllegalArgumentException("indexStrings");
-      } else if (indexStrings.length == 0) {
-        throw newEmptyArrayException("indexStrings");
-      }
-      var readIndexStrings = new Array();
-      var movedIndexStrings = new Array();
-      return readNewsSelectionCount().then((newsSelectionCount) => {
-          var movedIndexes = new Array();
-          for (let i = 0; i < indexStrings.length; i++) {
-            _setSortedIndexes(
-              indexStrings[i], newsSelectionCount - 1, movedIndexes);
-          }
-          // Collect the string of indexes for news selections moved up and
-          // the previous of its read from the local storage into an array.
-          for (let i = 0; i < movedIndexes.length; i++) {
-            var movedIndex = movedIndexes[i];
-            var movedPartStart = movedIndex;
-            while (i + 1 < movedIndexes.length) {
-              var movedNextIndex = movedIndexes[i + 1];
-              if (movedNextIndex > movedIndex - 1) {
-                break;
-              }
-              movedIndex = movedNextIndex;
-              i++;
-            }
-
-            if (movedPartStart == 0) {
-              // Throw the exception because the first news selection is moved
-              // up as in the below case for indexStrings = [ 0, 1, 2 ].
-              //
-              // readIndexStrings  = [ -1, 0, 1, 2 ]
-              // movedIndexStrings = [ 2, -1, 0, 1 ]
-              throw newArrayInvalidParametersException(indexStrings);
-            }
-
-            // See below, when news selections for indexStrings = [ 2, 5, 6 ]
-            // are moved up, its indexes are replaced.
-            //
-            // readIndexStrings  = [ 1, 2, 4, 5, 6 ]
-            // movedIndexStrings = [ 2, 1, 6, 4, 5 ]
-            var movedPartEnd = movedIndex;
-            readIndexStrings.push(
-              ExtractNews.SELECTION_INDEX_STRINGS[movedPartStart - 1]);
-            movedIndexStrings.push(
-              ExtractNews.SELECTION_INDEX_STRINGS[movedPartEnd]);
-            movedIndex = movedPartStart;
-            do {
-              readIndexStrings.push(
-                ExtractNews.SELECTION_INDEX_STRINGS[movedIndex]);
-              movedIndexStrings.push(
-                ExtractNews.SELECTION_INDEX_STRINGS[movedIndex - 1]);
-            } while (++movedIndex <= movedPartEnd);
-          }
-          return ExtractNews.removeStorageArea(readIndexStrings);
-        }).then((objects) => {
-          var movedObjects = new Array();
-          for (let i = 0; i < readIndexStrings.length; i++) {
-            movedObjects.push(objects[readIndexStrings[i]]);
-          }
-          return _writeNewsSelectionObject(movedIndexStrings, movedObjects);
-        });
-    }
-
-    /*
-     * Moves a news selection for index strings down into the local storage
-     * and returns the promise.
-     */
-    function moveNewsSelectionDown(index) {
-      return moveNewsSelectionsDown([ String(index) ]);
-    }
-
-    /*
-     * Moves news selections for index strings in the specified sorted array
-     * down into the local storage and returns the promise.
-     */
-    function moveNewsSelectionsDown(indexStrings) {
-      if (! Array.isArray(indexStrings)) {
-        throw newIllegalArgumentException("indexStrings");
-      } else if (indexStrings.length == 0) {
-        throw newEmptyArrayException("indexStrings");
-      }
-      var readIndexStrings = new Array();
-      var movedIndexStrings = new Array();
-      return readNewsSelectionCount().then((newsSelectionCount) => {
-          var movedIndexes = new Array();
-          for (let i = 0; i < indexStrings.length; i++) {
-            _setSortedIndexes(
-              indexStrings[i], newsSelectionCount - 1, movedIndexes);
-          }
-          // Collect the string of indexes for news selections moved down and
-          // the next of its read from the local storage into an array.
-          var movedPreviousIndex = -1;
-          var movedPartStart = movedIndexes[0];
-          for (let i = 0; i < movedIndexes.length; i++) {
-            var movedIndex = movedIndexes[i];
-            if (movedPreviousIndex >= 0
-              && movedPreviousIndex < movedIndex - 1) {
-              readIndexStrings.push(
-                ExtractNews.SELECTION_INDEX_STRINGS[movedPreviousIndex + 1]);
-              movedIndexStrings.push(
-                ExtractNews.SELECTION_INDEX_STRINGS[movedPartStart]);
-              movedPartStart = movedIndex;
-            }
-            readIndexStrings.push(
-              ExtractNews.SELECTION_INDEX_STRINGS[movedIndex]);
-            movedIndexStrings.push(
-              ExtractNews.SELECTION_INDEX_STRINGS[movedIndex + 1]);
-            movedPreviousIndex = movedIndex;
-          }
-
-          if (movedPreviousIndex + 1 >= newsSelectionCount) {
-            // Throw the exception because the last news selection is moved
-            // down as in the below case for indexStrings = [ 2, 5, 6 ].
-            //
-            // existing indexes  = [ 2, 3, 5, 6    ]
-            // movedIndexStrings = [ 3, 2, 6, 7, 5 ]  <- undefined for 5
-            throw newArrayInvalidParametersException(indexStrings);
-          }
-
-          // See below, when news selections for indexStrings = [ 2, 5, 6 ]
-          // are moved down, its indexes are replaced.
-          //
-          // readIndexStrings  = [ 2, 3, 5, 6, 7 ]
-          // movedIndexStrings = [ 3, 2, 6, 7, 5 ]
-          readIndexStrings.push(
-            ExtractNews.SELECTION_INDEX_STRINGS[movedPreviousIndex + 1]);
-          movedIndexStrings.push(
-            ExtractNews.SELECTION_INDEX_STRINGS[movedPartStart]);
-          return ExtractNews.removeStorageArea(readIndexStrings);
-        }).then((objects) => {
-          var movedObjects = new Array();
-          for (let i = 0; i < readIndexStrings.length; i++) {
-            movedObjects.push(objects[readIndexStrings[i]]);
-          }
-          return _writeNewsSelectionObject(movedIndexStrings, movedObjects);
-        });
-    }
-
-    _Storage.moveNewsSelectionDown = moveNewsSelectionDown;
-    _Storage.moveNewsSelectionsDown = moveNewsSelectionsDown;
-    _Storage.moveNewsSelectionUp = moveNewsSelectionUp;
-    _Storage.moveNewsSelectionsUp = moveNewsSelectionsUp;
 
 
     // Key to read and write a favicon string by suffixing the favicon ID.
@@ -618,7 +555,7 @@ ExtractNews.Storage = (() => {
     function readFavicon(faviconId) {
       _checkFaviconId(faviconId);
       var faviconKey = FAVICON_KEY + faviconId;
-      return ExtractNews.readStorageArea(faviconKey).then((items) => {
+      return ExtractNews.readStorage(faviconKey).then((items) => {
           var favicon = "";
           if (items[faviconKey] != undefined) {
             favicon = items[faviconKey];
@@ -641,7 +578,9 @@ ExtractNews.Storage = (() => {
         throw newEmptyStringException("favicon");
       }
       var faviconKey = FAVICON_KEY + faviconId;
-      return ExtractNews.writeStorageArea({ [faviconKey]: favicon });
+      return ExtractNews.writeStorage({
+          [faviconKey]: favicon
+        });
     }
 
     _Storage.readFavicon = readFavicon;
@@ -651,14 +590,6 @@ ExtractNews.Storage = (() => {
     // Key to read and write a comment mode by suffixing the site ID.
     const COMMENT_KEY = "Comment";
 
-    function _checkSiteId(siteId) {
-      if (siteId == undefined) {
-        throw newNullPointerException("siteId");
-      } else if ((typeof siteId) != "string") {
-        throw newIllegalArgumentException("siteId");
-      }
-    }
-
     /*
      * Reads the comment mode for a site of the specified ID from the local
      * storage and returns the promise fulfilled with its value or rejected.
@@ -666,7 +597,7 @@ ExtractNews.Storage = (() => {
     function readCommentMode(siteId) {
       _checkSiteId(siteId);
       var commentKey = COMMENT_KEY + siteId;
-      return ExtractNews.readStorageArea(commentKey).then((items) => {
+      return ExtractNews.readStorage(commentKey).then((items) => {
           var commentOn = true;
           if (items[commentKey] != undefined) {
             commentOn = items[commentKey];
@@ -685,7 +616,9 @@ ExtractNews.Storage = (() => {
         throw newIllegalArgumentException("commentOn");
       }
       var commentKey = COMMENT_KEY + siteId;
-      return ExtractNews.writeStorageArea({ [commentKey]: commentOn });
+      return ExtractNews.writeStorage({
+          [commentKey]: commentOn
+        });
     }
 
     _Storage.readCommentMode = readCommentMode;

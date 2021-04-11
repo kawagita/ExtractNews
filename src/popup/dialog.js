@@ -108,6 +108,6 @@ dialogButtonOK.addEventListener(_Event.CLICK, (event) => {
       });
   });
 
-document.body.addEventListener("contextmenu", (event) => {
+document.addEventListener("contextmenu", (event) => {
     event.preventDefault();
   });

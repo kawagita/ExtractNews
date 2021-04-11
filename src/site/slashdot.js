@@ -75,7 +75,7 @@ function _squeezeTextSpaces(textString) {
 /*
  * Stories on Slashdot and Srad.
  */
-class SlashdotStories extends NewsDesign {
+class SlashdotStories extends Design.NewsDesign {
   constructor() {
     super({
         parentProperties: Array.of({
@@ -105,7 +105,7 @@ class SlashdotStories extends NewsDesign {
             senderFollowing: Site.LANGUAGE == ExtractNews.SITE_ENGLISH
           },
         observedProperties: Site.LANGUAGE == ExtractNews.SITE_ENGLISH ?
-          undefined : ONESELF_QUERY_PROPERTIES,
+          undefined : Design.ONESELF_QUERY_PROPERTIES,
         observedItemProperties: Array.of({
             setNewsElement: (element, newsItems) => {
                 if (element.tagName == "ARTICLE") {
@@ -160,7 +160,7 @@ function _addStoryTopicWords(storyTopics) {
 /*
  * The story on Slashdot and Srad.
  */
-class SlashdotStory extends NewsDesign {
+class SlashdotStory extends Design.NewsDesign {
   constructor() {
     super({
         parentProperties: Array.of({
@@ -176,10 +176,10 @@ class SlashdotStory extends NewsDesign {
                     headerElement.querySelectorAll("img").forEach((image) => {
                         var storyTopicMatch =
                           image.alt.match(SLASHDOT_STORY_TOPIC_REGEXP);
+                        storyTopicSet.add(storyTopicMatch[1]);
                         if (storyTopicMatch[2] != undefined) { // XXX (YYY)
                           storyTopicSet.add(storyTopicMatch[2]);
                         }
-                        storyTopicSet.add(storyTopicMatch[1]);
                       });
                     break;
                   }
@@ -207,7 +207,7 @@ class SlashdotStory extends NewsDesign {
                 }
               }
           }),
-        topicProperties: ONESELF_QUERY_PROPERTIES
+        topicProperties: Design.ONESELF_QUERY_PROPERTIES
       });
   }
 
@@ -235,7 +235,7 @@ class SlashdotStory extends NewsDesign {
 /*
  * Comments with related stories on Slashdot or Srad.
  */
-class SlashdotComments extends NewsDesign {
+class SlashdotComments extends Design.NewsDesign {
   constructor() {
     super({
         parentProperties: Site.LANGUAGE == ExtractNews.SITE_ENGLISH ?
@@ -287,14 +287,14 @@ class SlashdotComments extends NewsDesign {
     if (newsParent.tagName == "SECTION") { // Related Links
       return Array.of(newsParent.querySelector("ul"));
     }
-    return EMPTY_NEWS_ELEMENTS;
+    return new Array();
   }
 }
 
 /*
  * Story boxes displayed in the side on Slashdot and Srad.
  */
-class SlashdotStoryBoxes extends NewsDesign {
+class SlashdotStoryBoxes extends Design.NewsDesign {
   constructor() {
     super({
         parentProperties: Array.of({
@@ -338,7 +338,7 @@ class SlashdotStoryBoxes extends NewsDesign {
 /*
  * The story archive on Slashdot.
  */
-class SlashdotStoryArchive extends NewsDesign {
+class SlashdotStoryArchive extends Design.NewsDesign {
   constructor() {
     super({
         parentProperties: Array.of({
@@ -367,7 +367,7 @@ class SlashdotStoryArchive extends NewsDesign {
                 }
               }
           }),
-        topicProperties: ONESELF_QUERY_PROPERTIES
+        topicProperties: Design.ONESELF_QUERY_PROPERTIES
       });
   }
 
@@ -408,7 +408,7 @@ class SlashdotStoryArchive extends NewsDesign {
 /*
  * Tagged stories on Slashdot and Srad.
  */
-class SlashdotTaggedStories extends NewsDesign {
+class SlashdotTaggedStories extends Design.NewsDesign {
   constructor() {
     super({
         parentProperties: Array.of({
@@ -430,117 +430,87 @@ class SlashdotTaggedStories extends NewsDesign {
   }
 }
 
+// Adds topics for the specified story topic's keyword to the array of words.
 
-function _getStoryTopic(storyTopicKeyword) {
+function _addStoryTopicKeyword(storyTopicKeyword) {
   const STORY_TOPIC_KEYWORDS =
     splitSlashdotString("StoryTopicKeywords", Site.LANGUAGE);
-  var storyTopicText;
   var storyTopicSet = new Set();
   var storyTopicIndex = STORY_TOPIC_KEYWORDS.indexOf(storyTopicKeyword);
   if (storyTopicIndex >= 0) {
     const STORY_TOPICS = splitSlashdotString("StoryTopics", Site.LANGUAGE);
-    storyTopicText = STORY_TOPICS[storyTopicIndex];
-    var storyTopicMatch = storyTopicText.match(SLASHDOT_STORY_TOPIC_REGEXP);
+    var storyTopicMatch =
+      STORY_TOPICS[storyTopicIndex].match(SLASHDOT_STORY_TOPIC_REGEXP);
+    storyTopicSet.add(storyTopicMatch[1]);
     if (storyTopicMatch[2] != undefined) { // XXX (YYY)
       storyTopicSet.add(storyTopicMatch[2]);
     }
-    storyTopicSet.add(storyTopicMatch[1]);
   } else {
-    storyTopicText =
+    storyTopicSet.add(
       storyTopicKeyword.substring(0, 1).toUpperCase()
-      + storyTopicKeyword.substring(1);
-    storyTopicSet.add(storyTopicText);
+      + storyTopicKeyword.substring(1));
   }
   _addStoryTopicWords(storyTopicSet);
-  return storyTopicText;
 }
 
 // Displays news designs arranged by a selector which selects and excludes news
 // topics or senders, waiting regular expressions from the background script.
 
-if (Site.isLocalized()) {
-  const STORIES_PATH_REGEXP = getSlashdotRegExp("StoriesPath", Site.LANGUAGE);
-  const STORY_PATH_REGEXP = getSlashdotRegExp("StoryPath");
-  const STORY_ARCHIVE_PATH = getSlashdotString("StoryArchivePath");
-  const TAGGED_STORIES_PATH = getSlashdotString("TaggedStoriesPath");
-
-  const STORY_VIEW_QUERY_KEY = getSlashdotString("StoryViewQueryKey");
+if (Site.isNewsArranged()) {
   const STORY_FILTER_QUERY_KEY = getSlashdotString("StoryFilterQueryKey");
-  const STORY_OP_QUERY_KEY = getSlashdotString("StoryOpQueryKey");
-  const STORY_KEYWORD_QUERY_KEY = getSlashdotString("StoryKeywordQueryKey");
+
+  var storyQueryKeys = undefined;
+  var newsOpenedUrlParser = new Site.OpenedUrlParser(document.URL);
+  newsOpenedUrlParser.parseHostName();
 
   Site.addNewsTopicWords(
     splitSlashdotString("CommonTopicWords", Site.LANGUAGE));
 
-  var newsTitle = undefined;
-  var newsOpenedUrl = "";
-  var newsOpenedUrlParser = new Site.OpenedUrlParser(document.URL);
-  newsOpenedUrlParser.parseHostName();
   if (newsOpenedUrlParser.hostServer != "") { // "xxx.slashdot.org"
-    newsTitle =
-      Site.NAME + Site.NAME_CONCATENATION
-      + _getStoryTopic(newsOpenedUrlParser.hostServer);
+    _addStoryTopicKeyword(newsOpenedUrlParser.hostServer);
   }
   if (newsOpenedUrlParser.parseQuery()) {
     var storyFilterValue =
       newsOpenedUrlParser.getQueryValue(STORY_FILTER_QUERY_KEY);
     if (storyFilterValue != undefined) { // "slashdot.org/?hfilter=xxx"
-      newsTitle =
-        Site.NAME + Site.NAME_CONCATENATION + _getStoryTopic(storyFilterValue);
+      _addStoryTopicKeyword(storyFilterValue);
     }
   }
 
+  const STORIES_PATH_REGEXP = getSlashdotRegExp("StoriesPath", Site.LANGUAGE);
+  const STORY_PATH_REGEXP = getSlashdotRegExp("StoryPath");
+  const STORY_ARCHIVE_PATH = getSlashdotString("StoryArchivePath");
+  const TAGGED_STORIES_PATH = getSlashdotString("TaggedStoriesPath");
+
   if (newsOpenedUrlParser.match(STORY_PATH_REGEXP)) { // A story
     Site.addNewsDesigns(new SlashdotStory(), new SlashdotComments());
-    newsTitle = undefined;
   } else if (newsOpenedUrlParser.match(STORIES_PATH_REGEXP)) { // Stories
     Site.addNewsDesign(new SlashdotStories());
+    storyQueryKeys = Array.of(
+        getSlashdotString("StoryViewQueryKey"),
+        STORY_FILTER_QUERY_KEY
+      );
     newsOpenedUrlParser.parseAll();
-    if (newsTitle == undefined
-      && (Site.LANGUAGE == ExtractNews.SITE_ENGLISH
-        || ! newsOpenedUrlParser.path.startsWith(
-          getSlashdotString("StoryArchivePath", Site.LANGUAGE)))) { // Top page
-      newsTitle = Site.NAME;
-    }
-    newsOpenedUrl =
-      newsOpenedUrlParser.toString(
-        Array.of(STORY_VIEW_QUERY_KEY, STORY_FILTER_QUERY_KEY));
   } else if (newsOpenedUrlParser.parse(STORY_ARCHIVE_PATH)) { // Story Archive
     Site.addNewsDesign(new SlashdotStoryArchive());
-    newsOpenedUrl =
-      newsOpenedUrlParser.toString(
-        Array.of(STORY_OP_QUERY_KEY, STORY_KEYWORD_QUERY_KEY));
+    storyQueryKeys = Array.of(
+        getSlashdotString("StoryOpQueryKey"),
+        getSlashdotString("StoryKeywordQueryKey")
+      );
   } else if (newsOpenedUrlParser.parse(TAGGED_STORIES_PATH)) { // Tagged XXX
     Site.addNewsDesign(new SlashdotTaggedStories());
     newsOpenedUrlParser.parseAll();
-    newsOpenedUrl = newsOpenedUrlParser.toString();
-    newsTitle = undefined;
   }
   if (Site.LANGUAGE != ExtractNews.SITE_ENGLISH) {
     Site.addNewsDesign(
       // Menus including Apple, Microsoft, and Google on Srad
-      new NewsDesign({
+      new Design.NewsDesign({
           parentProperties: Array.of({
               selectors: "#firehose-sections"
             }),
-          topicProperties: ONESELF_QUERY_PROPERTIES
+          topicProperties: Design.ONESELF_QUERY_PROPERTIES
         }));
   }
   Site.addNewsDesign(new SlashdotStoryBoxes());
-
-  if (newsTitle == undefined) {
-    newsTitle = Site.NAME + Site.NAME_CONCATENATION;
-    // Adds the part of a page title to the name of "Slashdot" or "Srad".
-    var titleText =
-      _squeezeTextSpaces(document.querySelector("title").textContent);
-    var titleMatch =
-      titleText.match(getSlashdotRegExp("TitleSuffix", Site.LANGUAGE));
-    if (titleMatch != null) { // Before " - Slashdot" or " (on|for) Slashdot"
-      newsTitle += titleText.substring(0, titleMatch.index);
-    } else {
-      newsTitle += titleText;
-    }
-  }
-
-  Site.displayNewsDesigns(newsTitle, newsOpenedUrl);
+  Site.displayNewsDesigns(newsOpenedUrlParser.toString(storyQueryKeys));
 }

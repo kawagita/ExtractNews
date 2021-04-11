@@ -50,7 +50,7 @@ const IMPRESS_WATCH_GROUP = "group";
 /*
  * Panels of the top news on Impress Watch.
  */
-class ImpressWatchTopNewsPanels extends NewsDesign {
+class ImpressWatchTopNewsPanels extends Design.NewsDesign {
   constructor(className) {
     super({
         parentProperties: Array.of({
@@ -66,7 +66,7 @@ class ImpressWatchTopNewsPanels extends NewsDesign {
 /*
  * News topics displayed in the main area on Impress Watch.
  */
-class ImpressWatchMainTopics extends NewsDesign {
+class ImpressWatchMainTopics extends Design.NewsDesign {
   constructor(parentSelectors, setNewsParent, itemSelected = false) {
     super({
         parentProperties: Array.of({
@@ -186,7 +186,7 @@ class ImpressWatchDailyBlocks extends ImpressWatchMainBlocks {
     if (newsParent.classList.contains(IMPRESS_WATCH_GROUP)) {
       return Array.of(newsParent.querySelector("ul"));
     }
-    return EMPTY_NEWS_ELEMENTS;
+    return new Array();
   }
 
   getObservedNewsItemElements(addedNode) {
@@ -208,7 +208,7 @@ class ImpressWatchNewsBlocks extends ImpressWatchMainBlocks {
 /*
  * The list of news topics on Kodomo IT of Impress Watch.
  */
-class ImpressWatchKodomoItList extends NewsDesign {
+class ImpressWatchKodomoItList extends Design.NewsDesign {
   constructor() {
     super({
         parentProperties: Array.of({
@@ -218,8 +218,8 @@ class ImpressWatchKodomoItList extends NewsDesign {
         itemSelected: true,
         itemProperties: IMPRESS_WATCH_ITEM_PROPERTIES,
         topicProperties: IMPRESS_WATCH_TITLE_PROPERTIES,
-        observerOptions: SUBTREE_OBSERVER_OPTIONS,
-        observedProperties: ONESELF_QUERY_PROPERTIES
+        observerOptions: Design.SUBTREE_OBSERVER_OPTIONS,
+        observedProperties: Design.ONESELF_QUERY_PROPERTIES
       });
   }
 
@@ -227,14 +227,14 @@ class ImpressWatchKodomoItList extends NewsDesign {
     if (addedNode.tagName == "LI") {
       return Array.of(addedNode);
     }
-    return EMPTY_NEWS_ELEMENTS;
+    return new Array();
   }
 }
 
 /*
  * Links of topics by which the news list is categorized on Impress sites.
  */
-class ImpressWatchCategoryLinks extends NewsDesign {
+class ImpressWatchCategoryLinks extends Design.NewsDesign {
   constructor() {
     super({
         parentProperties: Array.of({
@@ -248,7 +248,7 @@ class ImpressWatchCategoryLinks extends NewsDesign {
                 }
               }
           }),
-        topicProperties: ONESELF_QUERY_PROPERTIES
+        topicProperties: Design.ONESELF_QUERY_PROPERTIES
       });
   }
 
@@ -305,7 +305,7 @@ class ImpressWatchCategoryLinks extends NewsDesign {
 /*
  * The list of recommended topics in the main area or side on Impress sites.
  */
-class ImpressWatchRecommendedList extends NewsDesign {
+class ImpressWatchRecommendedList extends Design.NewsDesign {
   constructor() {
     super({
         parentProperties: Array.of({
@@ -323,7 +323,7 @@ class ImpressWatchRecommendedList extends NewsDesign {
 /*
  * The ranking of news topics on Impress Watch.
  */
-class ImpressWatchRanking extends NewsDesign {
+class ImpressWatchRanking extends Design.NewsDesign {
   constructor(name) {
     super({
         parentProperties: Array.of({
@@ -336,16 +336,16 @@ class ImpressWatchRanking extends NewsDesign {
             selectors: "#" + name + "-720-list"
           }),
         keepDisplaying: true,
-        topicProperties: ONESELF_QUERY_PROPERTIES,
+        topicProperties: Design.ONESELF_QUERY_PROPERTIES,
         itemTextProperty: {
             topicSearchProperties: Array.of({
-                skippedTextRegexp: NEWS_RANKING_NUMBER_REGEXP
+                skippedTextRegexp: Design.NEWS_RANKING_NUMBER_REGEXP
               })
           },
         observedProperties: Array.of({
             selectors: "ul"
           }),
-        observedItemProperties: ONESELF_QUERY_PROPERTIES
+        observedItemProperties: Design.ONESELF_QUERY_PROPERTIES
       });
   }
 }
@@ -353,7 +353,7 @@ class ImpressWatchRanking extends NewsDesign {
 /*
  * News topics observed in the main area on Impress Watch.
  */
-class ImpressWatchMainObservedTopics extends NewsDesign {
+class ImpressWatchMainObservedTopics extends Design.NewsDesign {
   constructor(parentSelectors, keepDisplaying = true) {
     super({
         parentProperties: Array.of({
@@ -362,8 +362,8 @@ class ImpressWatchMainObservedTopics extends NewsDesign {
         keepDisplaying: keepDisplaying,
         itemProperties: IMPRESS_WATCH_ITEM_PROPERTIES,
         topicProperties: IMPRESS_WATCH_TITLE_PROPERTIES,
-        observerOptions: SUBTREE_OBSERVER_OPTIONS,
-        observedProperties: ONESELF_QUERY_PROPERTIES
+        observerOptions: Design.SUBTREE_OBSERVER_OPTIONS,
+        observedProperties: Design.ONESELF_QUERY_PROPERTIES
       });
   }
 
@@ -375,15 +375,10 @@ class ImpressWatchMainObservedTopics extends NewsDesign {
   }
 }
 
-
 // Displays news designs arranged by a selector which selects and excludes news
 // topics or senders, waiting regular expressions from the background script.
 
-if (Site.isLocalized()) {
-  const SITE_HOST_SERVERS = splitImpressWatchString("SiteHostServers");
-  const SITE_NAMES = splitImpressWatchString("SiteNames");
-  const SITE_TOPIC_WORDS = splitImpressWatchString("SiteTopicWords");
-
+if (Site.isNewsArranged()) {
   const DOCUMENTS_REGEXP = getImpressWatchRegExp("Documents");
   const KODOMO_IT_PATH = getImpressWatchString("KodomoItPath");
   const BACK_NUMBER_PATH = getImpressWatchString("BackNumberPath");
@@ -391,15 +386,17 @@ if (Site.isLocalized()) {
   const LIFE_AT_HOME_PATH = getImpressWatchString("LifeAtHomePath");
   const HEADLINE_PATH = getImpressWatchString("HeadlinePath");
   const TRENDING_PATH = getImpressWatchString("TrendingPath");
-  const CATEGORIZED_PATH = getImpressWatchString("CategorizedPath");
+  const CATEGORY_PATH = getImpressWatchString("CategoryPath");
 
-  var newsTitle = Site.NAME;
-  var newsSiteIndex = -1;
   var newsOpenedUrlParser = new Site.OpenedUrlParser(document.URL);
   newsOpenedUrlParser.parseHostName();
-  newsSiteIndex = SITE_HOST_SERVERS.indexOf(newsOpenedUrlParser.hostServer);
-  if (newsSiteIndex >= 0) { // INTERNET Watch, PC Watch, ..., and Watch Video
-    Site.addNewsTopicWords(SITE_TOPIC_WORDS[newsSiteIndex].split(" "));
+
+  const SITE_HOST_SERVERS = splitImpressWatchString("SiteHostServers");
+
+  var siteIndex = SITE_HOST_SERVERS.indexOf(newsOpenedUrlParser.hostServer);
+  if (siteIndex >= 0) { // INTERNET Watch, PC Watch, ..., and Watch Video
+    Site.addNewsTopicWords(
+      splitImpressWatchString("SiteTopicWords")[siteIndex].split(" "));
   } else { // Impress Watch
     Site.addNewsTopicWords(splitImpressWatchString("TopicWords"));
   }
@@ -407,7 +404,7 @@ if (Site.isLocalized()) {
   if (newsOpenedUrlParser.match(DOCUMENTS_REGEXP) != null) { // Articles
     Site.addNewsDesigns(
       // Links to the previous or next article
-      new NewsDesign({
+      new Design.NewsDesign({
           parentProperties: Array.of({
               selectors: ".corner",
             }),
@@ -415,14 +412,14 @@ if (Site.isLocalized()) {
           topicProperties: IMPRESS_WATCH_TITLE_PROPERTIES
         }),
       // Links to outer articles
-      new NewsDesign({
+      new Design.NewsDesign({
           parentProperties: Array.of({
               selectorsForAll: ".outer"
             }),
-          topicProperties: ONESELF_QUERY_PROPERTIES
+          topicProperties: Design.ONESELF_QUERY_PROPERTIES
         }),
       // Links to related articles
-      new NewsDesign({
+      new Design.NewsDesign({
           parentProperties: Array.of({
               selectorsForAll: ".related"
             }),
@@ -431,13 +428,12 @@ if (Site.isLocalized()) {
       // TRENDING
       new ImpressWatchMainObservedTopics("#chartbeat_recommend", false));
   } else if (newsOpenedUrlParser.parseDirectory()) { // Impress site's top
-    if (newsSiteIndex >= 0) { // INTERNET Watch, PC Watch, ..., and Watch Video
+    if (siteIndex >= 0) { // INTERNET Watch, PC Watch, ..., and Watch Video
       Site.addNewsDesigns(
         new ImpressWatchTopNewsPanels("top-news"),
         new ImpressWatchDailyBlocks(),
         // HOT TOPICS, Rensai, and Market Johou
         new ImpressWatchMainTopics("li.type-1"));
-      newsTitle = SITE_NAMES[newsSiteIndex];
     } else { // Impress Watch
       Site.addNewsDesigns(
         new ImpressWatchTopNewsPanels("top-news2"),
@@ -449,9 +445,8 @@ if (Site.isLocalized()) {
   } else if (newsOpenedUrlParser.parse(BACK_NUMBER_PATH)) { // Back number
     if (newsOpenedUrlParser.parse(
       getImpressWatchString("BackNumberTopPath"))) {
-      if (newsSiteIndex >= 0) {
+      if (siteIndex >= 0) {
         Site.addNewsDesign(new ImpressWatchNewsBlocks());
-        newsTitle = SITE_NAMES[newsSiteIndex];
       } else { // "Kongetsu No Kiji" linked from the bottom of Impress Watch
         Site.addNewsDesign(new ImpressWatchNewsLists());
       }
@@ -471,20 +466,19 @@ if (Site.isLocalized()) {
     Site.addNewsDesign(new ImpressWatchMainObservedTopics("section.list"));
   } else if (newsOpenedUrlParser.parse(LIFE_AT_HOME_PATH)) { // Zaitaku Work
     Site.addNewsDesign(new ImpressWatchMainObservedTopics("#article_list"));
-  } else if (newsOpenedUrlParser.parse(CATEGORIZED_PATH)) {
+  } else if (newsOpenedUrlParser.parse(CATEGORY_PATH)) { // Each category
     if (newsOpenedUrlParser.parse(
       getImpressWatchString("CategoryListHtml"))) { // Category Links
       Site.addNewsDesign(new ImpressWatchCategoryLinks());
     } else { // Impress site's news lists categorized by a topic
-      if (newsSiteIndex >= 0) {
+      if (siteIndex >= 0) {
         Site.addNewsDesign(
-          new NewsDesign({
+          new Design.NewsDesign({
               parentProperties: Array.of({
                   selectors: ".category-selector" // Shiborikomu
                 }),
-              topicProperties: ONESELF_QUERY_PROPERTIES
+              topicProperties: Design.ONESELF_QUERY_PROPERTIES
             }));
-        newsTitle = SITE_NAMES[newsSiteIndex];
       }
       Site.addNewsDesign(new ImpressWatchNewsLists());
       newsOpenedUrlParser.parseDirectoryHierarchy();
@@ -497,7 +491,7 @@ if (Site.isLocalized()) {
     // Osusume Kiji
     new ImpressWatchRecommendedList(),
     // Saishin Kiji
-    new NewsDesign({
+    new Design.NewsDesign({
         parentProperties: Array.of({
             selectors: ".latest"
           }),
@@ -506,21 +500,5 @@ if (Site.isLocalized()) {
     new ImpressWatchRanking("ranking"),
     new ImpressWatchRanking("all-ranking"));
 
-  if (newsOpenedUrlParser.path != "/") { // Except for Impress site's top
-    newsTitle += Site.NAME_CONCATENATION;
-    // Adds the part of a page title to the name of an Impress site.
-    var titleText = document.querySelector("title").textContent.trim();
-    var titleMatch = titleText.match(getImpressWatchRegExp("TitleSuffix"));
-    if (titleMatch != null) { // " - Impress Watch" or " | Impress Watch"
-      newsTitle += titleText.substring(0, titleMatch.index);
-    } else {
-      newsTitle += titleText;
-    }
-    newsTitle =
-      newsTitle.replace(
-        getImpressWatchRegExp("DocumentsDurationTitle"),
-        getImpressWatchString("DocumentsTitle"));
-  }
-
-  Site.displayNewsDesigns(newsTitle, newsOpenedUrlParser.toString());
+  Site.displayNewsDesigns(newsOpenedUrlParser.toString());
 }

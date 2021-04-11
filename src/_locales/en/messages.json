@@ -19,16 +19,6 @@
     "description": "Name of Yahoo!."
   },
 
-  "extractNewsYahooTitlePrefixRegularExpression": {
-    "message": "^Yahoo [A-Z][a-z]+ - ",
-    "description": "Regular expression of the title prefix on Yahoo!."
-  },
-
-  "extractNewsYahooTitleSuffixRegularExpression": {
-    "message": "(?:, .+ and .+)? (?:[-|]|for) Yahoo(?: [A-Z][a-z]+(:? .+)?)?$$",
-    "description": "Regular expression of the title suffix on Yahoo!."
-  },
-
   "extractNewsYahooUrlHostServerPatterns": {
     "message": "www,news,finance,money,sports",
     "description": "Host server patterns of Yahoo! URL."
@@ -52,11 +42,6 @@
   "extractNewsYahooSiteCategoryTopicWords": {
     "message": "Politics Society U.S. World Money Business Science Technology IT Entertainment Sports NFL Life Health Medicine,U.S. Society Politics World Science Health Medicine,Politics Money Business Market IT Technology Game,Money Business Travel,Sports NFL NBA MLB NHL NCAA Golf Soccer Tennis Boxing Motorsports,Entertainment TV Movies Music,Life Health Medicine Education Trend",
     "description": "Topic wards for each category of Yahoo! site."
-  },
-
-  "extractNewsYahooSiteNames": {
-    "message": "Yahoo!,Yahoo! News,Yahoo! Finance,Yahoo! Money,Yahoo! Sports,Yahoo! Entertainment,Yahoo! Life",
-    "description": "Names of Yahoo! site."
   },
 
   "extractNewsYahooNewsHostServer": {
@@ -107,11 +92,6 @@
   "extractNewsSlashdotName": {
     "message": "Slashdot",
     "description": "Name of Slashdot."
-  },
-
-  "extractNewsSlashdotTitleSuffixRegularExpression": {
-    "message": " (?:[-|]|for|on) Slashdot$$",
-    "description": "Regular expression of the title suffix on Slashdot."
   },
 
   "extractNewsSlashdotUrlHostServerPatterns": {
@@ -814,19 +794,9 @@
     "description": "Contenxt menu to clear excluded topics on the tab."
   },
 
-  "contextMenuDisableFiltering": {
-    "message": "Disable word filterings",
-    "description": "Contenxt menu to disable word filterings."
-  },
-
   "contextMenuHideComment": {
     "message": "Hide comments on this site",
     "description": "Contenxt menu to hide comments on the site."
-  },
-
-  "contextMenuDebugExtension": {
-    "message": "Debug this extension",
-    "description": "Contenxt menu to debug the extension."
   },
 
   "browserActionShowNewsSelections": {
@@ -1007,6 +977,11 @@
   "optionInputFilteringCategoryTopics": {
     "message": "Input topics separated by commas.",
     "description": "Message to input topics of a filtering category."
+  },
+
+  "optionFilteringCategoryAlways": {
+    "message": "This category is always applied.",
+    "description": "Option description to apply the filtering category for all."
   },
 
   "optionTargetAccept": {

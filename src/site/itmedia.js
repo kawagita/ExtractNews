@@ -42,6 +42,11 @@ function getITmediaNewsRegExp(id) {
   return ExtractNews.getLocalizedRegExp("ITmediaNews" + id);
 }
 
+const ITMEDIA_NEWS_CATEGORY_ROOT_PATH =
+  getITmediaNewsString("CategoryRootPath");
+const ITMEDIA_NEWS_CATEGORY_PATHS = splitITmediaNewsString("CategoryPaths");
+const ITMEDIA_NEWS_CATEGORY_IDS = splitITmediaNewsString("CategoryIds");
+
 const ITMEDIA_NEWS_ARTICLE_TYPE_ALL = getITmediaNewsString("ArticleTypeAll");
 
 const ITMEDIA_NEWS_COL_BOX_INNER = "colBoxInner";
@@ -51,7 +56,7 @@ const ITMEDIA_NEWS_COL_BOX_TITLE = "colBoxTitle";
 /*
  * News topics on ITmedia NEWS.
  */
-class ITmediaNewsTopics extends NewsDesign {
+class ITmediaNewsTopics extends Design.NewsDesign {
   constructor(parentSelectors, itemSelected = false) {
     super({
         parentProperties: Array.of({
@@ -116,7 +121,7 @@ class ITmediaNewsVeticalPanels extends ITmediaNewsTopics {
 /*
  * Pick up news on ITmedia NEWS.
  */
-class ITmediaNewsPickUp extends NewsDesign {
+class ITmediaNewsPickUp extends Design.NewsDesign {
   constructor(parentSelectors) {
     super({
         parentProperties: Array.of({
@@ -128,7 +133,7 @@ class ITmediaNewsPickUp extends NewsDesign {
           }, {
             selectorsForAll: "li"
           }),
-        topicProperties: ONESELF_QUERY_PROPERTIES
+        topicProperties: Design.ONESELF_QUERY_PROPERTIES
       });
   }
 }
@@ -178,14 +183,14 @@ class ITmediaNewsListMoreLink extends ITmediaNewsList {
 /*
  * Burst news on ITmedia NEWS.
  */
-class ITmediaNewsBursts extends NewsDesign {
+class ITmediaNewsBursts extends Design.NewsDesign {
   constructor() {
     super({
         parentProperties: Array.of({
             selectorsForAll: ".colBoxToday"
           }),
         itemSelected: true,
-        topicProperties: ONESELF_QUERY_PROPERTIES
+        topicProperties: Design.ONESELF_QUERY_PROPERTIES
       });
   }
 }
@@ -204,9 +209,9 @@ class ITmediaNewsFeed extends ITmediaNewsList {
 
   getObserverOptions(newsParent) {
     if (newsParent.parentNode.tagName != "SECTION" && newsParent.id != "") {
-      return SUBTREE_OBSERVER_OPTIONS;
+      return Design.SUBTREE_OBSERVER_OPTIONS;
     }
-    return CHILD_OBSERVER_OPTIONS;
+    return Design.CHILD_OBSERVER_OPTIONS;
   }
 
   getObservedNodes(newsParent) {
@@ -218,7 +223,7 @@ class ITmediaNewsFeed extends ITmediaNewsList {
       return Array.of(
         newsParent.querySelector("." + ITMEDIA_NEWS_COL_BOX_INNER));
     }
-    return EMPTY_NEWS_ELEMENTS;
+    return new Array();
   }
 
   getObservedNewsItemElements(addedNode) {
@@ -232,7 +237,7 @@ class ITmediaNewsFeed extends ITmediaNewsList {
 /*
  * The link to related articles or sites on ITmedia NEWS.
  */
-class ITmediaNewsRelatedLink extends NewsDesign {
+class ITmediaNewsRelatedLink extends Design.NewsDesign {
   constructor(parentSelectors, setNewsBlocks) {
     super({
         parentProperties: Array.of({
@@ -341,36 +346,33 @@ class ITmediaNewsBackNumber extends ITmediaNewsRelatedLink {
 /*
  * The ranking of news topics named with "Ninki Kiji Ranking" on ITmedia NEWS.
  */
-class ITmediaNewsRanking extends NewsDesign {
+class ITmediaNewsRanking extends Design.NewsDesign {
   constructor(parentSelectors) {
     super({
         parentProperties: Array.of({
             selectors: parentSelectors
           }),
-        topicProperties: ONESELF_QUERY_PROPERTIES,
+        topicProperties: Design.ONESELF_QUERY_PROPERTIES,
         itemTextProperty: {
             topicSearchProperties: Array.of({
-                skippedTextRegexp: NEWS_RANKING_NUMBER_REGEXP
+                skippedTextRegexp: Design.NEWS_RANKING_NUMBER_REGEXP
               })
           }
       });
   }
 }
 
-
-const CATEGORY_ROOT_PATH = getITmediaNewsString("CategoryRootPath");
-const CATEGORY_PATHS = splitITmediaNewsString("CategoryPaths");
-const CATEGORY_IDS = splitITmediaNewsString("CategoryIds");
+// Returns the ID of a category parsed from the pankuzu list.
 
 function _getPankuzuCategoryId() {
   for (const pankuzuTopic of document.querySelectorAll("#localPankuzu a")) {
     var pankuzuUrlParser = new Site.OpenedUrlParser(pankuzuTopic.href);
     if (pankuzuUrlParser.parseHostName()
       && pankuzuUrlParser.parseRootDirectory()
-      && pankuzuUrlParser.parse(CATEGORY_ROOT_PATH)) {
-      for (let i = 0; i < CATEGORY_PATHS.length; i++) {
-        if (pankuzuUrlParser.parse(CATEGORY_PATHS[i])) {
-          return CATEGORY_IDS[i];
+      && pankuzuUrlParser.parse(ITMEDIA_NEWS_CATEGORY_ROOT_PATH)) {
+      for (let i = 0; i < ITMEDIA_NEWS_CATEGORY_PATHS.length; i++) {
+        if (pankuzuUrlParser.parse(ITMEDIA_NEWS_CATEGORY_PATHS[i])) {
+          return ITMEDIA_NEWS_CATEGORY_IDS[i];
         }
       }
     }
@@ -381,7 +383,7 @@ function _getPankuzuCategoryId() {
 // Displays news designs arranged by a selector which selects and excludes news
 // topics or senders, waiting regular expressions from the background script.
 
-if (Site.isLocalized()) {
+if (Site.isNewsArranged()) {
   const ARTICLES_REGEXP = getITmediaNewsRegExp("Articles");
   const BURSTS_CATEGORY_PATH = getITmediaNewsString("BurstsCategoryPath");
   const INDUSTRY_CATEGORY_PATH = getITmediaNewsString("IndustryCategoryPath");
@@ -394,13 +396,10 @@ if (Site.isLocalized()) {
     getITmediaNewsString("ClouduserCategoryPath");
   const QUANTUM_CATEGORY_PATH = getITmediaNewsString("QuantumCategoryPath");
 
-  var newsTitle = Site.NAME;
   var newsCategoryId = "";
   var newsOpenedUrlParser = new Site.OpenedUrlParser(document.URL);
   newsOpenedUrlParser.parseHostName();
   newsOpenedUrlParser.parseRootDirectory();
-
-  Site.addNewsTopicWords(splitITmediaNewsString("CommonTopicWords"));
 
   if (newsOpenedUrlParser.match(ARTICLES_REGEXP) != null) { // Articles
     newsCategoryId = _getPankuzuCategoryId();
@@ -414,7 +413,7 @@ if (Site.isLocalized()) {
       new ITmediaNewsList(".colBoxHotTopic"),
       new ITmediaNewsListMoreLink(".colBoxLifestyle"),
       new ITmediaNewsList(".colBoxAttention"));
-  } else if (newsOpenedUrlParser.parse(CATEGORY_ROOT_PATH)) {
+  } else if (newsOpenedUrlParser.parse(ITMEDIA_NEWS_CATEGORY_ROOT_PATH)) {
     if (newsOpenedUrlParser.parse(BURSTS_CATEGORY_PATH)) { // Bursts
       Site.addNewsDesign(new ITmediaNewsBursts());
     } else if (newsOpenedUrlParser.parse(STUDIO_CATEGORY_PATH)) { // STUDIO
@@ -454,9 +453,9 @@ if (Site.isLocalized()) {
         new ITmediaNewsList(".colBoxFeaturesIndex120Urllist"),
         new ITmediaNewsList(".colBoxFeaturesIndex240Urllist"));
     } else { // Other categories
-      for (let i = 0; i < CATEGORY_PATHS.length; i++) {
-        if (newsOpenedUrlParser.parse(CATEGORY_PATHS[i])) {
-          newsCategoryId = CATEGORY_IDS[i];
+      for (let i = 0; i < ITMEDIA_NEWS_CATEGORY_PATHS.length; i++) {
+        if (newsOpenedUrlParser.parse(ITMEDIA_NEWS_CATEGORY_PATHS[i])) {
+          newsCategoryId = ITMEDIA_NEWS_CATEGORY_IDS[i];
           Site.addNewsDesigns(
             new ITmediaNewsList(".colBox" + newsCategoryId + "New"),
             new ITmediaNewsList(".colBox" + newsCategoryId + "Newtopic"));
@@ -470,33 +469,24 @@ if (Site.isLocalized()) {
   }
   Site.addNewsDesign(new ITmediaNewsTopics(".colBoxTopRanking"));
 
-  // Add topics for a category of this page to the array of topic words.
   var newsCategoryTopicWordsString = "";
   if (newsCategoryId != "") {
     newsCategoryTopicWordsString =
       getITmediaNewsString(newsCategoryId + "CategoryTopicWords");
   }
+  Site.addNewsTopicWords(splitITmediaNewsString("CommonTopicWords"));
+
   if (newsCategoryTopicWordsString != "") {
+    // Add topics for a category of this page to the array of topic words.
     Site.addNewsTopicWords(newsCategoryTopicWordsString.split(","));
-  } else { // Top page or Burst or Archive category
-    for (let i = 0; i < CATEGORY_IDS.length; i++) {
-      // Add topics for all categories to the array of topic words.
+  } else {
+    // Add topics for all categories on the top page, burst, or archive.
+    for (let i = 0; i < ITMEDIA_NEWS_CATEGORY_IDS.length; i++) {
       Site.addNewsTopicWords(
-        splitITmediaNewsString(CATEGORY_IDS[i] + "CategoryTopicWords"));
+        splitITmediaNewsString(
+          ITMEDIA_NEWS_CATEGORY_IDS[i] + "CategoryTopicWords"));
     }
   }
 
-  if (newsOpenedUrlParser.path != "/") { // Except for ITmedia NEWS top
-    newsTitle += Site.NAME_CONCATENATION;
-    // Adds the part of a page title to "ITmedia NEWS".
-    var titleText = document.querySelector("title").textContent.trim();
-    var titleMatch = titleText.match(getITmediaNewsRegExp("TitleSuffix"));
-    if (titleMatch != null) { // " - ITmedia NEWS" or " | ITmedia NEWS"
-      newsTitle += titleText.substring(0, titleMatch.index);
-    } else {
-      newsTitle += titleText;
-    }
-  }
-
-  Site.displayNewsDesigns(newsTitle, newsOpenedUrlParser.toString());
+  Site.displayNewsDesigns(newsOpenedUrlParser.toString());
 }

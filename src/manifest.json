@@ -57,6 +57,7 @@
             "debug.js",
             "extractnews.js",
             "site/site.js",
+            "site/design.js",
             "site/yahoo.js"
           ],
         "run_at": "document_idle"
@@ -72,6 +73,7 @@
             "debug.js",
             "extractnews.js",
             "site/site.js",
+            "site/design.js",
             "site/slashdot.js"
           ],
         "run_at": "document_end"
@@ -82,6 +84,7 @@
             "debug.js",
             "extractnews.js",
             "site/site.js",
+            "site/design.js",
             "site/yahoo_japan.js"
           ],
         "run_at": "document_end"
@@ -92,6 +95,7 @@
             "debug.js",
             "extractnews.js",
             "site/site.js",
+            "site/design.js",
             "site/impress_watch.js"
           ],
         "run_at": "document_end"
@@ -102,7 +106,31 @@
             "debug.js",
             "extractnews.js",
             "site/site.js",
+            "site/design.js",
             "site/itmedia.js"
+          ],
+        "run_at": "document_end"
+      },
+      {
+        "matches": [ "<all_urls>" ],
+        "exclude_matches": [
+            "https://www.yahoo.com/*",
+            "https://news.yahoo.com/*",
+            "https://finance.yahoo.com/*",
+            "https://money.yahoo.com/*",
+            "https://sports.yahoo.com/*",
+            "https://*.slashdot.org/*",
+            "https://slashdot.org/*",
+            "https://*.srad.jp/*",
+            "https://srad.jp/*",
+            "https://news.yahoo.co.jp/*",
+            "https://*.watch.impress.co.jp/*",
+            "https://www.itmedia.co.jp/news/*"
+          ],
+        "js": [ 
+            "debug.js",
+            "extractnews.js",
+            "site/site.js"
           ],
         "run_at": "document_end"
       }

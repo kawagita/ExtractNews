@@ -259,6 +259,6 @@ _Storage.readNewsSelectionCount().then((newsSelectionCount) => {
     Debug.printStackTrace(error);
   });
 
-document.body.addEventListener("contextmenu", (event) => {
+document.addEventListener("contextmenu", (event) => {
     event.preventDefault();
   });

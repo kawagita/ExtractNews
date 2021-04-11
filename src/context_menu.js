@@ -51,11 +51,7 @@ ExtractNews.Menus = (() => {
     const ID_CLEAR_TAB_SELECTED_SENDER = "ClearTabSelectedSender";
     const ID_CLEAR_TAB_NEWS_EXCLUSION = "ClearTabNewsExclusion";
 
-    const ID_DISABLE_FILTERING = "DisableFiltering";
-
     const ID_HIDE_COMMENT = "HideComment";
-
-    const ID_DEBUG_EXTENSION = "DebugExtension";
 
     _Menus.ID_SELECT_NEWS_TOPIC = ID_SELECT_NEWS_TOPIC;
     _Menus.ID_SELECT_NEWS_TOPIC_ADDITIONALLY =
@@ -72,9 +68,7 @@ ExtractNews.Menus = (() => {
     _Menus.ID_CLEAR_TAB_SELECTED_TOPIC = ID_CLEAR_TAB_SELECTED_TOPIC;
     _Menus.ID_CLEAR_TAB_SELECTED_SENDER = ID_CLEAR_TAB_SELECTED_SENDER;
     _Menus.ID_CLEAR_TAB_NEWS_EXCLUSION = ID_CLEAR_TAB_NEWS_EXCLUSION;
-    _Menus.ID_DISABLE_FILTERING = ID_DISABLE_FILTERING;
     _Menus.ID_HIDE_COMMENT = ID_HIDE_COMMENT;
-    _Menus.ID_DEBUG_EXTENSION = ID_DEBUG_EXTENSION;
 
     const ID_SEPARATOR = "Separator";
     const ID_HIDE_COMMENT_SEPARATOR = "HideCommentSeparator";
@@ -119,9 +113,10 @@ ExtractNews.Menus = (() => {
         ID_EXCLUDE_NEWS_TOPIC_ADDITIONALLY
       ];
 
-    // The context menu applied to a news page not including a textarea, nested
-    // iframe, image, link, selection text, and audio or video element.
-    const NEWS_PAGE_MENUS = [
+    // The context menu applied to the element of news sites which are not
+    // including a textarea, nested iframe, image, link, selection text, and
+    // audio or video element.
+    const NEWS_SITE_MENUS = [
         ID_DISABLE_TAB_LINK,
         ID_DISABLE_TAB_NEWS_SELECTION,
         ID_SEPARATOR,
@@ -129,18 +124,16 @@ ExtractNews.Menus = (() => {
         ID_CLEAR_TAB_SELECTED_TOPIC,
         ID_CLEAR_TAB_SELECTED_SENDER,
         ID_CLEAR_TAB_NEWS_EXCLUSION,
-        ID_SEPARATOR,
-        ID_DISABLE_FILTERING,
         ID_HIDE_COMMENT_SEPARATOR,
         ID_HIDE_COMMENT
       ];
 
     /*
-     * Removes and creates the context menu applied on only news site
+     * Removes and creates the context menu applied on only enabled news sites
      * and returns the promise.
      */
-    function createContextMenus(newsDisplayOptions = { }) {
-      var enabledSiteUrlPatterns = ExtractNews.getEnabledSiteUrlPatterns();
+    function createContextMenus() {
+      var enabledSiteUrlPatterns = ExtractNews.getEnabledNewsSiteUrlPatterns();
       var enabledCommentSiteUrlPatterns =
         ExtractNews.getEnabledCommentSiteUrlPatterns();
       var separatorCount = 0;
@@ -180,7 +173,7 @@ ExtractNews.Menus = (() => {
               browser.contextMenus.create(createProperties);
             });
 
-          NEWS_PAGE_MENUS.forEach((menuId) => {
+          NEWS_SITE_MENUS.forEach((menuId) => {
               var menuTitle = undefined;
               var menuType = "normal";
               var menuEnabled = true;
@@ -199,10 +192,6 @@ ExtractNews.Menus = (() => {
                 menuUrlPatterns = enabledCommentSiteUrlPatterns;
               case ID_DISABLE_TAB_LINK:
               case ID_DISABLE_TAB_NEWS_SELECTION:
-              case ID_DISABLE_FILTERING:
-                if (menuId == ID_DISABLE_FILTERING) {
-                  menuChecked = newsDisplayOptions.newsFilteringDisabled;
-                }
                 menuType = "checkbox";
               default:
                 if (menuIconName != undefined) {
@@ -227,20 +216,6 @@ ExtractNews.Menus = (() => {
               }
               browser.contextMenus.create(createProperties);
             });
-
-          //ExtractNews.getDebugMode().then((debugOn) => {
-          //    browser.contextMenus.create({
-          //        id: ID_DEBUG_EXTENSION,
-          //        parentId: ID_EXTRACT_NEWS_SETTINGS,
-          //        title: getContextMenuMessage(ID_DEBUG_EXTENSION),
-          //        type: "checkbox",
-          //        checked: debugOn,
-          //        contexts: [ "page" ],
-          //        documentUrlPatterns: siteUrlPatterns
-          //      });
-          //  }).catch((error) => {
-          //    Debug.printStackTrace(error);
-          //  });
 
           return Promise.resolve();
         });
@@ -271,7 +246,7 @@ ExtractNews.Menus = (() => {
       if (tabSetting == undefined) {
         throw newNullPointerException("tabSetting");
       }
-      return Promise.all([
+      return Promise.all(Array.of(
           _updateTabNewsSettingMenuDisabled(
             ID_SAVE_TAB_NEWS_SELECTION,
             tabSetting.newsSelectedTopicRegularExpression == ""
@@ -285,7 +260,7 @@ ExtractNews.Menus = (() => {
           _updateTabNewsSettingMenuDisabled(
             ID_CLEAR_TAB_NEWS_EXCLUSION,
             tabSetting.newsExcludedRegularExpression == "")
-        ]);
+        ));
     }
 
     /*

@@ -300,14 +300,35 @@ select {
   background-color: #ffffa0;
 }
 
-#FilteringCategory input:disabled {
-  -webkit-text-fill-color: #c8c8c8;
-  color: #c8c8c8;
-  background-color: #c8c8c8;
-}
-
 .narrow #FilteringCategory input {
   width: 100%;
+}
+
+.for_all #FilteringCategoryTopics {
+  display: none;
+}
+
+#FilteringCategoryAlways {
+  display: none;
+}
+
+.for_all #FilteringCategoryAlways {
+  display: flex;
+}
+
+#FilteringCategoryAlways span {
+  margin: 8px;
+  padding: 5px 75px;
+  width: 284px;
+  border-radius: 5px;
+  color: #4f4f4f;
+  background-color: #c8c8c8;
+  font-weight: bold;
+}
+
+.narrow #FilteringCategoryAlways span {
+  padding: 5px 16px;
+  width: 264px;
 }
 
 .block {

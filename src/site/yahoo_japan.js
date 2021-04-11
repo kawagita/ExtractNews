@@ -48,6 +48,7 @@ const YAHOO_JAPAN_NEWS_LIVE_MOVIE_TITLE =
   getYahooJapanNewsString("LiveMovieTitle");
 
 const YAHOO_JAPAN_NEWS_CATEGORIES = splitYahooJapanNewsString("Categories");
+const YAHOO_JAPAN_NEWS_MAIN_CATEGORY_SET = new Set();
 const YAHOO_JAPAN_NEWS_TOPIC_WORDS_MAP = new Map();
 
 {
@@ -56,6 +57,7 @@ const YAHOO_JAPAN_NEWS_TOPIC_WORDS_MAP = new Map();
       YAHOO_JAPAN_NEWS_TOPIC_WORDS_MAP.set(
         YAHOO_JAPAN_NEWS_CATEGORIES[index], topicWords.split(" "));
     });
+  YAHOO_JAPAN_NEWS_MAIN_CATEGORY_SET.add(YAHOO_JAPAN_NEWS_CATEGORIES[0]);
 }
 
 const YAHOO_JAPAN_NEWS_TOPIC_SET = new Set(YAHOO_JAPAN_NEWS_CATEGORIES);
@@ -76,13 +78,13 @@ const YAHOO_JAPAN_NEWS_VIEWABLE_COMMENT = "viewable_comment";
 /*
  * The list of news topics displayed in the category top on Yahoo! JAPAN News.
  */
-class YahooJapanNewsCategoryTopics extends NewsDesign {
+class YahooJapanNewsCategoryTopics extends Design.NewsDesign {
   constructor() {
     super({
         parentProperties: Array.of({
             selectors: ".topics"
           }),
-        topicProperties: ONESELF_QUERY_PROPERTIES
+        topicProperties: Design.ONESELF_QUERY_PROPERTIES
       });
     this.pickedTopicClassName = undefined;
   }
@@ -149,7 +151,7 @@ class YahooJapanNewsCategoryTopics extends NewsDesign {
 /*
  * Summaries of news topics displayed in the top on Yahoo! JAPAN News Flash.
  */
-class YahooJapanNewsFlashSummaries extends NewsDesign {
+class YahooJapanNewsFlashSummaries extends Design.NewsDesign {
   constructor() {
     super({
         parentProperties: Array.of({
@@ -218,7 +220,7 @@ class YahooJapanNewsFlashSummaries extends NewsDesign {
 /*
  * Panels of news movies on Yahoo! JAPAN News Live.
  */
-class YahooJapanNewsLiveMoviePanels extends NewsDesign {
+class YahooJapanNewsLiveMoviePanels extends Design.NewsDesign {
   constructor() {
     super({
         parentProperties: Array.of({
@@ -244,12 +246,12 @@ class YahooJapanNewsLiveMoviePanels extends NewsDesign {
   }
 }
 
-const FEED_ITEM_PAY_SELECTORS = ".newsFeed_item_pay";
+const FEED_ITEM_PAY_SELECTORS = ".newsFeedPrice";
 
 /*
  * The main pain displayed in the left side on Yahoo! JAPAN News.
  */
-class YahooJapanNewsMainPane extends NewsDesign {
+class YahooJapanNewsMainPane extends Design.NewsDesign {
   constructor(designProperty) {
     super(designProperty);
   }
@@ -273,7 +275,7 @@ class YahooJapanNewsMainPane extends NewsDesign {
       }
       return newsItems;
     }
-    return EMPTY_NEWS_ELEMENTS;
+    return new Array();
   }
 
   isNewsItemSelected(newsItem) {
@@ -286,7 +288,7 @@ class YahooJapanNewsMainPane extends NewsDesign {
           selectors: "." + YAHOO_JAPAN_NEWS_FEED_ITEM_TITLE
         });
     }
-    return ONESELF_QUERY_PROPERTIES;
+    return Design.ONESELF_QUERY_PROPERTIES;
   }
 
   getNewsSenderProperties(newsItem) {
@@ -342,12 +344,12 @@ class YahooJapanNewsFeed extends YahooJapanNewsMainPane {
     if (newsParent.tagName != "NAV") {
       return Array.of(newsParent);
     }
-    return EMPTY_NEWS_ELEMENTS;
+    return new Array();
   }
 
   isRearrangementNewsItemsCleared(changedNodes) {
     // Clear the cache of news items when a subcategory is clicked.
-    return true;
+    return changedNodes.length > 0;
   }
 
   getRearrangementObservedNode() {
@@ -377,10 +379,10 @@ class YahooJapanNewsArticlePane extends YahooJapanNewsMainPane {
           }),
         itemTextProperty: {
             topicSearchProperties: Array.of({
-                skippedTextRegexp: NEWS_VIDEO_TIME_REGEXP
+                skippedTextRegexp: Design.NEWS_VIDEO_TIME_REGEXP
               })
           },
-        observerOptions: SUBTREE_OBSERVER_OPTIONS,
+        observerOptions: Design.SUBTREE_OBSERVER_OPTIONS,
         commentProperties: Array.of({
             selectorsForAll: "#" + YAHOO_JAPAN_NEWS_VIEWABLE_COMMENT,
             setNewsElement: (element, commentNodes) => {
@@ -397,7 +399,7 @@ class YahooJapanNewsArticlePane extends YahooJapanNewsMainPane {
     if (newsParent.classList.contains(YAHOO_JAPAN_NEWS_CONTENTS_WRAP)) {
       return Array.of(newsParent);
     }
-    return EMPTY_NEWS_ELEMENTS;
+    return new Array();
   }
 
   getObservedNewsItemElements(addedNode) {
@@ -406,7 +408,7 @@ class YahooJapanNewsArticlePane extends YahooJapanNewsMainPane {
     } else if (addedNode.id == "uamods-also_read" || addedNode.id == "newsFeed") {
       return Array.from(addedNode.querySelectorAll("li"));
     }
-    return EMPTY_NEWS_ELEMENTS;
+    return new Array();
   }
 
   hasComments() {
@@ -417,14 +419,14 @@ class YahooJapanNewsArticlePane extends YahooJapanNewsMainPane {
 /*
  * Lists of news topics displayed in the side on Yahoo! JAPAN News.
  */
-class YahooJapanNewsSideLists extends NewsDesign {
+class YahooJapanNewsSideLists extends Design.NewsDesign {
   constructor(setNewsParentElement) {
     super({
         parentProperties: Array.of({
             selectorsForAll: ".yjnSub_list section",
             setNewsElement: setNewsParentElement
           }),
-        topicProperties: ONESELF_QUERY_PROPERTIES,
+        topicProperties: Design.ONESELF_QUERY_PROPERTIES,
         itemTextProperty: {
             topicSearchProperties: Array.of({
                 skippedTextRegexp: getYahooJapanNewsRegExp("CommentCount")
@@ -434,8 +436,7 @@ class YahooJapanNewsSideLists extends NewsDesign {
   }
 }
 
-
-const NEWS_MAIN_CATEGORY_SET = new Set([ YAHOO_JAPAN_NEWS_CATEGORIES[0] ]);
+// Returns the set of categories gotten by the specified URL parser.
 
 function _parseNewsCategory(newsOpenedUrlParser) {
   const CATEGORY_PATHS = splitYahooJapanNewsString("CategoryPaths");
@@ -451,13 +452,13 @@ function _parseNewsCategory(newsOpenedUrlParser) {
     return Site.getNewsWordSet(
       getYahooJapanNewsString("ITScienceCategory"));
   }
-  return NEWS_MAIN_CATEGORY_SET;
+  return YAHOO_JAPAN_NEWS_MAIN_CATEGORY_SET;
 }
 
 // Displays news designs arranged by a selector which selects and excludes news
 // topics or senders, waiting regular expressions from the background script.
 
-if (Site.isLocalized()) {
+if (Site.isNewsArranged()) {
   const CATEGORY_ROOT_PATH = getYahooJapanNewsString("CategoryRootPath");
   const FLASH_PATH = getYahooJapanNewsString("FlashPath");
   const LIVE_PATH = getYahooJapanNewsString("LivePath");
@@ -466,7 +467,6 @@ if (Site.isLocalized()) {
   const RANKING_ROOT_PATH = getYahooJapanNewsString("RankingRootPath");
   const RANKING_PATHS = splitYahooJapanNewsString("RankingPaths");
 
-  var newsTitle = Site.NAME;
   var newsOpenedUrl = "";
   var newsOpenedUrlParser = new Site.OpenedUrlParser(document.URL);
   newsOpenedUrlParser.parseHostName();
@@ -501,7 +501,7 @@ if (Site.isLocalized()) {
           newsParents.push(element);
         }));
   } else { // Paths except for articles started from "/articles" or "/pickup"
-    var newsCategorySet = NEWS_MAIN_CATEGORY_SET;
+    var newsCategorySet = YAHOO_JAPAN_NEWS_MAIN_CATEGORY_SET;
     if (newsOpenedUrlParser.parseDirectory()) { // Top
       Site.addNewsDesign(new YahooJapanNewsCategoryTopics());
     } else if (newsOpenedUrlParser.parse(CATEGORY_ROOT_PATH)) { // Categories
@@ -514,7 +514,7 @@ if (Site.isLocalized()) {
     } else if (newsOpenedUrlParser.parse(TOPICS_PATH)) {
       if (newsOpenedUrlParser.isCompleted()) { // All Topics
         Site.addNewsDesign(
-          new NewsDesign({
+          new Design.NewsDesign({
             parentProperties: Array.of({
                 selectorsForAll: "." + YAHOO_JAPAN_NEWS_CONTENTS_WRAP + " ul",
                 setNewsElement: (element, newsParents) => {
@@ -527,7 +527,7 @@ if (Site.isLocalized()) {
                     }
                   }
               }),
-            topicProperties: ONESELF_QUERY_PROPERTIES
+            topicProperties: Design.ONESELF_QUERY_PROPERTIES
           }));
       } else { // Each category's topics
         newsCategorySet = _parseNewsCategory(newsOpenedUrlParser);
@@ -556,14 +556,5 @@ if (Site.isLocalized()) {
     newsOpenedUrl = newsOpenedUrlParser.toString();
   }
 
-  // Adds the part of a page title before " - Yahoo!" to "Yahoo! JAPAN News".
-  var titleText = document.querySelector("title").textContent.trim();
-  var titleSuffixIndex =
-    titleText.indexOf(getYahooJapanNewsString("TitleSuffix"));
-  if (titleSuffixIndex >= 0) {
-    newsTitle +=
-      Site.NAME_CONCATENATION + titleText.substring(0, titleSuffixIndex);
-  }
-
-  Site.displayNewsDesigns(newsTitle, newsOpenedUrl);
+  Site.displayNewsDesigns(newsOpenedUrl);
 }

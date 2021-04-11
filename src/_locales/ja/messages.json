@@ -19,11 +19,6 @@
     "description": "Yahoo! JAPAN ニュースの名称。"
   },
 
-  "extractNewsYahooJapanNewsTitleSuffix": {
-    "message": " - Yahoo!ニュース",
-    "description": "Yahoo!ニュースのタイトルサフィックス。"
-  },
-
   "extractNewsYahooJapanNewsUrlHostServerPatterns": {
     "message": "news",
     "description": "Yahoo! JAPAN ニュースURLのホストサーバーのパターン。"
@@ -129,21 +124,6 @@
     "description": "Impress Watchの名称。"
   },
 
-  "extractNewsImpressWatchTitleSuffixRegularExpression": {
-    "message": " [-|] ([^-]+)$$",
-    "description": "Impress Watchのタイトルサフィックス。"
-  },
-
-  "extractNewsImpressWatchDocumentsTitle": {
-    "message": "記事一覧",
-    "description": "Impress Watchの記事一覧のタイトル。"
-  },
-
-  "extractNewsImpressWatchDocumentsDurationTitleRegularExpression": {
-    "message": "(?:[0-9]{4}年(?: |[1-9][0-9]?月の))記事(?:一覧)?",
-    "description": "Impress Watchの記事一覧の特定期間のタイトル。"
-  },
-
   "extractNewsImpressWatchUrlHostServerPatterns": {
     "message": "*",
     "description": "Impress Watch URLのホストサーバーのパターン。"
@@ -162,11 +142,6 @@
   "extractNewsImpressWatchSiteHostServers": {
     "message": "internet,pc,dc,akiba-pc,av,kaden,k-tai,cloud,forest,car,travel,gourmet,game,hobby,video",
     "description": "Impress Watchサイトのホストサーバー。"
-  },
-
-  "extractNewsImpressWatchSiteNames": {
-    "message": "INTERNET Watch,PC Watch,デジカメ Watch,AKIBA PC Hotline!,AV Watch,家電 Watch,ケータイ Watch,クラウド Watch,窓の杜,Car Watch,トラベル Watch,グルメ WatchGAME Watch,HOBBY Watch,Watch Video",
-    "description": "Impress Watchサイトの名称。"
   },
 
   "extractNewsImpressWatchDocumentsRegularExpression": {
@@ -224,9 +199,9 @@
     "description": "Impress Watchの今読まれている記事のパス。"
   },
 
-  "extractNewsImpressWatchCategorizedPath": {
+  "extractNewsImpressWatchCategoryPath": {
     "message": "/category",
-    "description": "Impress Watchのカテゴリーで絞り込まれたパス。"
+    "description": "Impress Watchのカテゴリーパス。"
   },
 
   "extractNewsImpressWatchCategoryListHtml": {
@@ -237,11 +212,6 @@
   "extractNewsITmediaNewsName": {
     "message": "ITmedia NEWS",
     "description": "ITmedia NEWSの名称。"
-  },
-
-  "extractNewsITmediaNewsTitleSuffixRegularExpression": {
-    "message": " (?:[-|]|by) ITmedia NEWS$$",
-    "description": "Impress Watchのタイトルサフィックス。"
   },
 
   "extractNewsITmediaNewsUrlHostServerPatterns": {
@@ -397,11 +367,6 @@
   "extractNewsSradName": {
     "message": "スラド",
     "description": "スラドの名称。"
-  },
-
-  "extractNewsSradTitleSuffixRegularExpression": {
-    "message": " [-|] スラド(?: .+)?$$",
-    "description": "スラドのタイトルサフィックスの正規表現。"
   },
 
   "extractNewsSradUrlHostServerPatterns": {
@@ -1029,19 +994,9 @@
     "description": "タブで除外した話題をクリアするコンテキストメニュー。"
   },
 
-  "contextMenuDisableFiltering": {
-    "message": "フィルタリング設定を無効化する",
-    "description": "フィルタリング設定を無効化するコンテキストメニュー。"
-  },
-
   "contextMenuHideComment": {
     "message": "このサイトのコメントを隠す",
     "description": "このサイトでコメントを隠すコンテキストメニュー。"
-  },
-
-  "contextMenuDebugExtension": {
-    "message": "拡張機能をデバッグする",
-    "description": "拡張機能をデバッグするコンテキストメニュー。"
   },
 
   "browserActionShowNewsSelections": {
@@ -1210,8 +1165,8 @@
   },
 
   "optionFilteringCategoryName": {
-    "message": "カテゴリー名",
-    "description": "フィルタリングのカテゴリー名のオプションラベル。"
+    "message": "カテゴリー名称",
+    "description": "フィルタリングのカテゴリー名称のオプションラベル。"
   },
 
   "optionFilteringCategoryTopics": {
@@ -1222,6 +1177,11 @@
   "optionInputFilteringCategoryTopics": {
     "message": "トピックをコンマ区切りで入力して下さい",
     "description": "フィルタリングカテゴリーのトピックを入力するメッセージ。"
+  },
+
+  "optionFilteringCategoryAlways": {
+    "message": "このカテゴリーは常に適応されます。",
+    "description": "すべてに対してフィルタリングカテゴリーを適応するオプションの説明。"
   },
 
   "optionTargetAccept": {

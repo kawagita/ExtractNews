@@ -295,6 +295,19 @@ const ExtractNews = (() => {
     }
 
     /*
+     * Sets the specified flag to enable or disable the news site
+     * of the specified ID.
+     */
+    function setNewsSiteEnabled(siteId, siteEnabled) {
+      _checkSiteId(siteId);
+      if (siteEnabled) {
+        _enabledSiteIdSet.add(siteId);
+      } else if (_enabledSiteIdSet.has(siteId)) {
+        _enabledSiteIdSet.delete(siteId);
+      }
+    }
+
+    /*
      * Returns the favicon ID of a news site for the specified ID if exists,
      * otherwise, undefined.
      */
@@ -340,8 +353,23 @@ const ExtractNews = (() => {
     }
 
     _ExtractNews.isNewsSiteEnabled = isNewsSiteEnabled;
+    _ExtractNews.setNewsSiteEnabled = setNewsSiteEnabled;
     _ExtractNews.getNewsSiteFaviconId = getNewsSiteFaviconId;
     _ExtractNews.getNewsSiteLanguage = getNewsSiteLanguage;
+
+    /*
+     * Sets enabled news sites for IDs in the specified array.
+     */
+    function setEnabledNewsSites(enabledSiteIds) {
+      if (enabledSiteIds == undefined) {
+        throw newNullPointerException("enabledSiteIds");
+      } else if (! Array.isArray(enabledSiteIds)) {
+        throw newIllegalArgumentException("enabledSiteIds");
+      }
+      enabledSiteIds.forEach((enabledSiteId) => {
+          setNewsSiteEnabled(enabledSiteId, true);
+        });
+    }
 
     function _getUrlPattern(hostServerPattern, domain) {
       if (hostServerPattern != URL_PATTERN_NO_HOST_SERVER) {
@@ -354,7 +382,7 @@ const ExtractNews = (() => {
     /*
      * Returns the array of URL patterns whose news sites are enabled.
      */
-    function getEnabledSiteUrlPatterns() {
+    function getEnabledNewsSiteUrlPatterns() {
       var enabledSiteUrlPatterns = new Array();
       _enabledSiteIdSet.forEach((siteId) => {
           var site = SITE_MAP.get(siteId);
@@ -386,7 +414,8 @@ const ExtractNews = (() => {
       return enabledCommentSiteUrlPatterns;
     }
 
-    _ExtractNews.getEnabledSiteUrlPatterns = getEnabledSiteUrlPatterns;
+    _ExtractNews.setEnabledNewsSites = setEnabledNewsSites;
+    _ExtractNews.getEnabledNewsSiteUrlPatterns = getEnabledNewsSiteUrlPatterns;
     _ExtractNews.getEnabledCommentSiteUrlPatterns =
       getEnabledCommentSiteUrlPatterns;
 
@@ -728,101 +757,51 @@ const ExtractNews = (() => {
     _ExtractNews.newSelection = newSelection;
 
 
+    // Storage area to store the settings of this extension
     const STORAGE_AREA = browser.storage.local;
 
     /*
      * Reads the storage area by the specified key and returns the promise
      * fulfilled with its value.
      */
-    function readStorageArea(key) {
+    function readStorage(key) {
       if (BROWSER_PROMISE_RETURNED) {
         return STORAGE_AREA.get(key);
       }
-      return new Promise((resolve) => { STORAGE_AREA.get(key, resolve); });
+      return new Promise((resolve) => {
+          STORAGE_AREA.get(key, resolve);
+        });
     }
 
     /*
      * Writes the storage area by the specified object which consists of pairs
      * of a key and value and returns the promise.
      */
-    function writeStorageArea(items) {
+    function writeStorage(items) {
       if (BROWSER_PROMISE_RETURNED) {
         return STORAGE_AREA.set(items);
       }
-      return new Promise((resolve) => { STORAGE_AREA.set(items, resolve); });
+      return new Promise((resolve) => {
+          STORAGE_AREA.set(items, resolve);
+        });
     }
 
     /*
      * Reads the storage area by the specified key and returns the promise
      * fulfilled with its value.
      */
-    function removeStorageArea(key) {
+    function removeStorage(key) {
       if (BROWSER_PROMISE_RETURNED) {
         return STORAGE_AREA.remove(key);
       }
-      return new Promise((resolve) => { STORAGE_AREA.remove(key, resolve); });
-    }
-
-    _ExtractNews.readStorageArea = readStorageArea;
-    _ExtractNews.writeStorageArea = writeStorageArea;
-    _ExtractNews.removeStorageArea = removeStorageArea;
-
-
-    const ENABLED_KEY = "Enabled";
-
-    /*
-     * Reads IDs of enabled sites from the local storage and returns
-     * the promise fulfilled with the set of its or rejected.
-     */
-    function getEnabledSites() {
-      const readingPromises = new Array();
-      SITE_IDS.forEach((siteId) => {
-          var siteEnabledKey = siteId + ENABLED_KEY;
-          readingPromises.push(
-              readStorageArea(siteEnabledKey).then((items) => {
-                  var enabledSiteId = undefined;
-                  var siteEnabled = items[siteEnabledKey];
-                  if (siteEnabled | siteEnabled == undefined) {
-                    enabledSiteId = siteId;
-                  }
-                  return Promise.resolve(enabledSiteId);
-                })
-            );
-        });
-      return Promise.all(readingPromises).then((enabledSiteIds) => {
-          _enabledSiteIdSet = new Set();
-          enabledSiteIds.forEach((enabledSiteId) => {
-              if (enabledSiteId != undefined) {
-                _enabledSiteIdSet.add(enabledSiteId);
-              }
-            });
-          return Promise.resolve(new Set(_enabledSiteIdSet));
+      return new Promise((resolve) => {
+          STORAGE_AREA.remove(key, resolve);
         });
     }
 
-    /*
-     * Writes the specified flag to enable the site of the specified ID into
-     * the local storage and returns the promise.
-     */
-    function setEnabledSite(siteId, enabled) {
-      if (siteId == undefined) {
-        throw newNullPointerException("siteId");
-      }
-      var siteEnabledKey = siteId + ENABLED_KEY;
-      return writeStorageArea({
-          [siteEnabledKey]: enabled
-        }).then(() => {
-          if (enabled) {
-            _enabledSiteIdSet.add(siteId);
-          } else {
-            _enabledSiteIdSet.delete(siteId);
-          }
-          return Promise.resolve();
-        });
-    }
-
-    _ExtractNews.getEnabledSites = getEnabledSites;
-    _ExtractNews.setEnabledSite = setEnabledSite;
+    _ExtractNews.readStorage = readStorage;
+    _ExtractNews.writeStorage = writeStorage;
+    _ExtractNews.removeStorage = removeStorage;
 
 
     /*
@@ -855,7 +834,7 @@ const ExtractNews = (() => {
      * and returns the promise fulfilled with its value or rejected.
      */
     function getDebugMode() {
-      return readStorageArea(DEBUG_KEY).then((items) => {
+      return readStorage(DEBUG_KEY).then((items) => {
           var debugOn = items[DEBUG_KEY];
           if (debugOn == undefined) {
             debugOn = false;
@@ -874,43 +853,14 @@ const ExtractNews = (() => {
         throw newIllegalArgumentException("debugOn");
       }
       Debug.debugOn = debugOn;
-      return writeStorageArea({ [DEBUG_KEY]: debugOn });
+      return writeStorage({
+          [DEBUG_KEY]: debugOn
+        });
     }
 
     _ExtractNews.Debug = Debug;
     _ExtractNews.getDebugMode = getDebugMode;
     _ExtractNews.setDebugMode = setDebugMode;
-
-
-    const FILTERING_DISABLED_KEY = "FilteringDisabled";
-
-    /*
-     * Reads the flag to disable the filtering from the local storage
-     * and returns the promise fulfilled with its value or rejected.
-     */
-    function getFilteringDisabled() {
-      return readStorageArea(FILTERING_DISABLED_KEY).then((items) => {
-          var filteringDisabled = items[FILTERING_DISABLED_KEY];
-          if (filteringDisabled == undefined) {
-            filteringDisabled = false;
-          }
-          return Promise.resolve(filteringDisabled);
-        });
-    }
-
-    /*
-     * Writes the specified flag to disable the filtering into the local
-     * storage and returns the promise.
-     */
-    function setFilteringDisabled(filteringDisabled) {
-      if ((typeof filteringDisabled) != "boolean") {
-        throw newIllegalArgumentException("filteringDisabled");
-      }
-      return writeStorageArea({ [FILTERING_DISABLED_KEY]: filteringDisabled });
-    }
-
-    _ExtractNews.getFilteringDisabled = getFilteringDisabled;
-    _ExtractNews.setFilteringDisabled = setFilteringDisabled;
 
 
      /*

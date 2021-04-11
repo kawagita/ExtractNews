@@ -19,6 +19,7 @@
 
 "use strict";
 
+const _Storage = ExtractNews.Storage;
 const _Text = ExtractNews.Text;
 const _Regexp = ExtractNews.Regexp;
 const _Alert = ExtractNews.Alert;
@@ -46,7 +47,7 @@ function getOptionMessage(id) {
  */
 function getOptionElement(id, tagName) {
   var element = document.getElementById(id);
-  var label = element.querySelector("h3, label");
+  var label = element.querySelector("h3, label, span");
   if (label != null) {
     label.textContent = getOptionMessage(id);
   }
@@ -102,10 +103,13 @@ var optionPointedGroup = new _Event.PointedGroup();
       siteInput.value = newsSitePage.getSiteId();
       siteInput.addEventListener("input", (event) => {
           var siteId = event.target.value;
-          ExtractNews.setEnabledSite(siteId, event.target.checked).then(() => {
+          var enabled = event.target.checked;
+          ExtractNews.setNewsSiteEnabled(siteId, enabled);
+          _Storage.writeNewsSiteEnabled(siteId, enabled).then(() => {
               return ExtractNews.sendRuntimeMessage({
                   command: ExtractNews.COMMAND_SETTING_UPDATE,
-                  siteId: siteId
+                  siteId: siteId,
+                  siteEnabled: enabled
                 }, ON_OPTION_TAB);
             }).catch((error) => {
               Debug.printStackTrace(error);
@@ -123,23 +127,25 @@ var optionPointedGroup = new _Event.PointedGroup();
   const displayingPromises = new Array();
 
   displayingPromises.push(
-    ExtractNews.getEnabledSites().then((enabledSiteIdSet) => {
+    _Storage.readEnabledNewsSiteIds().then((enabledSiteIds) => {
+        ExtractNews.setEnabledNewsSites(enabledSiteIds);
         // Set checkboxes to each state whether the news site is enabled.
         enablingSiteInputs.forEach((siteInput) => {
-            if (enabledSiteIdSet.has(siteInput.value)) {
+            if (ExtractNews.isNewsSiteEnabled(siteInput.value)) {
               siteInput.checked = true;
             }
           });
       }),
-    ExtractNews.getFilteringDisabled().then((filteringDisabled) => {
+    _Storage.readNewsFilteringDisabled().then((filteringDisabled) => {
         // Set the checkbox to the state whether word filterings are disabled
         // and register the listener to it.
         disableFilteringInput.checked = filteringDisabled;
         disableFilteringInput.addEventListener("input", (event) => {
-            ExtractNews.setFilteringDisabled(event.target.checked).then(() => {
+            var disabled = event.target.checked;
+            _Storage.writeNewsFilteringDisabled(disabled).then(() => {
                 return ExtractNews.sendRuntimeMessage({
                     command: ExtractNews.COMMAND_SETTING_UPDATE,
-                    filteringDisabled: event.target.checked
+                    filteringDisabled: disabled
                   }, ON_OPTION_TAB);
               }).catch((error) => {
                 Debug.printStackTrace(error);
@@ -966,10 +972,12 @@ function clearFilteringTargetNodes() {
 
 // Creates and displays elements for the filtering category.
 
+var optionFilteringCategory = document.getElementById("FilteringCategory");
 var optionFilteringCategorySelect =
   getOptionElement("FilteringCategoryName", "select");
 var optionFilteringCategoryTopicsInput =
   getOptionElement("FilteringCategoryTopics", "input");
+getOptionElement("FilteringCategoryAlways");
 
 optionFilteringCategorySelect.addEventListener("focus", (event) => {
     optionPointedGroup.clearEventTarget();
@@ -1002,6 +1010,8 @@ function setOptionFilteringCategoryNames() {
     });
 }
 
+const FILTERING_CATEGORY_FOR_ALL = "for_all";
+
 /*
  * Reflects filtering data appended with targets after the specified index on
  * this option page when it's loaded firstly or imported, or other filtering
@@ -1018,10 +1028,10 @@ function reflectOptionFilteringData(targetIndex = 0) {
   if (optionFiltering.id != ExtractNews.FILTERING_FOR_ALL) {
     optionFilteringCategoryTopicsInput.value =
       optionFiltering.categoryTopicsString;
-    optionFilteringCategoryTopicsInput.disabled = false;
+    optionFilteringCategory.className = "";
   } else {
     optionFilteringCategoryTopicsInput.value = "";
-    optionFilteringCategoryTopicsInput.disabled = true;
+    optionFilteringCategory.className = FILTERING_CATEGORY_FOR_ALL;
   }
   var addedTargetData = optionFiltering.getTargetData(targetIndex);
   for (let i = targetIndex + 1; i < optionFiltering.targetDataSize(); i++) {
@@ -1894,6 +1904,6 @@ document.body.addEventListener("keydown", (event) => {
     }
   });
 
-document.body.addEventListener("contextmenu", (event) => {
+document.addEventListener("contextmenu", (event) => {
     event.preventDefault();
   });

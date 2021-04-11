@@ -672,7 +672,8 @@ function displayNewsSelectionMessage(pageMessageId) {
 // Sets the text label and event listener to the page header or action UI,
 // and lastly call displayPageList() if a news selection exist.
 
-ExtractNews.getEnabledSites().then(() => {
+_Storage.readEnabledNewsSiteIds().then((enabledSiteIds) => {
+    ExtractNews.setEnabledNewsSites(enabledSiteIds);
     return _Popup.queryNewsSelectionEditWindow();
   }).then((editWindowTabId) => {
     if (editWindowTabId != browser.tabs.TAB_ID_NONE) {
@@ -780,6 +781,6 @@ ExtractNews.getEnabledSites().then(() => {
     Debug.printStackTrace(error);
   });
 
-document.body.addEventListener("contextmenu", (event) => {
+document.addEventListener("contextmenu", (event) => {
     event.preventDefault();
   });
