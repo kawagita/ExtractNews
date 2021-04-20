@@ -94,6 +94,7 @@ class OptionFiltering {
     this.dataIds = new Array();
     this.dataArray = new Array();
     this.dataSelectedIndex = -1;
+    this.dataTotal = 0;
     this.removedDataIds = new Array();
   }
 
@@ -119,7 +120,7 @@ class OptionFiltering {
     this._getSelectedData().categoryTopicsString = topicsString;
   }
 
-  targetDataSize() {
+  get targetDataSize() {
     return this._getSelectedData().targetDataArray.length;
   }
 
@@ -139,6 +140,7 @@ class OptionFiltering {
       throw newNullPointerException("targetData");
     }
     targetDataArray.splice(targetIndex, 0, targetData);
+    this.dataTotal++;
   }
 
   removeTargetData(targetIndex) {
@@ -146,7 +148,41 @@ class OptionFiltering {
     if (targetIndex < 0 || targetIndex >= targetDataArray.length) {
       throw newIndexOutOfBoundsException("target data", targetIndex);
     }
+    this.dataTotal--;
     return targetDataArray.splice(targetIndex, 1)[0];
+  }
+
+  get targetDataTotal() {
+    return this.dataTotal;
+  }
+
+  /*
+   * Selects the filtering data of the specified ID on the option page.
+   */
+  selectData(filteringId) {
+    if (filteringId == undefined) {
+      throw newNullPointerException("filteringId");
+    } else if ((typeof filteringId) != "string") {
+      throw newIllegalArgumentException("filteringId");
+    }
+    for (let i = 0; i < this.dataIds.length; i++) {
+      if (filteringId == this.dataIds[i]) {
+        this.dataSelectedIndex = i;
+        return;
+      }
+    }
+    throw newInvalidParameterException(filteringId);
+  }
+
+  /*
+   * Calls the specified function with the filtering ID and data for each data.
+   */
+  forEachData(callback) {
+    if (callback != undefined) {
+      for (let i = 0; i < this.dataIds.length; i++) {
+        callback(this.dataIds[i], this.dataArray[i]);
+      }
+    }
   }
 
   /*
@@ -155,14 +191,18 @@ class OptionFiltering {
   read() {
     return ExtractNews.Storage.readNewsFilteringIds().then((filteringIds) => {
         this.dataIds = filteringIds;
+        this.dataArray = new Array();
         return ExtractNews.Storage.readNewsFilterings(filteringIds);
       }).then((filteringMap) => {
         Debug.printMessage(
           "Read filterings for " + this.dataIds.join(", ") + ".");
+        this.dataTotal = 0;
         this.dataIds.forEach((filteringId) => {
             var filtering = filteringMap.get(filteringId);
+            var filteringData = createFilteringData(filtering);
             Debug.printJSON(filtering);
-            this.dataArray.push(createFilteringData(filtering));
+            this.dataArray.push(filteringData);
+            this.dataTotal += filteringData.targetDataArray.length;
           });
         this.dataSelectedIndex = 0;
         return Promise.resolve();
@@ -175,16 +215,13 @@ class OptionFiltering {
    */
   import(dataReplaced = false) {
     var filteringTargetAppendedIndex = 0;
-    var filteringTargetAppendedIndexMap = new Map();
+    var filteringTargetTotal = 0;
     if (! dataReplaced) {
-      this.dataIds.forEach((filteringId, index) => {
-          filteringTargetAppendedIndexMap.set(
-            filteringId, this.dataArray[index].targetDataArray.length - 1);
-        });
+      filteringTargetTotal = this.dataTotal;
     }
     const importPromise = new Promise((resolve) => {
         ExtractNews.File.importNewsFilterings(
-          filteringTargetAppendedIndexMap, (filteringIds, filteringMap) => {
+          filteringTargetTotal, (filteringIds, filteringMap) => {
             if (dataReplaced) {
               // Replace the category name or topics, and targets of all
               // filterings with file's data.
@@ -198,6 +235,7 @@ class OptionFiltering {
               this.dataIds = new Array();
               this.dataArray = new Array();
               this.dataSelectedIndex = 0;
+              this.dataTotal = 0;
             } else {
               filteringTargetAppendedIndex =
                 this._getSelectedData().targetDataArray.length - 1;
@@ -214,9 +252,6 @@ class OptionFiltering {
                       // data if has already been existed.
                       var filteringData = this.dataArray[i];
                       var targetDataArray = filteringData.targetDataArray;
-                      var policyTarget =
-                        ExtractNews.newFilteringTarget(
-                          targetDataArray.pop().name);
                       if (filteringId != ExtractNews.FILTERING_FOR_ALL) {
                         filteringData.categoryTopicsString =
                           filtering.categoryTopics.join(",");
@@ -226,13 +261,17 @@ class OptionFiltering {
                           targetDataArray.push(
                             createTargetData(filteringTarget));
                         });
-                      targetDataArray.push(createTargetData(policyTarget));
+                      targetDataArray.push(
+                        createTargetData(filtering.policyTarget));
+                      this.dataTotal += targetDataArray.length;
                       return;
                     }
                   }
                   // Add new filtering data of imported targets to the array.
-                  this.dataArray.push(createFilteringData(filtering));
+                  var filteringData = createFilteringData(filtering);
+                  this.dataArray.push(filteringData);
                   this.dataIds.push(filteringId);
+                  this.dataTotal += filteringData.targetDataArray.length;
                 });
             }
             // Always put the filtering for all topics to the last position.
@@ -244,6 +283,7 @@ class OptionFiltering {
                 ExtractNews.getLocalizedString("AllFilteringCategoryName"));
               filtering.setPolicyTarget(ExtractNews.TARGET_ACCEPT);
               this.dataArray.push(createFilteringData(filtering));
+              this.dataTotal++;
             } else {
               if (filteringforAllIndex < this.dataIds.length - 1) {
                 this.dataArray.push(
@@ -262,10 +302,10 @@ class OptionFiltering {
 
   _write(writeNewsFilterings) {
     var filteringMap = new Map();
-    this.dataArray.forEach((filteringData, index) => {
+    this.forEachData((filteringId, filteringData) => {
         var filtering = ExtractNews.newFiltering();
         filtering.setCategoryName(filteringData.categoryName);
-        if (this.dataIds[index] != ExtractNews.FILTERING_FOR_ALL) {
+        if (filteringId != ExtractNews.FILTERING_FOR_ALL) {
           filtering.setCategoryTopics(
             filteringData.categoryTopicsString.split(","));
         }
@@ -280,7 +320,7 @@ class OptionFiltering {
         filtering.setTargets(filteringTargets);
         filtering.setPolicyTarget(
           targetDataArray[targetDataArray.length - 1].name);
-        filteringMap.set(this.dataIds[index], filtering);
+        filteringMap.set(filteringId, filtering);
       });
     return writeNewsFilterings(this.dataIds, filteringMap);
   }
@@ -314,37 +354,5 @@ class OptionFiltering {
             return Promise.resolve();
           });
       });
-  }
-
-  /*
-   * Selects the filtering data of the specified ID on the option page.
-   */
-  selectData(filteringId) {
-    if (filteringId == undefined) {
-      throw newNullPointerException("filteringId");
-    } else if ((typeof filteringId) != "string") {
-      throw newIllegalArgumentException("filteringId");
-    }
-    for (let i = 0; i < this.dataIds.length; i++) {
-      if (filteringId == this.dataIds[i]) {
-        this.dataSelectedIndex = i;
-        return;
-      }
-    }
-    throw newInvalidParameterException(filteringId);
-  }
-
-  /*
-   * Calls the specified function with the ID, category name and topics string,
-   * and targets for each data.
-   */
-  forEachData(callback) {
-    if (callback != undefined) {
-      for (let i = 0; i < this.dataIds.length; i++) {
-        var filteringData = this.dataArray[i];
-        callback(this.dataIds[i], filteringData.categoryName,
-          filteringData.categoryTopicsString, filteringData.targetDataArray);
-      }
-    }
   }
 }

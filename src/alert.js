@@ -24,11 +24,15 @@
  */
 ExtractNews.Alert = (() => {
     const _Alert = {
-        // Maximum numbers for a news selection or word filterings
+        // Maximum numbers for the setting name and regular expressions input
+        // on the edit window or option page and selected by the context menu
         SETTING_NAME_MAX_WIDTH: 30,
-        REGEXP_MAX_UTF16_CHARACTER_LENGTH: 256,
-        FILTERING_CATEGORY_MAX_COUNT: 32,
-        FILTERING_TARGET_MAX_COUNT: 64
+        REGEXP_MAX_UTF16_CHARACTERS: 256,
+
+        // Maximum numbers of filtering category or targets and the string of
+        // words separated by commas input or imported on the option page
+        FILTERING_MAX_COUNT: 100,
+        FILTERING_WORDS_MAX_UTF16_CHARACTERS: 64
       };
 
     /*
@@ -84,8 +88,12 @@ ExtractNews.Alert = (() => {
     // Warnings for the error of news selections
 
     _Alert.SETTING_NAME_MAX_WITDH_EXCEEDED = "SettingNameMaxWidthExceeded";
-    _Alert.REGEXP_MAX_UTF16_CHARACTER_LENGTH_EXCEEDED =
-      "RegularExpressionMaxUTF16CharacterLengthExceeded";
+    _Alert.SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED =
+      "SelectedTopicMaxUTF16CharactersExceeded";
+    _Alert.SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED =
+      "SelectedSenderMaxUTF16CharactersExceeded";
+    _Alert.EXCLUDED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED =
+      "ExcludedTopicMaxUTF16CharactersExceeded";
     _Alert.NEWS_SELECTION_NOT_SAVED_ANY_MORE = "NewsSelectionNotSavedAnyMore";
 
     var settingNameMaxWidth = String(_Alert.SETTING_NAME_MAX_WIDTH);
@@ -101,31 +109,34 @@ ExtractNews.Alert = (() => {
 
     _Alert.WARNING_SETTING_NAME_MAX_WITDH_EXCEEDED =
       _newWarning(_Alert.SETTING_NAME_MAX_WITDH_EXCEEDED, settingNameMaxWidth);
-    _Alert.WARNING_REGEXP_MAX_UTF16_CHARACTER_LENGTH_EXCEEDED =
-      _newWarning(_Alert.REGEXP_MAX_UTF16_CHARACTER_LENGTH_EXCEEDED,
-        String(_Alert.REGEXP_MAX_UTF16_CHARACTER_LENGTH));
-
+    _Alert.WARNING_SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED =
+      _newWarning(_Alert.SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED,
+        String(_Alert.REGEXP_MAX_UTF16_CHARACTERS));
+    _Alert.WARNING_SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED =
+      _newWarning(_Alert.SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED,
+        String(_Alert.REGEXP_MAX_UTF16_CHARACTERS));
+    _Alert.WARNING_EXCLUDED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED =
+      _newWarning(_Alert.EXCLUDED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED,
+        String(_Alert.REGEXP_MAX_UTF16_CHARACTERS));
     _Alert.WARNING_NEWS_SELECTION_NOT_SAVED_ANY_MORE =
       _newWarning(_Alert.NEWS_SELECTION_NOT_SAVED_ANY_MORE);
 
     // Warnings for the error of word filterings
 
-    _Alert.FILTERING_CATEGORY_NOT_SAVED_OVER_MAX_COUNT =
-      "FilteringCategoryNotSavedOverMaxCount";
-    _Alert.FILTERING_TARGET_NOT_SAVED_OVER_MAX_COUNT =
-      "FilteringTargetNotSavedOverMaxCount";
+    _Alert.FILETERING_WORDS_MAX_UTF16_CHARACTERS_EXCEEDED =
+      "FilteringWordsMaxUTF16CharactersExceeded";
+    _Alert.FILTERING_NOT_SAVED_ANY_MORE = "FilteringNotSavedAnyMore";
 
-    _Alert.WARNING_FILTERING_CATEGORY_NOT_SAVED_OVER_MAX_COUNT =
-      _newWarning(_Alert.FILTERING_CATEGORY_NOT_SAVED_OVER_MAX_COUNT,
-        String(_Alert.FILTERING_CATEGORY_MAX_COUNT));
-    _Alert.WARNING_FILTERING_TARGET_NOT_SAVED_OVER_MAX_COUNT =
-      _newWarning(_Alert.FILTERING_TARGET_NOT_SAVED_OVER_MAX_COUNT,
-        String(_Alert.FILTERING_TARGET_MAX_COUNT));
+    _Alert.WARNING_FILETERING_WORDS_MAX_UTF16_CHARACTERS_EXCEEDED =
+      _newWarning(_Alert.FILETERING_WORDS_MAX_UTF16_CHARACTERS_EXCEEDED,
+        String(_Alert.FILTERING_WORDS_MAX_UTF16_CHARACTERS));
+    _Alert.WARNING_FILTERING_NOT_SAVED_ANY_MORE =
+      _newWarning(_Alert.FILTERING_NOT_SAVED_ANY_MORE);
 
-    // Warnings for the error of setting initialization
+    // Warnings for the error of the news setting
 
-    _Alert.WARNING_SETTING_NOT_INITIALIZED =
-      _newWarning("SettingNotInitialized");
+    _Alert.WARNING_NEWS_SETTING_NOT_INITIALIZED =
+      _newWarning("NewsSettingNotInitialized");
 
     return _Alert;
   })();

@@ -58,6 +58,12 @@ const ExtractNews = (() => {
         SITE_ENGLISH: "English",
         SITE_JAPANESE: "Japanese",
 
+        SITE_LABEL_REGULAR_EXPRESSION:
+          "[0-9A-Za-z](?:[-0-9A-Za-z]*[0-9A-Za-z])?",
+
+        // Key to read and write the flag whether the site is enabled
+        SITE_ENABLED_KEY: "Enabled",
+
         // Filtering ID for all categories
         FILTERING_FOR_ALL: "All",
 
@@ -82,6 +88,52 @@ const ExtractNews = (() => {
         COMMAND_DIALOG_OPEN: "open",
         COMMAND_DIALOG_CLOSE: "close"
       };
+
+    // Storage area to store the settings of this extension
+    const STORAGE_AREA = browser.storage.local;
+
+    /*
+     * Reads the storage area by the specified key and returns the promise
+     * fulfilled with its value.
+     */
+    function readStorage(key) {
+      if (BROWSER_PROMISE_RETURNED) {
+        return STORAGE_AREA.get(key);
+      }
+      return new Promise((resolve) => {
+          STORAGE_AREA.get(key, resolve);
+        });
+    }
+
+    /*
+     * Writes the storage area by the specified object which consists of pairs
+     * of a key and value and returns the promise.
+     */
+    function writeStorage(items) {
+      if (BROWSER_PROMISE_RETURNED) {
+        return STORAGE_AREA.set(items);
+      }
+      return new Promise((resolve) => {
+          STORAGE_AREA.set(items, resolve);
+        });
+    }
+
+    /*
+     * Reads the storage area by the specified key and returns the promise
+     * fulfilled with its value.
+     */
+    function removeStorage(key) {
+      if (BROWSER_PROMISE_RETURNED) {
+        return STORAGE_AREA.remove(key);
+      }
+      return new Promise((resolve) => {
+          STORAGE_AREA.remove(key, resolve);
+        });
+    }
+
+    _ExtractNews.readStorage = readStorage;
+    _ExtractNews.writeStorage = writeStorage;
+    _ExtractNews.removeStorage = removeStorage;
 
     /*
      * Returns the string localized for the specified ID prefixed with
@@ -117,167 +169,6 @@ const ExtractNews = (() => {
     _ExtractNews.getLocalizedRegExp = getLocalizedRegExp;
 
 
-    /*
-     * The information of a page on news site.
-     */
-    class NewsPage {
-      constructor() {
-      }
-
-      getSiteId() {
-        throw newUnsupportedOperationException();
-      }
-
-      getUrl() {
-        throw newUnsupportedOperationException();
-      }
-
-      getDomain() {
-        throw newUnsupportedOperationException();
-      }
-
-      containsUrl(url) {
-        return false;
-      }
-    }
-
-    /*
-     * The information of a top page on news site.
-     */
-    class NewsTopPage extends NewsPage {
-      constructor(siteId, hostServerPattern) {
-        super();
-        this.siteId = siteId;
-        this.hostServerPattern = hostServerPattern;
-        this.domain = getLocalizedString(siteId + "UrlDomain");
-        this.rootDirectoryPath =
-          getLocalizedString(siteId + "UrlRootDirectoryPath");
-      }
-
-      getSiteId() {
-        return this.siteId;
-      }
-
-      getUrl() {
-        var url = URL_HTTPS_SCHEME;
-        var hostServer = this.getHostServer();
-        if (hostServer != "") {
-          url += hostServer + ".";
-        }
-        url += this.domain;
-        if (this.rootDirectoryPath != "") {
-          url += this.rootDirectoryPath + "/";
-        }
-        return url;
-      }
-
-      getHostServer() {
-        if (this.hostServerPattern != URL_PATTERN_ANY_HOST_SERVER) {
-          return this.hostServerPattern;
-        }
-        return URL_DEFAULT_HOST_SERVER;
-      }
-
-      getDomain() {
-        return this.domain;
-      }
-
-      containsHostPath(hostPath) {
-        var newsTopDomainPath = this.domain + this.rootDirectoryPath;
-        var relativePath = undefined;
-        if (this.hostServerPattern == URL_PATTERN_NO_HOST_SERVER
-          || this.hostServerPattern == URL_PATTERN_ANY_HOST_SERVER) {
-          if (this.hostServerPattern == URL_PATTERN_NO_HOST_SERVER
-            && hostPath.startsWith(newsTopDomainPath)) { // "slashdot.org"
-            relativePath = hostPath.substring(newsTopDomainPath.length);
-          }
-          if (relativePath == undefined) { // "devices.slashdot.org"
-            var domainPath = hostPath.substring(hostPath.indexOf(".") + 1);
-            if (! domainPath.startsWith(newsTopDomainPath)) {
-              return false;
-            }
-            relativePath = domainPath.substring(newsTopDomainPath.length);
-          }
-        } else { // "www.yahoo.com" or "news.yahoo.co.jp"
-          var newsTopHostPath =
-            this.hostServerPattern + "." + newsTopDomainPath;
-          if (! hostPath.startsWith(newsTopHostPath)) {
-            return false;
-          }
-          relativePath = hostPath.substring(newsTopHostPath.length);
-        }
-        return relativePath == "" || relativePath.startsWith("/");
-      }
-
-      containsUrl(url) {
-        if (url != undefined) {
-          if ((typeof url) != "string") {
-            throw newIllegalArgumentException("url");
-          } else if (url.startsWith(URL_HTTPS_SCHEME)) {
-            return this.containsHostPath(
-              url.substring(URL_HTTPS_SCHEME.length));
-          }
-        }
-        return false;
-      }
-    }
-
-    // IDs of news sites enabled on this extension
-    var _enabledSiteIdSet = new Set();
-
-    // IDs of news sites used by this extension
-    const SITE_IDS = new Array();
-
-    // Map of news sites used by this extension
-    const SITE_MAP = new Map();
-
-    // Sets the information of sites used for each language.
-
-    splitLocalizedString("SiteLanguages").forEach((siteLanguage) => {
-        var siteIds = splitLocalizedString(siteLanguage + "SiteIds");
-        var commentSiteIdSet =
-          new Set(splitLocalizedString(siteLanguage + "CommentSiteIds"));
-        var hostFaviconSiteIdSet =
-          new Set(splitLocalizedString(siteLanguage + "HostFaviconSiteIds"));
-
-        siteIds.forEach((siteId) => {
-            var site = {
-                name: getLocalizedString(siteId + "Name"),
-                language: siteLanguage,
-                hostServerPatterns:
-                  splitLocalizedString(siteId + "UrlHostServerPatterns"),
-                hasHostFavicon: hostFaviconSiteIdSet.has(siteId),
-                hasComment: commentSiteIdSet.has(siteId)
-              };
-            var hostServerPattern = site.hostServerPatterns[0];
-            if (hostServerPattern != URL_PATTERN_NO_HOST_SERVER
-              && site.hostServerPatterns.length > 1) {
-              hostServerPattern = URL_PATTERN_ANY_HOST_SERVER;
-            }
-            site.newsTopPage = new NewsTopPage(siteId, hostServerPattern);
-            if (site.newsTopPage.containsUrl(document.URL)) {
-              // Sets the site ID as an enabled site for the content script.
-              _enabledSiteIdSet.add(siteId);
-            }
-            SITE_IDS.push(siteId);
-            SITE_MAP.set(siteId, site);
-          });
-      });
-
-    /*
-     * Returns the array of news site pages used by the current local.
-     */
-    function getNewsSitePages() {
-      var sitePages = new Array();
-      SITE_IDS.forEach((siteId) => {
-          sitePages.push(SITE_MAP.get(siteId).newsTopPage);
-        });
-      return sitePages;
-    }
-
-    _ExtractNews.NewsPage = NewsPage;
-    _ExtractNews.getNewsSitePages = getNewsSitePages;
-
     function _checkSiteId(siteId) {
       if (siteId == undefined) {
         throw newNullPointerException("siteId");
@@ -287,11 +178,211 @@ const ExtractNews = (() => {
     }
 
     /*
-     * Returns true if a news site for the specified ID is enabled.
+     * The information of a news site.
+     */
+    class NewsSite {
+      constructor(siteId, siteLanguage,
+        hostServerPatterns, domain, rootDirectoryPath) {
+        _checkSiteId(siteId);
+        if ((typeof siteLanguage) != "string") {
+          throw newIllegalArgumentException("siteLanguage");
+        } else if (! Array.isArray(hostServerPatterns)) {
+          throw newIllegalArgumentException("hostServerPatterns");
+        }
+        this.siteId = siteId;
+        if (siteLanguage == _ExtractNews.SITE_JAPANESE) {
+          this.siteLanguage = siteLanguage;
+        } else {
+          this.siteLanguage = _ExtractNews.SITE_ENGLISH;
+        }
+        var hostPathRegexpString = "^";
+        if (hostServerPatterns.length <= 1) {
+          if (hostServerPatterns[0] != URL_PATTERN_ANY_HOST_SERVER) {
+            hostPathRegexpString += hostServerPatterns[0];
+          } else {
+            hostPathRegexpString +=
+              _ExtractNews.SITE_LABEL_REGULAR_EXPRESSION;
+          }
+          hostPathRegexpString += "\\.";
+        } else if (hostServerPatterns[0] != URL_PATTERN_NO_HOST_SERVER) {
+          hostPathRegexpString += "(?:";
+          for (let i = 0; i < hostServerPatterns.length; i++) {
+            if (i > 0) {
+              hostPathRegexpString += "|";
+            }
+            hostPathRegexpString += hostServerPatterns[i];
+          }
+          hostPathRegexpString += ")\\.";
+        } else {
+          hostPathRegexpString +=
+            "(?:|" + _ExtractNews.SITE_LABEL_REGULAR_EXPRESSION + "\\.)";
+        }
+        hostPathRegexpString +=
+          (domain + rootDirectoryPath).replaceAll(".", "\\.") + "(?:/|$)";
+        this.siteUrl = {
+            hostPathRegexp: new RegExp(hostPathRegexpString),
+            hostServerPatterns: hostServerPatterns,
+            domain: domain,
+            rootDirectoryPath: rootDirectoryPath
+          };
+      }
+
+      get id() {
+        return this.siteId;
+      }
+
+      get language() {
+        return this.siteLanguage;
+      }
+
+      get url() {
+        var url = URL_HTTPS_SCHEME;
+        var hostServer = this.hostServer;
+        if (hostServer != "") {
+          url += hostServer + ".";
+        }
+        url += this.domain;
+        var rootDirectoryPath = this.rootDirectoryPath;
+        if (rootDirectoryPath != "") {
+          url += rootDirectoryPath + "/";
+        }
+        return url;
+      }
+
+      get hostServerPatterns() {
+        return this.siteUrl.hostServerPatterns;
+      }
+
+      get hostServer() {
+        if (this.hostServerPatterns.length <= 1) {
+          if (this.hostServerPatterns[0] != URL_PATTERN_ANY_HOST_SERVER) {
+            return this.hostServerPatterns[0];
+          }
+        } else if (this.hostServerPatterns[0] == URL_PATTERN_NO_HOST_SERVER) {
+          return "";
+        }
+        return URL_DEFAULT_HOST_SERVER;
+      }
+
+      get domain() {
+        return this.siteUrl.domain;
+      }
+
+      get rootDirectoryPath() {
+        return this.siteUrl.rootDirectoryPath;
+      }
+
+      containsUrl(url) {
+        if (url != undefined) {
+          if ((typeof url) != "string") {
+            throw newIllegalArgumentException("url");
+          } else if (url.startsWith(URL_HTTPS_SCHEME)) {
+            var hostPath = url.substring(URL_HTTPS_SCHEME.length);
+            return this.siteUrl.hostPathRegexp.test(hostPath);
+          }
+        }
+        return false;
+      }
+    }
+
+    // IDs of news sites enabled in this locale
+    var _enabledNewsSiteIdSet = new Set();
+
+    // Map of news sites used in this locale
+    const NEWS_SITE_MAP = new Map();
+
+    const COMMENT_SITE_ID_SET = new Set();
+    const HOST_FAVICON_SITE_ID_SET = new Set();
+
+    // Sets the information of news sites used for each language.
+
+    splitLocalizedString("SiteLanguages").forEach((siteLanguage) => {
+        splitLocalizedString(siteLanguage + "SiteIds").forEach((siteId) => {
+            var newsSite =
+              new NewsSite(siteId, siteLanguage,
+                splitLocalizedString(siteId + "UrlHostServerPatterns"),
+                getLocalizedString(siteId + "UrlDomain"),
+                getLocalizedString(siteId + "UrlRootDirectoryPath"));
+            NEWS_SITE_MAP.set(siteId, newsSite);
+          });
+        var commentSiteIds =
+          splitLocalizedString(siteLanguage + "CommentSiteIds");
+        commentSiteIds.forEach((siteID) => {
+            COMMENT_SITE_ID_SET.add(siteID);
+          });
+        var hostFaviconSiteIds =
+          splitLocalizedString(siteLanguage + "HostFaviconSiteIds");
+        hostFaviconSiteIds.forEach((siteID) => {
+            HOST_FAVICON_SITE_ID_SET.add(siteID);
+          });
+      });
+
+    /*
+     * Returns the array of news sites used in this locale.
+     */
+    function getNewsSites() {
+      var newsSites = new Array();
+      for (const newsSite of NEWS_SITE_MAP.values()) {
+        newsSites.push(newsSite);
+      }
+      return newsSites;
+    }
+
+    /*
+     * Returns the news site which contains the specified URL if used in
+     * this locale, otherwise, undefined.
+     */
+    function getNewsSite(url) {
+      if (url != undefined) {
+        if ((typeof url) != "string") {
+          throw newIllegalArgumentException("url");
+        } else {
+          for (const newsSite of NEWS_SITE_MAP.values()) {
+            if (newsSite.containsUrl(url)) {
+              return newsSite;
+            }
+          }
+        }
+      }
+      return undefined;
+    }
+
+    /*
+     * Reads the enabled news site for the specified URL from the local storage
+     * and returns the promise fulfilled with it if exists.
+     */
+    function readEnabledNewsSite(url) {
+      var readingPromise = Promise.resolve();
+      var newsSite = getNewsSite(url);
+      if (newsSite != undefined) {
+        readingPromise = Promise.resolve(newsSite.id);
+      }
+      return readingPromise.then((newsSiteId) => {
+          if (newsSiteId != undefined) {
+            var siteEnabledKey = newsSiteId + _ExtractNews.SITE_ENABLED_KEY;
+            return ExtractNews.readStorage(siteEnabledKey).then((items) => {
+                var siteEnabled = items[siteEnabledKey];
+                if (siteEnabled | siteEnabled == undefined) {
+                  return Promise.resolve(newsSite);
+                }
+                return Promise.resolve();
+              });
+          }
+          return Promise.resolve();
+        });
+    }
+
+    _ExtractNews.NewsSite = NewsSite;
+    _ExtractNews.getNewsSites = getNewsSites;
+    _ExtractNews.getNewsSite = getNewsSite;
+    _ExtractNews.readEnabledNewsSite = readEnabledNewsSite;
+
+    /*
+     * Returns true if the news site of the specified ID is enabled.
      */
     function isNewsSiteEnabled(siteId) {
       _checkSiteId(siteId);
-      return _enabledSiteIdSet.has(siteId);
+      return _enabledNewsSiteIdSet.has(siteId);
     }
 
     /*
@@ -301,28 +392,28 @@ const ExtractNews = (() => {
     function setNewsSiteEnabled(siteId, siteEnabled) {
       _checkSiteId(siteId);
       if (siteEnabled) {
-        _enabledSiteIdSet.add(siteId);
-      } else if (_enabledSiteIdSet.has(siteId)) {
-        _enabledSiteIdSet.delete(siteId);
+        _enabledNewsSiteIdSet.add(siteId);
+      } else if (_enabledNewsSiteIdSet.has(siteId)) {
+        _enabledNewsSiteIdSet.delete(siteId);
       }
     }
 
     /*
-     * Returns the favicon ID of a news site for the specified ID if exists,
+     * Returns the favicon ID for the news site of the specified ID if exists,
      * otherwise, undefined.
      */
     function getNewsSiteFaviconId(siteId, siteUrl) {
       _checkSiteId(siteId);
-      var site = SITE_MAP.get(siteId);
-      if (site != undefined) {
-        if (! site.hasHostFavicon) {
+      var newsSite = NEWS_SITE_MAP.get(siteId);
+      if (newsSite != undefined) {
+        if (! HOST_FAVICON_SITE_ID_SET.has(siteId)) {
           return siteId;
         } else if (siteUrl == undefined) {
           throw newNullPointerException("siteUrl");
         } else if ((typeof siteUrl) != "string") {
           throw newIllegalArgumentException("siteUrl");
         } else if (siteUrl.startsWith(URL_HTTPS_SCHEME)) {
-          var siteDomainIndex = siteUrl.indexOf(site.newsTopPage.getDomain());
+          var siteDomainIndex = siteUrl.indexOf(newsSite.domain);
           if (siteDomainIndex > URL_HTTPS_SCHEME.length + 1) {
             var siteFaviconId = siteId;
             var siteHostServer =
@@ -339,23 +430,9 @@ const ExtractNews = (() => {
       return undefined;
     }
 
-    /*
-     * Returns the language of a news site for the specified ID if exists,
-     * otherwise, undefined.
-     */
-    function getNewsSiteLanguage(siteId) {
-      _checkSiteId(siteId);
-      var site = SITE_MAP.get(siteId);
-      if (site != undefined) {
-        return site.language;
-      }
-      return undefined;
-    }
-
     _ExtractNews.isNewsSiteEnabled = isNewsSiteEnabled;
     _ExtractNews.setNewsSiteEnabled = setNewsSiteEnabled;
     _ExtractNews.getNewsSiteFaviconId = getNewsSiteFaviconId;
-    _ExtractNews.getNewsSiteLanguage = getNewsSiteLanguage;
 
     /*
      * Sets enabled news sites for IDs in the specified array.
@@ -372,11 +449,11 @@ const ExtractNews = (() => {
     }
 
     function _getUrlPattern(hostServerPattern, domain) {
+      var hostServer = "";
       if (hostServerPattern != URL_PATTERN_NO_HOST_SERVER) {
-        hostServerPattern += ".";
+        hostServer = hostServerPattern + ".";
       }
-      return URL_HTTPS_SCHEME + hostServerPattern + domain
-        + URL_PATTERN_ANY_PATH;
+      return URL_HTTPS_SCHEME + hostServer + domain + URL_PATTERN_ANY_PATH;
     }
 
     /*
@@ -384,12 +461,11 @@ const ExtractNews = (() => {
      */
     function getEnabledNewsSiteUrlPatterns() {
       var enabledSiteUrlPatterns = new Array();
-      _enabledSiteIdSet.forEach((siteId) => {
-          var site = SITE_MAP.get(siteId);
-          site.hostServerPatterns.forEach((hostServerPattern) => {
+      _enabledNewsSiteIdSet.forEach((siteId) => {
+          var newsSite = NEWS_SITE_MAP.get(siteId);
+          newsSite.hostServerPatterns.forEach((hostServerPattern) => {
               enabledSiteUrlPatterns.push(
-                _getUrlPattern(
-                  hostServerPattern, site.newsTopPage.getDomain()));
+                _getUrlPattern(hostServerPattern, newsSite.domain));
             });
         });
       return enabledSiteUrlPatterns;
@@ -401,13 +477,12 @@ const ExtractNews = (() => {
      */
     function getEnabledCommentSiteUrlPatterns() {
       var enabledCommentSiteUrlPatterns = new Array();
-      _enabledSiteIdSet.forEach((siteId) => {
-          var site = SITE_MAP.get(siteId);
-          if (site.hasComment) {
-            site.hostServerPatterns.forEach((hostServerPattern) => {
+      _enabledNewsSiteIdSet.forEach((siteId) => {
+          if (COMMENT_SITE_ID_SET.has(siteId)) {
+            var newsSite = NEWS_SITE_MAP.get(siteId);
+            newsSite.hostServerPatterns.forEach((hostServerPattern) => {
                 enabledCommentSiteUrlPatterns.push(
-                  _getUrlPattern(
-                    hostServerPattern, site.newsTopPage.getDomain()));
+                  _getUrlPattern(hostServerPattern, newsSite.domain));
               });
           }
         });
@@ -418,29 +493,6 @@ const ExtractNews = (() => {
     _ExtractNews.getEnabledNewsSiteUrlPatterns = getEnabledNewsSiteUrlPatterns;
     _ExtractNews.getEnabledCommentSiteUrlPatterns =
       getEnabledCommentSiteUrlPatterns;
-
-    /*
-     * Returns the news site page which contains the specified URL if used by
-     * the current locale, otherwise, undefined.
-     */
-    function getNewsSitePage(url) {
-      if (url != undefined) {
-        if ((typeof url) != "string") {
-          throw newIllegalArgumentException("url");
-        } else if (url.startsWith(URL_HTTPS_SCHEME)) {
-          var hostPath = url.substring(URL_HTTPS_SCHEME.length);
-          for (let i = 0; i < SITE_IDS.length; i++) {
-            var site = SITE_MAP.get(SITE_IDS[i]);
-            if (site.newsTopPage.containsHostPath(hostPath)) {
-              return site.newsTopPage;
-            }
-          }
-        }
-      }
-      return undefined;
-    }
-
-    _ExtractNews.getNewsSitePage = getNewsSitePage;
 
 
     // Target names to accept or drop a news topic or sender by the filtering
@@ -755,53 +807,6 @@ const ExtractNews = (() => {
 
     _ExtractNews.Selection = Selection;
     _ExtractNews.newSelection = newSelection;
-
-
-    // Storage area to store the settings of this extension
-    const STORAGE_AREA = browser.storage.local;
-
-    /*
-     * Reads the storage area by the specified key and returns the promise
-     * fulfilled with its value.
-     */
-    function readStorage(key) {
-      if (BROWSER_PROMISE_RETURNED) {
-        return STORAGE_AREA.get(key);
-      }
-      return new Promise((resolve) => {
-          STORAGE_AREA.get(key, resolve);
-        });
-    }
-
-    /*
-     * Writes the storage area by the specified object which consists of pairs
-     * of a key and value and returns the promise.
-     */
-    function writeStorage(items) {
-      if (BROWSER_PROMISE_RETURNED) {
-        return STORAGE_AREA.set(items);
-      }
-      return new Promise((resolve) => {
-          STORAGE_AREA.set(items, resolve);
-        });
-    }
-
-    /*
-     * Reads the storage area by the specified key and returns the promise
-     * fulfilled with its value.
-     */
-    function removeStorage(key) {
-      if (BROWSER_PROMISE_RETURNED) {
-        return STORAGE_AREA.remove(key);
-      }
-      return new Promise((resolve) => {
-          STORAGE_AREA.remove(key, resolve);
-        });
-    }
-
-    _ExtractNews.readStorage = readStorage;
-    _ExtractNews.writeStorage = writeStorage;
-    _ExtractNews.removeStorage = removeStorage;
 
 
     /*

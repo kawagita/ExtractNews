@@ -1049,16 +1049,10 @@ ExtractNews.Design = (() => {
         return Promise.all(arrangingPromises);
       }
 
-      reset(disposed = false) {
-        if (disposed) {
-          this.arrangedNewsParents = undefined;
-          this.arrangedNewsItemsMap.clear();
-          this.arrangedNewsItemParamsMap.clear();
-        } else {
-          this.arrangedNewsItemParamsMap.forEach((newsItemParams) => {
-              newsItemParams.topicDropped = undefined;
-            });
-        }
+      reset() {
+        this.arrangedNewsItemParamsMap.forEach((newsItemParams) => {
+            newsItemParams.topicDropped = undefined;
+          });
         if (this.arrangementObservers != undefined) {
           var arrangementObservers = this.arrangementObservers.length;
           if (arrangementObservers.length > 0) {
@@ -1071,6 +1065,13 @@ ExtractNews.Design = (() => {
           }
           this.arrangementObservers = undefined;
         }
+      }
+
+      clear() {
+        this.arrangedNewsParents = undefined;
+        this.arrangedNewsItemsMap.clear();
+        this.arrangedNewsItemParamsMap.clear();
+        this.reset();
       }
     }
 

@@ -404,14 +404,14 @@
     "description": "IDs whose news site has favicons for each host in English."
   },
 
-  "extractNewsEnglishTopicWordJoinedRegularExpression": {
-    "message": " & |/",
-    "description": "Regular expression by which topic words are joined on news site in English."
-  },
-
   "extractNewsEnglishWordSeparators": {
     "message": " !\"#$&'(),-./:;<=>?@[]|",
     "description": "Separators in front or back of a word in English."
+  },
+
+  "extractNewsEnglishWordSuffixes": {
+    "message": "",
+    "description": "Suffixes of a word in English."
   },
 
   "extractNewsFilteringIds": {
@@ -514,9 +514,19 @@
     "description": "Message for exceeding the maximum width of a setting name."
   },
 
-  "extractNewsRegularExpressionMaxUTF16CharacterLengthExceeded": {
-    "message": "Regular expression must not exceed $1 characters by UTF-16 encoding.",
-    "description": "Message for exceeding the maximum character length by UTF-16 encoding in a regular expression."
+  "extractNewsSelectedTopicMaxUTF16CharactersExceeded": {
+    "message": "Selected topics must not exceed $1 characters by UTF-16 encoding.",
+    "description": "Message for exceeding the maximum character length by UTF-16 encoding in selected topics."
+  },
+
+  "extractNewsSelectedSenderMaxUTF16CharactersExceeded": {
+    "message": "Selected senders must not exceed $1 characters by UTF-16 encoding.",
+    "description": "Message for exceeding the maximum character length by UTF-16 encoding in selected senders."
+  },
+
+  "extractNewsExcludedTopicMaxUTF16CharactersExceeded": {
+    "message": "Excluded topics must not exceed $1 characters by UTF-16 encoding.",
+    "description": "Message for exceeding the maximum character length by UTF-16 encoding in excluded topics."
   },
 
   "extractNewsNewsSelectionNotSavedAnyMore": {
@@ -524,19 +534,19 @@
     "description": "Message for saving over the maximum count of news selections."
   },
 
-  "extractNewsFilteringCategoryNotSavedOverMaxCount": {
-    "message": "Filtering category is not saved over $1.",
-    "description": "Message for saving over the maximum count of filtering categories."
+  "extractNewsFilteringWordsMaxUTF16CharactersExceeded": {
+    "message": "Filtering words must not exceed $1 characters by UTF-16 encoding.",
+    "description": "Message for exceeding the maximum character length by UTF-16 encoding in filtering words."
   },
 
-  "extractNewsFilteringTargetNotSavedOverMaxCount": {
-    "message": "Filtering target is not saved over $1.",
+  "extractNewsFilteringNotSavedAnyMore": {
+    "message": "Word filtering is not saved any more.",
     "description": "Message for saving over the maximum count of filtering targets."
   },
 
-  "extractNewsSettingNotInitialized": {
-    "message": "Setting has not been initialized yet. Reload this page, please.",
-    "description": "Message for news setting which is not initialized."
+  "extractNewsNewsSettingNotInitialized": {
+    "message": "News setting has not been initialized yet. Reload this tab, please.",
+    "description": "Message for not initializing the news setting."
   },
 
   "regularExpressionControlEscapeNotFollowedByAlphabet": {
@@ -689,9 +699,19 @@
     "description": "Description of non-alphanumeric filtering ID on a import line."
   },
 
-  "fileImportLineFilteringDataNotSpecified": {
-    "message": "Filtering data has not been specified.",
-    "description": "Description of no filtering data on a import line."
+  "fileImportLineFilteringCategoryNotTerminatedByEndOfBlock": {
+    "message": "Filtering category must be terminated by the end of a block.",
+    "description": "Message for terminating the filtering category by no end of a block on a import line."
+  },
+
+  "fileImportLineFilteringCategoryNameNotSpecified": {
+    "message": "Filtering category name has not been specified.",
+    "description": "Description of no filtering category name on a import line."
+  },
+
+  "fileImportLineFilteringTargetNameNotSpecified": {
+    "message": "Filtering target name has not been specified.",
+    "description": "Description of no filtering target name on a import line."
   },
 
   "fileImportLineUnknownFilteringTargetName": {
@@ -951,17 +971,17 @@
 
   "optionExport": {
     "message": "Export",
-    "description": "Option button to export filtering targets to a file."
+    "description": "Option button to export filtering data to a file."
   },
 
   "optionImport": {
     "message": "Import",
-    "description": "Option button to import filtering targets from a file."
+    "description": "Option button to import filtering data from a file."
   },
 
   "optionSave": {
     "message": "Save",
-    "description": "Option button to save filtering targets."
+    "description": "Option button to save filtering data."
   },
 
   "optionFilteringCategoryName": {

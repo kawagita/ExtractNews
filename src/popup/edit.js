@@ -61,6 +61,8 @@ var newsSelectionEditQueryMap = _Popup.getQueryMap(document.URL);
 var newsSelectionEditPane =
   _Popup.getNewsSelectionEditPane(
     newsSelectionEditQueryMap.get(_Popup.QUERY_OPENER_TAB_ID));
+var newsSelectionEditSaveButton = getEditButton("Save");
+var newsSelectionEditRemoveButton = getEditButton("Remove");
 var newsSelectionEditPointedGroup = new _Event.PointedGroup();
 
 newsSelectionEditPane.nameInput.addEventListener("focus", (event) => {
@@ -75,31 +77,33 @@ newsSelectionEditPane.urlSelect.addEventListener("focus", (event) => {
     newsSelectionEditPointedGroup.clearEventTarget();
   });
 
+newsSelectionEditPointedGroup.addElements(
+  newsSelectionEditSaveButton, newsSelectionEditRemoveButton);
+
 // Sets buttons to localize the regular expression of a news selection.
 
 newsSelectionEditPane.localizedButtons.forEach((localizedButton) => {
     localizedButton.addEventListener(_Event.CLICK, (event) => {
         var editRegexp =
           newsSelectionEditPane.regexps[Number(event.target.value)];
-        var regexpString =
-          _Text.trimText(
-            _Text.replaceTextLineBreaksToSpace(
-              _Text.removeTextZeroWidthSpaces(editRegexp.textarea.value)));
         var regexpResult =
-          _Regexp.checkRegularExpression(regexpString, { localized: true });
-        if (regexpResult.errorCode >= 0) {
-          sendEditWarningMessage(
-            _Regexp.getErrorWarning(editRegexp.name, regexpResult));
-        } else {
-          regexpString = regexpResult.localizedText.textString;
-          if (regexpString.length > _Alert.REGEXP_MAX_UTF16_CHARACTER_LENGTH) {
-            sendEditWarningMessage(
-              _Alert.WARNING_REGEXP_MAX_UTF16_CHARACTER_LENGTH_EXCEEDED);
-          } else {
+          _Regexp.checkRegularExpression(
+            _Text.trimText(
+              _Text.replaceTextLineBreaksToSpace(
+                _Text.removeTextZeroWidthSpaces(editRegexp.textarea.value))),
+            { localized: true });
+        if (regexpResult.errorCode < 0) {
+          var regexpString = regexpResult.localizedText.textString;
+          if (regexpString.length <= _Alert.REGEXP_MAX_UTF16_CHARACTERS) {
             // Set localized string into text area and checked flag to true.
             editRegexp.textarea.value = regexpString;
             editRegexp.errorChecked = true;
+            return;
           }
+          sendEditWarningMessage(editRegexp.warningMaxUtf16CharactersExceeded);
+        } else {
+          sendEditWarningMessage(
+            _Regexp.getErrorWarning(editRegexp.name, regexpResult));
         }
       });
     newsSelectionEditPointedGroup.addElement(localizedButton);
@@ -122,8 +126,6 @@ _Storage.readNewsSelectionCount().then((newsSelectionCount) => {
     }
     return _Storage.readNewsSelections(editIndexStrings);
   }).then((newsSelections) => {
-    var editSaveButton = getEditButton("Save");
-    var editRemoveButton = getEditButton("Remove");
     var editNumberString = "#" + String(newsSelectionEditIndex + 1);
     newsSelectionEditTitleElement.textContent =
       getEditMessage("NewsSelection") + " " + editNumberString;
@@ -143,19 +145,17 @@ _Storage.readNewsSelectionCount().then((newsSelectionCount) => {
         topicRegexpString =
           _Regexp.getAlternative(
             topicRegexpString, newsSelections[i].topicRegularExpression);
-        if (topicRegexpString.length
-          > _Alert.REGEXP_MAX_UTF16_CHARACTER_LENGTH) {
+        if (topicRegexpString.length > _Alert.REGEXP_MAX_UTF16_CHARACTERS) {
           sendEditWarningMessage(
-            _Alert.WARNING_REGEXP_MAX_UTF16_CHARACTER_LENGTH_EXCEEDED);
+            _Alert.WARNING_SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED);
           break;
         }
         senderRegexpString =
           _Regexp.getAlternative(
             senderRegexpString, newsSelections[i].senderRegularExpression);
-        if (topicRegexpString.length
-          > _Alert.REGEXP_MAX_UTF16_CHARACTER_LENGTH) {
+        if (topicRegexpString.length > _Alert.REGEXP_MAX_UTF16_CHARACTERS) {
           sendEditWarningMessage(
-            _Alert.WARNING_REGEXP_MAX_UTF16_CHARACTER_LENGTH_EXCEEDED);
+            _Alert.WARNING_SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED);
           break;
         }
       }
@@ -166,7 +166,8 @@ _Storage.readNewsSelectionCount().then((newsSelectionCount) => {
 
       newsSelectionEditPane.nameInput.value = settingName;
       var regexpStrings =
-        Array.of(newsSelection.topicRegularExpression,
+        Array.of(
+          newsSelection.topicRegularExpression,
           newsSelection.senderRegularExpression);
       for (let i = 0; i < regexpStrings.length; i++) {
         newsSelectionEditPane.regexps[i].textarea.value = regexpStrings[i];
@@ -175,7 +176,8 @@ _Storage.readNewsSelectionCount().then((newsSelectionCount) => {
 
     // Set buttons to save or remove a new selection and localize the regular
     // expression into the edit button group.
-    editSaveButton.addEventListener(_Event.CLICK, (event) => {
+
+    newsSelectionEditSaveButton.addEventListener(_Event.CLICK, (event) => {
         var newsSelection = ExtractNews.newSelection();
         var regexpStrings = new Array();
         var settingName =
@@ -231,7 +233,7 @@ _Storage.readNewsSelectionCount().then((newsSelectionCount) => {
             _Popup.closeNewsSelectionEditWindow();
           });
       });
-    editRemoveButton.addEventListener(_Event.CLICK, (event) => {
+    newsSelectionEditRemoveButton.addEventListener(_Event.CLICK, (event) => {
         var removingPromise = Promise.resolve();
         if (! newsSelectionNewEdit) {
           removingPromise =
@@ -246,8 +248,6 @@ _Storage.readNewsSelectionCount().then((newsSelectionCount) => {
             _Popup.closeNewsSelectionEditWindow();
           });
       });
-    newsSelectionEditPointedGroup.addElement(editSaveButton);
-    newsSelectionEditPointedGroup.addElement(editRemoveButton);
 
     // Set URLs to open a news site to which above news selection is applied
     // into the select element on the edit window.

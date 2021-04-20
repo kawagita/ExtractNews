@@ -524,12 +524,11 @@ function displayPageList(pageIndex) {
       newsSelections.forEach((newsSelection) => {
           var faviconId = undefined;
           if (newsSelection.openedUrl != URL_ABOUT_BLANK) {
-            var newsSitePage =
-              ExtractNews.getNewsSitePage(newsSelection.openedUrl);
-            if (newsSitePage != undefined) {
+            var newsSite = ExtractNews.getNewsSite(newsSelection.openedUrl);
+            if (newsSite != undefined) {
               faviconId =
                 ExtractNews.getNewsSiteFaviconId(
-                  newsSitePage.getSiteId(), newsSelection.openedUrl);
+                  newsSite.id, newsSelection.openedUrl);
             }
           }
           if (faviconId != undefined) {

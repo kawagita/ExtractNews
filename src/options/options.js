@@ -94,13 +94,13 @@ var optionPointedGroup = new _Event.PointedGroup();
   var disableFilteringInput = getOptionElement("DisableFiltering", "input");
   var debugInput = getOptionElement("DebugExtension", "input");
 
-  ExtractNews.getNewsSitePages().forEach((newsSitePage) => {
+  ExtractNews.getNewsSites().forEach((newsSite) => {
       var siteDiv = document.createElement("div");
       var siteInput = document.createElement("input");
       var siteLabel = document.createElement("label");
       siteDiv.className = "checked_option";
       siteInput.type = "checkbox";
-      siteInput.value = newsSitePage.getSiteId();
+      siteInput.value = newsSite.id;
       siteInput.addEventListener("input", (event) => {
           var siteId = event.target.value;
           var enabled = event.target.checked;
@@ -335,6 +335,7 @@ function createTargetWordsDiv(wordsString, wordsMatches, wordNegative) {
   targetWordsInput.placeholder = getOptionMessage("InputTargetWords");
   targetWordsInput.className = FILTERING_TARGET_WORDS_INPUT;
   targetWordsInput.value = wordsString;
+  targetWordsInput.maxLength = _Alert.FILTERING_WORDS_MAX_UTF16_CHARACTERS;
   targetWordsMatch.className = "checked_option";
   for (let i = 0; i < FILTERING_TARGET_WORDS_MATCH_TYPES.length; i++) {
     var targetWordsMatchCheckbox = document.createElement("input");
@@ -508,8 +509,9 @@ function _focusButton(targetDiv, focusedOperation) {
   targetDiv.querySelector("." + focusedOperation).focus();
 }
 
-var optionMenuManager;
 var optionMenuItems = Array.from(document.querySelectorAll("#OptionMenu li"));
+var optionFilteringMenuItem;
+var optionSelectionMenuItem;
 var optionSection = document.getElementById("Options");
 var optionDataUpdateParagraph = optionSection.querySelector("#DataUpdate p");
 var optionDataReplacementCheckbox =
@@ -523,6 +525,7 @@ const OPTION_SELECTION = "selection";
 const OPTION_DATA_DESCRIPTION = getOptionMessage("DataDescription");
 
 var optionImportButton = getOptionButton("Import");
+var optionImportDisabledMap = new Map();
 var optionExportButton = getOptionButton("Export");
 var optionSaveButton = getOptionButton("Save");
 var optionSaveDisabledMap = new Map();
@@ -530,6 +533,75 @@ var optionSaveDisabledMap = new Map();
 optionImportButton.disabled = true;
 optionExportButton.disabled = true;
 optionSaveButton.disabled = true;
+
+// Displays the menu list of general, filtering, and selection options.
+
+for (let i = 0; i < optionMenuItems.length; i++) {
+  var settingMenuItem = optionMenuItems[i];
+  var settingMenuItemLowerCaseId = settingMenuItem.id.toLowerCase();
+  if (settingMenuItemLowerCaseId != OPTION_GENERAL) {
+    switch(settingMenuItemLowerCaseId) {
+    case OPTION_FILTERING:
+      optionFilteringMenuItem = settingMenuItem;
+      break;
+    case OPTION_SELECTION:
+      optionSelectionMenuItem = settingMenuItem;
+      break;
+    }
+    optionDataReplacementCheckedMap.set(settingMenuItem.id, false);
+    optionImportDisabledMap.set(settingMenuItem.id, true);
+    optionSaveDisabledMap.set(settingMenuItem.id, true);
+  }
+  settingMenuItem.textContent = getOptionMessage(settingMenuItem.id);
+  optionPointedGroup.addElement(settingMenuItem);
+}
+
+var optionMenuManager =
+  new _Event.PageListManager((event, pageIndex, previousPageIndex) => {
+    var menuId = optionMenuManager.getEventTarget(pageIndex).id;
+    var menuOption = menuId.toLowerCase();
+    // Reserve the state of checkboxes or buttons for unfocused setting
+    // and restore to changed setting.
+    if (previousPageIndex >= 0) {
+      var previousMenuId =
+        optionMenuManager.getEventTarget(previousPageIndex).id;
+      optionImportDisabledMap.set(previousMenuId, optionImportButton.disabled);
+      optionSaveDisabledMap.set(previousMenuId, optionSaveButton.disabled);
+      optionDataReplacementCheckedMap.set(
+        previousMenuId, optionDataReplacementCheckbox.checked);
+    }
+    optionImportButton.disabled = optionImportDisabledMap.get(menuId);
+    optionSaveButton.disabled = optionSaveDisabledMap.get(menuId);
+    optionDataReplacementCheckbox.checked =
+      optionDataReplacementCheckedMap.get(menuId);
+    if (menuOption != OPTION_GENERAL) {
+      if (menuOption == OPTION_SELECTION
+        && optionSelectionDiv.classList.contains(OPERATION_EDIT)) {
+        clearSelectionEditPane();
+      }
+      optionDataUpdateParagraph.textContent =
+        getOptionMessage("Data" + menuId) + OPTION_DATA_DESCRIPTION;
+    }
+    optionSection.className = menuOption;
+  }, optionMenuItems);
+optionMenuManager.setPageSize(optionMenuItems.length);
+
+optionDataReplacementCheckbox.addEventListener("input", (event) => {
+    if (event.target.checked) {
+      optionImportButton.disabled = false;
+    } else {
+      switch (optionMenuManager.getEventTarget().id.toLowerCase()) {
+      case OPTION_FILTERING:
+        optionImportButton.disabled =
+          optionFiltering.targetDataTotal >= _Alert.FILTERING_MAX_COUNT;
+        break;
+      case OPTION_SELECTION:
+        optionImportButton.disabled =
+          optionSelection.dataSize >= ExtractNews.SELECTION_MAX_COUNT;
+        break;
+      }
+    }
+  });
 
 optionPointedGroup.addElements(
   optionDataReplacementCheckbox, optionImportButton,
@@ -805,12 +877,13 @@ function insertFilteringTargetNode(
           var emptyData = createTargetData();
           optionFiltering.insertTargetData(insertedIndex, emptyData);
           insertFilteringTargetNode(insertedIndex, emptyData);
-          if (optionFilteringTargetNodes.length
-            >= _Alert.FILTERING_TARGET_MAX_COUNT) {
+          if (optionFiltering.targetDataTotal >= _Alert.FILTERING_MAX_COUNT) {
             // Disable to insert new selection on all div elements.
             optionFilteringTargetNodes.forEach((targetDiv) => {
                 _setButtonDisabled(targetDiv, OPERATION_INSERT);
               });
+            optionImportButton.disabled =
+              ! optionDataReplacementCheckbox.checked;
             focusedOperation = OPERATION_REMOVE;
           } else {
             _setButtonEnabled(targetDiv, OPERATION_INSERT);
@@ -860,10 +933,17 @@ function insertFilteringTargetNode(
                   }
                 }
               });
-            localizedData.wordsString = Array.from(targetWordSet).join(",");
-            localizedData.localizedWordSet = targetWordSet;
-            targetWordsInput.value = localizedData.wordsString;
-            optionSaveButton.disabled = false;
+            var localizedWordsString = Array.from(targetWordSet).join(",");
+            if (localizedWordsString.length
+              <= _Alert.FILTERING_WORDS_MAX_UTF16_CHARACTERS) {
+              localizedData.wordsString = localizedWordsString;
+              localizedData.localizedWordSet = targetWordSet;
+              targetWordsInput.value = localizedData.wordsString;
+              optionSaveButton.disabled = false;
+              return;
+            }
+            sendOpitonWarningMessage(
+              _Alert.WARNING_FILETERING_WORDS_MAX_UTF16_CHARACTERS_EXCEEDED);
           }
         });
       break;
@@ -881,12 +961,12 @@ function insertFilteringTargetNode(
       button.addEventListener(_Event.CLICK, (event) => {
           var focusedOperation = OPERATION_REMOVE;
           var targetDiv = _getEventTargetDiv(event);
-          var targetNodeLength = optionFilteringTargetNodes.length;
+          var targetDataTotal = optionFiltering.targetDataTotal;
           var removedIndex = optionFilteringTargetNodes.indexOf(targetDiv);
           _setButtonDisabled(targetDiv, OPERATION_REMOVE);
           optionFiltering.removeTargetData(removedIndex);
           removeFilteringTargetNode(removedIndex);
-          if (targetNodeLength >= _Alert.FILTERING_TARGET_MAX_COUNT) {
+          if (targetDataTotal >= _Alert.FILTERING_MAX_COUNT) {
             // Enable to insert new selection on all div elements.
             optionFilteringTargetNodes.forEach((targetDiv) => {
                 _setButtonEnabled(targetDiv, OPERATION_INSERT);
@@ -897,6 +977,7 @@ function insertFilteringTargetNode(
           }
           _focusButton(
             optionFilteringTargetNodes[removedIndex], focusedOperation);
+          optionImportButton.disabled = false;
           optionSaveButton.disabled = false;
         });
       break;
@@ -1002,10 +1083,10 @@ function setOptionFilteringCategoryNames() {
       optionFilteringCategorySelect.removeChild(filteringCategoryOptions[i]);
     }
   }
-  optionFiltering.forEachData((filteringId, filteringCategoryName) => {
+  optionFiltering.forEachData((filteringId, filteringData) => {
       var filteringCategoryOption = document.createElement("option");
       filteringCategoryOption.value = filteringId;
-      filteringCategoryOption.text = filteringCategoryName;
+      filteringCategoryOption.text = filteringData.categoryName;
       optionFilteringCategorySelect.appendChild(filteringCategoryOption);
     });
 }
@@ -1034,7 +1115,7 @@ function reflectOptionFilteringData(targetIndex = 0) {
     optionFilteringCategory.className = FILTERING_CATEGORY_FOR_ALL;
   }
   var addedTargetData = optionFiltering.getTargetData(targetIndex);
-  for (let i = targetIndex + 1; i < optionFiltering.targetDataSize(); i++) {
+  for (let i = targetIndex + 1; i < optionFiltering.targetDataSize; i++) {
     addFilteringTargetNode(addedTargetData);
     addedTargetData = optionFiltering.getTargetData(i);
   }
@@ -1048,7 +1129,7 @@ function reflectOptionFilteringData(targetIndex = 0) {
     _setButtonsEnabled(optionFilteringTargetNodes[i],
       i > 0, i < optionFilteringTargetNodes.length - 2);
   }
-  if (optionFilteringTargetNodes.length >= _Alert.FILTERING_TARGET_MAX_COUNT) {
+  if (optionFiltering.targetDataTotal >= _Alert.FILTERING_MAX_COUNT) {
     // Disable to insert new selection on all div elements.
     optionFilteringTargetNodes.forEach((targetDiv) => {
         _setButtonDisabled(targetDiv, OPERATION_INSERT);
@@ -1094,25 +1175,25 @@ optionSelectionEditPane.localizedButtons.forEach((localizedButton) => {
     localizedButton.addEventListener(_Event.CLICK, (event) => {
         var editRegexp =
           optionSelectionEditPane.regexps[Number(event.target.value)];
-        var regexpString =
-          _Text.trimText(
-            _Text.replaceTextLineBreaksToSpace(
-              _Text.removeTextZeroWidthSpaces(editRegexp.textarea.value)));
         var regexpResult =
-          _Regexp.checkRegularExpression(regexpString, { localized: true });
-        if (regexpResult.errorCode >= 0) {
-          sendOpitonWarningMessage(
-            _Regexp.getErrorWarning(editRegexp.name, regexpResult));
-        } else {
-          regexpString = regexpResult.localizedText.textString;
-          if (regexpString.length > _Alert.REGEXP_MAX_UTF16_CHARACTER_LENGTH) {
-            sendOpitonWarningMessage(
-              _Alert.WARNING_REGEXP_MAX_UTF16_CHARACTER_LENGTH_EXCEEDED);
-          } else {
+          _Regexp.checkRegularExpression(
+            _Text.trimText(
+              _Text.replaceTextLineBreaksToSpace(
+                _Text.removeTextZeroWidthSpaces(editRegexp.textarea.value))),
+            { localized: true });
+        if (regexpResult.errorCode < 0) {
+          var regexpString = regexpResult.localizedText.textString;
+          if (regexpString.length <= _Alert.REGEXP_MAX_UTF16_CHARACTERS) {
             // Set localized string into text area and checked flag to true.
             editRegexp.textarea.value = regexpString;
             editRegexp.errorChecked = true;
+            return;
           }
+          sendOpitonWarningMessage(
+            editRegexp.warningMaxUtf16CharactersExceeded);
+        } else {
+          sendOpitonWarningMessage(
+            _Regexp.getErrorWarning(editRegexp.name, regexpResult));
         }
       });
     optionSelectionEditPointedGroup.addElement(localizedButton);
@@ -1264,7 +1345,7 @@ function _fireSelectionMoveEvent(event, selectionMovedUp) {
       _focusButton(movedUpDiv, OPERATION_MOVE_UP);
     }
     var movedUpBottomIndex = optionSelectionNodes.length - 2;
-    if (optionSelection.dataSize() >= ExtractNews.SELECTION_MAX_COUNT) {
+    if (optionSelection.dataSize >= ExtractNews.SELECTION_MAX_COUNT) {
       movedUpBottomIndex++;
     }
     if (movedUpIndex >= movedUpBottomIndex
@@ -1321,7 +1402,7 @@ function insertSelectionNode(selectionIndex, selectionData) {
     }
     _setButtonsEnabled(addedSelectionDiv,
       movedUpButtonEnabled, movedDownButtonEnabled);
-    if (optionSelection.dataSize() >= ExtractNews.SELECTION_MAX_COUNT) {
+    if (optionSelection.dataSize >= ExtractNews.SELECTION_MAX_COUNT) {
       _setButtonDisabled(addedSelectionDiv, OPERATION_INSERT);
     }
     addedSelectionNextDiv = optionSelectionNodes[selectionIndex];
@@ -1369,7 +1450,7 @@ function insertSelectionNode(selectionIndex, selectionData) {
             && focusedIndex < optionSelectionNodes.length) {
             var focusedOperation = OPERATION_INSERT;
             if (focusedIndex >= optionSelectionNodes.length - 1
-              && optionSelection.dataSize() < ExtractNews.SELECTION_MAX_COUNT
+              && optionSelection.dataSize < ExtractNews.SELECTION_MAX_COUNT
               && optionSelectionPageManager.isLastPageKeeping()) {
               focusedOperation = OPERATION_APPEND;
             }
@@ -1400,7 +1481,7 @@ function insertSelectionNode(selectionIndex, selectionData) {
       button.addEventListener(_Event.CLICK, (event) => {
           var focusedOperation = OPERATION_REMOVE;
           var selectionDiv = _getEventSelectionDiv(event);
-          var selectionNodeTotal = optionSelection.dataSize();
+          var selectionNodeTotal = optionSelection.dataSize;
           var selectionNodeLength = optionSelectionNodes.length;
           var removedIndex = optionSelectionNodes.indexOf(selectionDiv);
           _setButtonDisabled(selectionDiv, OPERATION_REMOVE);
@@ -1451,7 +1532,7 @@ function insertSelectionNode(selectionIndex, selectionData) {
             var selectionDataIndex =
               (optionSelectionPageManager.pageIndex + 1)
               * OPTION_SELECTION_NODE_SIZE;
-            if (selectionDataIndex < optionSelection.dataSize()) {
+            if (selectionDataIndex < optionSelection.dataSize) {
               selectionData = optionSelection.getData(selectionDataIndex);
             }
             addSelectionNode(selectionData);
@@ -1463,6 +1544,7 @@ function insertSelectionNode(selectionIndex, selectionData) {
             setSelectionDeletedCheck();
           }
           _focusButton(optionSelectionNodes[removedIndex], focusedOperation);
+          optionImportButton.disabled = false;
           optionSaveButton.disabled = false;
         });
       break;
@@ -1538,7 +1620,7 @@ function reflectOptionSelectionData(selectionIndex = 0) {
   var selectionDataIndex =
     optionSelectionPageManager.pageIndex * OPTION_SELECTION_NODE_SIZE
     + selectionIndex;
-  var selectionDataSize = optionSelection.dataSize();
+  var selectionDataSize = optionSelection.dataSize;
   var addedSelectionCount = 0;
   var addedSelectionDataCount = selectionDataSize - selectionDataIndex;
   if (addedSelectionDataCount > 0) {
@@ -1600,6 +1682,9 @@ optionFiltering.read().then(() => {
       });
     setOptionFilteringCategoryNames();
     reflectOptionFilteringData();
+    if (optionFiltering.targetDataTotal < _Alert.FILTERING_MAX_COUNT) {
+      optionImportDisabledMap.set(optionFilteringMenuItem.id, false);
+    }
 
     return optionSelection.read();
   }).then(() => {
@@ -1660,7 +1745,7 @@ optionFiltering.read().then(() => {
           // Insert selection data and the div element into the option page
           // for an edited news selection.
           optionSelection.insertData(selectionDataIndex, selectionData);
-          var selectionNodeTotal = optionSelection.dataSize();
+          var selectionNodeTotal = optionSelection.dataSize;
           if (selectionNodeTotal >= ExtractNews.SELECTION_MAX_COUNT) {
             // Disable to insert new selection on all div elements.
             optionSelectionNodes.forEach((selectionDiv) => {
@@ -1668,6 +1753,8 @@ optionFiltering.read().then(() => {
                   _setButtonDisabled(selectionDiv, OPERATION_INSERT);
                 }
               });
+            optionImportButton.disabled =
+              ! optionDataReplacementCheckbox.checked;
             optionSelectionEditing.dataOperation = OPERATION_REMOVE;
           } else {
             // Count the node to append new selection following to the last
@@ -1690,9 +1777,12 @@ optionFiltering.read().then(() => {
       });
     optionSelectionEditPointedGroup.addElements(
       selectionEditCloseButton, selectionEditApplyButton);
+    if (optionSelection.dataSize < ExtractNews.SELECTION_MAX_COUNT) {
+      optionImportDisabledMap.set(optionSelectionMenuItem.id, false);
+    }
 
     // Set the index number of pages to the header on the list of selections.
-    var selectionNodeTotal = optionSelection.dataSize();
+    var selectionNodeTotal = optionSelection.dataSize;
     if (selectionNodeTotal < ExtractNews.SELECTION_MAX_COUNT) {
       // Count the node to append new selection following to the last data.
       selectionNodeTotal++;
@@ -1718,52 +1808,11 @@ optionFiltering.read().then(() => {
     optionSelectionPageManager.setPageSize(
       Math.ceil(selectionNodeTotal / OPTION_SELECTION_NODE_SIZE));
 
-    optionImportButton.disabled = false;
     optionExportButton.disabled = false;
     return Promise.resolve();
   }).catch((error) => {
     Debug.printStackTrace(error);
   });
-
-// Displays the menu list of general, filtering, and selection options.
-
-for (let i = 0; i < optionMenuItems.length; i++) {
-  var settingMenuItem = optionMenuItems[i];
-  if (settingMenuItem.id.toLowerCase() != OPTION_GENERAL) {
-    optionDataReplacementCheckedMap.set(settingMenuItem.id, false);
-    optionSaveDisabledMap.set(settingMenuItem.id, true);
-  }
-  settingMenuItem.textContent = getOptionMessage(settingMenuItem.id);
-  optionPointedGroup.addElement(settingMenuItem);
-}
-
-optionMenuManager =
-  new _Event.PageListManager((event, pageIndex, previousPageIndex) => {
-    var menuId = optionMenuManager.getEventTarget(pageIndex).id;
-    var menuOption = menuId.toLowerCase();
-    // Reserve the state of checkboxes or buttons for unfocused setting
-    // and restore to changed setting.
-    if (previousPageIndex >= 0) {
-      var previousMenuId =
-        optionMenuManager.getEventTarget(previousPageIndex).id;
-      optionSaveDisabledMap.set(previousMenuId, optionSaveButton.disabled);
-      optionDataReplacementCheckedMap.set(
-        previousMenuId, optionDataReplacementCheckbox.checked);
-    }
-    optionSaveButton.disabled = optionSaveDisabledMap.get(menuId);
-    optionDataReplacementCheckbox.checked =
-      optionDataReplacementCheckedMap.get(menuId);
-    if (menuOption != OPTION_GENERAL) {
-      if (menuOption == OPTION_SELECTION
-        && optionSelectionDiv.classList.contains(OPERATION_EDIT)) {
-        clearSelectionEditPane();
-      }
-      optionDataUpdateParagraph.textContent =
-        getOptionMessage("Data" + menuId) + OPTION_DATA_DESCRIPTION;
-    }
-    optionSection.className = menuOption;
-  }, optionMenuItems);
-optionMenuManager.setPageSize(optionMenuItems.length);
 
 // Registers click events to read and write filtering or selection data.
 
@@ -1779,13 +1828,16 @@ optionImportButton.addEventListener(_Event.CLICK, (event) => {
           }
           setOptionFilteringCategoryNames();
           reflectOptionFilteringData(targetAppendedIndex);
+          if (optionFiltering.targetDataTotal >= _Alert.FILTERING_MAX_COUNT) {
+            optionImportButton.disabled = ! dataReplaced;
+          }
           optionSaveButton.disabled = false;
           optionSaveButton.focus();
         });
       break;
     case OPTION_SELECTION:
       optionSelection.import(dataReplaced).then((dataAppendedIndex) => {
-          var selectionNodeTotal = optionSelection.dataSize();
+          var selectionNodeTotal = optionSelection.dataSize;
           if (dataReplaced) {
             clearSelectionNodes();
             reflectOptionSelectionData();
@@ -1797,6 +1849,8 @@ optionImportButton.addEventListener(_Event.CLICK, (event) => {
             // Count the node to append new selection following to
             // the last data.
             selectionNodeTotal++;
+          } else {
+            optionImportButton.disabled = ! dataReplaced;
           }
           optionSelectionPageManager.setPageSize(
             Math.ceil(selectionNodeTotal / OPTION_SELECTION_NODE_SIZE));
@@ -1864,7 +1918,7 @@ optionSelectionDeleteButton.addEventListener(_Event.CLICK, (event) => {
         optionSelection.removeData(selectionPageFirstDataIndex + i);
       }
     }
-    var selectionNodeTotal = optionSelection.dataSize();
+    var selectionNodeTotal = optionSelection.dataSize;
     if (selectionNodeTotal < ExtractNews.SELECTION_MAX_COUNT) {
       // Count the node to append new selection following to the last data.
       selectionNodeTotal++;

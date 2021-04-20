@@ -43,11 +43,11 @@ function createSelectionData(newsSelection) {
     selectionData.senderRegularExpression =
       newsSelection.senderRegularExpression;
     if (newsSelection.openedUrl != URL_ABOUT_BLANK) {
-      var newsSitePage = ExtractNews.getNewsSitePage(newsSelection.openedUrl);
-      if (newsSitePage != undefined) {
+      var newsSite = ExtractNews.getNewsSite(newsSelection.openedUrl);
+      if (newsSite != undefined) {
         var faviconId =
           ExtractNews.getNewsSiteFaviconId(
-            newsSitePage.getSiteId(), newsSelection.openedUrl);
+            newsSite.id, newsSelection.openedUrl);
         if (faviconId != undefined) {
           selectionData.faviconId = faviconId;
         }
@@ -113,7 +113,7 @@ class OptionSelection {
       });
   }
 
-  dataSize() {
+  get dataSize() {
     return this.dataArray.length;
   }
 

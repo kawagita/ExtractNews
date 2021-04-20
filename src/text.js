@@ -74,13 +74,6 @@ ExtractNews.Text = (() => {
       + "\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u3000";
     const NO_BREAK_SPACES = "\u00A0\u205F";
     const SPACES = LINE_BREAK_SPACES + NO_BREAK_SPACES;
-    const SPACE_SET = new Set();
-
-    for (let i = 0; i < SPACES.length; i++) {
-      SPACE_SET.add(SPACES.codePointAt(i));
-    }
-
-    _Text.SPACE_SET = SPACE_SET;
 
     // Unicode code points categorized as fullwidth characters (Ambiguous/Wide)
     // considering East Asian Width of Unicode Standard Annex #11 referened by
@@ -1932,10 +1925,6 @@ ExtractNews.Regexp = (() => {
           // Append " " to the last word, instead of the character set and
           // escaped or special characters if not ")", "|", "^", or "$".
           this.lastWord = this.getLastWord();
-          if (! _Text.SPACE_SET.has(
-            this.lastWord.codePointAt(this.lastWord.length - 1))) {
-            this.lastWord += " ";
-          }
         }
         if (pattern.hasOrdinaryCharacter(_isRegexpGroupAltenative)) {
           if (this.localizedContext != undefined) {
@@ -1974,12 +1963,13 @@ ExtractNews.Regexp = (() => {
         if (status.errorCode >= 0) {
           return status;
         }
-        var wordString = this.inputText().textString;
-        if (! pattern.hasOrdinaryCharacter(_isRegexpAltenative)) {
-          if (this.localizedContext != undefined) {
-            pattern.receiveLocalizedText(this.localizedContext);
-            wordString = this.localizedContext.halfwidthText.textString;
-          }
+        var wordString;
+        if (this.localizedContext != undefined
+          && ! pattern.hasOrdinaryCharacter(_isRegexpAltenative)) {
+          pattern.receiveLocalizedText(this.localizedContext);
+          wordString = this.localizedContext.halfwidthText.textString;
+        } else {
+          wordString = this.inputText().textString;
         }
         if (this.wordSet != undefined
           && (! pattern.isCharacter()
@@ -2013,11 +2003,21 @@ ExtractNews.Regexp = (() => {
 
       getLastWord() {
         if (this.wordSet != undefined) {
-          var wordString = this.inputText().textString;
+          var lastWord = this.lastWord;
+          var wordString;
           if (this.localizedContext != undefined) {
             wordString = this.localizedContext.halfwidthText.textString;
+          } else {
+            wordString = this.inputText().textString;
           }
-          return this.lastWord + wordString.substring(this.wordIndex);
+          var word = wordString.substring(this.wordIndex).trim();
+          if (word != "") {
+            if (lastWord != "") {
+              lastWord += " ";
+            }
+            lastWord += word;
+          }
+          return lastWord;
         }
         return undefined;
       }

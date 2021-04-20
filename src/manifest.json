@@ -57,6 +57,8 @@
             "debug.js",
             "extractnews.js",
             "site/site.js",
+            "site/urlparser.js",
+            "site/selector.js",
             "site/design.js",
             "site/yahoo.js"
           ],
@@ -73,6 +75,8 @@
             "debug.js",
             "extractnews.js",
             "site/site.js",
+            "site/urlparser.js",
+            "site/selector.js",
             "site/design.js",
             "site/slashdot.js"
           ],
@@ -84,6 +88,8 @@
             "debug.js",
             "extractnews.js",
             "site/site.js",
+            "site/urlparser.js",
+            "site/selector.js",
             "site/design.js",
             "site/yahoo_japan.js"
           ],
@@ -95,6 +101,8 @@
             "debug.js",
             "extractnews.js",
             "site/site.js",
+            "site/urlparser.js",
+            "site/selector.js",
             "site/design.js",
             "site/impress_watch.js"
           ],
@@ -106,6 +114,8 @@
             "debug.js",
             "extractnews.js",
             "site/site.js",
+            "site/urlparser.js",
+            "site/selector.js",
             "site/design.js",
             "site/itmedia.js"
           ],
@@ -130,7 +140,9 @@
         "js": [ 
             "debug.js",
             "extractnews.js",
-            "site/site.js"
+            "site/site.js",
+            "site/selector.js",
+            "site/others.js"
           ],
         "run_at": "document_end"
       }

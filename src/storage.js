@@ -1,5 +1,5 @@
 /*
- *  Define functions for the local storage on this extension.
+ *  Define functions to read, write, and remove settings for the local storage.
  *  Copyright (C) 2021 Yoshinori Kawagita.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -30,40 +30,32 @@ ExtractNews.Storage = (() => {
         throw newNullPointerException("siteId");
       } else if ((typeof siteId) != "string") {
         throw newIllegalArgumentException("siteId");
+      } else if (siteId == "") {
+        throw newEmptyStringException("siteId");
       }
     }
-
-    // Key to read and write the flag whether the site is enabled.
-    const ENABLED_KEY = "Enabled";
 
     /*
      * Reads IDs of enabled news sites from the local storage and returns
      * the promise fulfilled with the array of its or rejected.
      */
     function readEnabledNewsSiteIds() {
-      const readingPromises = new Array();
-      ExtractNews.getNewsSitePages().forEach((newsSitePage) => {
-          var siteId = newsSitePage.getSiteId();
-          var siteEnabledKey = siteId + ENABLED_KEY;
-          readingPromises.push(
-              ExtractNews.readStorage(siteEnabledKey).then((items) => {
-                  var enabledSiteId = undefined;
-                  var siteEnabled = items[siteEnabledKey];
-                  if (siteEnabled | siteEnabled == undefined) {
-                    enabledSiteId = siteId;
-                  }
-                  return Promise.resolve(enabledSiteId);
-                })
-            );
+      var enabledSiteIds = new Array();
+      var siteEnabledKeys = new Array();
+      ExtractNews.getNewsSites().forEach((newsSite) => {
+          siteEnabledKeys.push(newsSite.id + ExtractNews.SITE_ENABLED_KEY);
         });
-      return Promise.all(readingPromises).then((enabledSiteIds) => {
-          for (let i = enabledSiteIds.length - 1; i >= 0; i--) {
-            if (enabledSiteIds[i] == undefined) {
-              enabledSiteIds.splice(i, 1);
-            }
-          }
+      return ExtractNews.readStorage(siteEnabledKeys).then((items) => {
+          siteEnabledKeys.forEach((siteEnabledKey) => {
+              var siteEnabled = items[siteEnabledKey];
+              if (siteEnabled | siteEnabled == undefined) {
+                enabledSiteIds.push(
+                  siteEnabledKey.substring(
+                    0, siteEnabledKey.indexOf(ExtractNews.SITE_ENABLED_KEY)));
+              }
+            });
           return Promise.resolve(enabledSiteIds);
-        });
+        })
     }
 
     /*
@@ -75,7 +67,7 @@ ExtractNews.Storage = (() => {
       if ((typeof siteEnabled) != "boolean") {
         throw newIllegalArgumentException("siteEnabled");
       }
-      var siteEnabledKey = siteId + ENABLED_KEY;
+      var siteEnabledKey = siteId + ExtractNews.SITE_ENABLED_KEY;
       return ExtractNews.writeStorage({
           [siteEnabledKey]: siteEnabled
         });
@@ -85,7 +77,7 @@ ExtractNews.Storage = (() => {
     _Storage.writeNewsSiteEnabled = writeNewsSiteEnabled;
 
 
-    // Key to read and write the flag whether the filtering is disabled.
+    // Key to read and write the flag whether the filtering is disabled
     const FILTERING_DISABLED_KEY = "FilteringDisabled";
 
     /*
@@ -117,7 +109,6 @@ ExtractNews.Storage = (() => {
 
     _Storage.readNewsFilteringDisabled = readNewsFilteringDisabled;
     _Storage.writeNewsFilteringDisabled = writeNewsFilteringDisabled;
-
 
     // Key to read and write filtering IDs, or filterings by suffixing with its
     const FILTERING_KEY = "Filtering";
@@ -256,7 +247,6 @@ ExtractNews.Storage = (() => {
     }
 
     _Storage.readNewsSelectionCount = readNewsSelectionCount;
-
 
     // Read and write functions for news selections as the key of index number
 
@@ -534,7 +524,7 @@ ExtractNews.Storage = (() => {
     _Storage.removeNewsSelectionAll = removeNewsSelectionAll;
 
 
-    // Key to read and write a favicon string by suffixing the favicon ID.
+    // Key to read and write a favicon string by suffixing the favicon ID
     const FAVICON_KEY = "Favicon";
     const FAVICON_ID_REGEXP = new RegExp(/^[A-Za-z][0-9A-Za-z]+$/);
 
@@ -543,6 +533,8 @@ ExtractNews.Storage = (() => {
         throw newNullPointerException("faviconId");
       } else if ((typeof faviconId) != "string") {
         throw newIllegalArgumentException("faviconId");
+      } else if (faviconId == "") {
+        throw newEmptyStringException("faviconId");
       } else if (! FAVICON_ID_REGEXP.test(faviconId)) {
         throw newInvalidParameterException(faviconId);
       }
@@ -587,7 +579,7 @@ ExtractNews.Storage = (() => {
     _Storage.writeFavicon = writeFavicon;
 
 
-    // Key to read and write a comment mode by suffixing the site ID.
+    // Key to read and write a comment mode by suffixing the site ID
     const COMMENT_KEY = "Comment";
 
     /*

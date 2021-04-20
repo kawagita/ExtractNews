@@ -7,6 +7,7 @@ body {
   padding: 10px;
   flex-direction: column;
   display: flex;
+  font-family: "__MSG_extensionFontFamily__";
   background-color: #cfcfcf;
 }
 

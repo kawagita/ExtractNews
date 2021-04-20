@@ -59,8 +59,8 @@
     "description": "Yahoo! JAPAN ニュースのカテゴリー。"
   },
 
-  "extractNewsYahooJapanNewsITScienceCategory": {
-    "message": "IT・科学",
+  "extractNewsYahooJapanNewsITScienceCategories": {
+    "message": "IT,科学",
     "description": "Yahoo! JAPAN ニュースのIT・科学カテゴリー。"
   },
 
@@ -70,7 +70,7 @@
   },
 
   "extractNewsYahooJapanNewsHeadingTopicRegularExpression": {
-    "message": "^.+（(.+)(?:総合)?）$$",
+    "message": "^.+（([^・]+)(?:・(.+))?）$$",
     "description": "Yahoo! JAPAN ニュースの見出しトピックの正規表現。"
   },
 
@@ -609,14 +609,14 @@
     "description": "日本語のホストごとのFaviconがあるニュースサイトのID。"
   },
 
-  "extractNewsJapaneseTopicWordJoinedRegularExpression": {
-    "message": "[/・]",
-    "description": "日本語ニュースサイトでトピックワードを結合する正規表現。"
-  },
-
   "extractNewsJapaneseWordSeparators": {
     "message": " ×—‘ ’“ ”…　、。「」『』【】かがでとにのはへもやよらりを・！＂＃＄％＆＇（），－．／：；＜＝＞？＠［］｜～￠￡",
     "description": "日本語で単語の前後における分離文字（格助詞と並立助詞を含む）。"
+  },
+
+  "extractNewsJapaneseWordSuffixes": {
+    "message": "氏,さん,ちゃん,君,夫人,様",
+    "description": "日本語で単語の後ろに付ける語。"
   },
 
   "extractNewsSocietyFilteringCategoryName": {
@@ -714,29 +714,39 @@
     "description": "設定名称の最大幅を超えていることに対するメッセージ。"
   },
 
-  "extractNewsRegularExpressionMaxUTF16CharacterLengthExceeded": {
-    "message": "正規表現はUTF-16エンコーディングで$1文字以内にして下さい。",
-    "description": "正規表現でUTF-16エンコーディングで最大文字長を超えていることに対するメッセージ。"
+  "extractNewsSelectedTopicMaxUTF16CharactersExceeded": {
+    "message": "選択する話題はUTF-16エンコーディングで$1文字以内にして下さい。",
+    "description": "選択する話題でUTF-16エンコーディングで最大文字長を超えていることに対するメッセージ。"
+  },
+
+  "extractNewsSelectedSenderMaxUTF16CharactersExceeded": {
+    "message": "選択する発信元はUTF-16エンコーディングで$1文字以内にして下さい。",
+    "description": "選択する発信元でUTF-16エンコーディングで最大文字長を超えていることに対するメッセージ。"
+  },
+
+  "extractNewsExcludedTopicMaxUTF16CharactersExceeded": {
+    "message": "除外する話題はUTF-16エンコーディングで$1文字以内にして下さい。",
+    "description": "除外する話題でUTF-16エンコーディングで最大文字長を超えていることに対するメッセージ。"
   },
 
   "extractNewsNewsSelectionNotSavedAnyMore": {
-    "message": "選択設定はこれ以上保存されません。",
+    "message": "ニュース選択はこれ以上保存されません。",
     "description": "ニュース選択の最大数を超える保存に対するメッセージ。"
   },
 
-  "extractNewsFilteringCategoryNotSavedOverMaxCount": {
-    "message": "フィルタリングカテゴリーは$1個までにして下さい。",
-    "description": "フィルタリングカテゴリーの最大数を超える保存に対するメッセージ。"
+  "extractNewsFilteringWordsMaxUTF16CharactersExceeded": {
+    "message": "フィルタリングワードはUTF-16エンコーディングで$1文字以内にして下さい。",
+    "description": "フィルタリングワードでUTF-16エンコーディングで最大文字長を超えていることに対するメッセージ。"
   },
 
-  "extractNewsFilteringTargetNotSavedOverMaxCount": {
-    "message": "フィルタリング対象は$1個までにして下さい。",
-    "description": "フィルタリング対象の最大数を超える保存に対するメッセージ。"
+  "extractNewsFilteringNotSavedAnyMore": {
+    "message": "フィルタリングはこれ以上保存されません。",
+    "description": "フィルタリングの最大数を超える保存に対するメッセージ。"
   },
 
-  "extractNewsSettingNotInitialized": {
-    "message": "タブの設定が初期化されていません。このページを再読み込みして下さい。",
-    "description": "設定が初期化されていないことに対するメッセージ。"
+  "extractNewsNewsSettingNotInitialized": {
+    "message": "ニュース設定が初期化されていません。タブを再読み込みして下さい。",
+    "description": "ニュース設定が初期化されていないことに対するメッセージ。"
   },
 
   "regularExpressionControlEscapeNotFollowedByAlphabet": {
@@ -889,19 +899,29 @@
     "description": "インポート行で重複するフィルタリングIDの説明。"
   },
 
-  "fileImportLineFilteringDataNotSpecified": {
-    "message": "フィルタリングのデータが指定されていません。",
-    "description": "インポート行でフィルタリングのデータが指定されていないことの説明。"
+  "fileImportLineFilteringCategoryNotTerminatedByEndOfBlock": {
+    "message": "フィルタリングカテゴリーのブロック終端がありません。",
+    "description": "インポート行でフィルタリングカテゴリーのブロック終端がないことの説明。"
+  },
+
+  "fileImportLineFilteringCategoryNameNotSpecified": {
+    "message": "フィルタリングカテゴリーの名称が指定されていません。",
+    "description": "インポート行でフィルタリングカテゴリーの名称が指定されていないことの説明。"
+  },
+
+  "fileImportLineFilteringTargetNameNotSpecified": {
+    "message": "フィルタリングのターゲットが指定されていません。",
+    "description": "インポート行でフィルタリングのターゲットが指定されていないことの説明。"
   },
 
   "fileImportLineUnknownFilteringTargetName": {
-    "message": "不明なフィルタリング対象名 「$1」",
-    "description": "インポート行で不明なフィルタリング対象名の説明。"
+    "message": "不明なフィルタリングのターゲット 「$1」",
+    "description": "インポート行で不明なフィルタリングのターゲットの説明。"
   },
 
   "fileImportLineUnknownFilteringWordMatching": {
-    "message": "不明なフィルタリング単語マッチング 「$1」",
-    "description": "インポート行で不明なフィルタリング単語マッチングの説明。"
+    "message": "不明なフィルタリングのワードマッチング 「$1」",
+    "description": "インポート行で不明なフィルタリングのワードマッチングの説明。"
   },
 
   "fileImportLineSettingNameNotEnclosedByDoubleQuotes": {
@@ -1151,17 +1171,17 @@
 
   "optionImport": {
     "message": "インポート",
-    "description": "フィルタリング対象をファイルからインポートするオプションボタン。"
+    "description": "フィルタリングデータをファイルからインポートするオプションボタン。"
   },
 
   "optionExport": {
     "message": "エクスポート",
-    "description": "フィルタリング対象をファイルへエクスポートするオプションボタン。"
+    "description": "フィルタリングデータをファイルへエクスポートするオプションボタン。"
   },
 
   "optionSave": {
     "message": "保存",
-    "description": "フィルタリング対象を保存するオプションボタン。"
+    "description": "フィルタリングデータを保存するオプションボタン。"
   },
 
   "optionFilteringCategoryName": {
@@ -1186,17 +1206,17 @@
 
   "optionTargetAccept": {
     "message": "受け入れる",
-    "description": "フィルタリング対象により、ニュースの話題を受け入れるオプションラベル。"
+    "description": "フィルタリングターゲットにより、ニュースの話題を受け入れるオプションラベル。"
   },
 
   "optionTargetDrop": {
     "message": "拒否する",
-    "description": "フィルタリング対象により、ニュースの話題を拒否するオプションラベル。"
+    "description": "フィルタリングターゲットにより、ニュースの話題を拒否するオプションラベル。"
   },
 
   "optionTargetReturn": {
     "message": "ブロック外へ",
-    "description": "フィルタリング対象により、ブロックをスキップするオプションラベル。"
+    "description": "フィルタリングターゲットにより、ブロックをスキップするオプションラベル。"
   },
 
   "optionTargetTerminateBlock": {
@@ -1206,32 +1226,32 @@
 
   "optionInputTargetWords": {
     "message": "単語をコンマ区切りで入力して下さい",
-    "description": "フィルタリング対象の単語を入力するメッセージ。"
+    "description": "フィルタリングターゲットの単語を入力するメッセージ。"
   },
 
   "optionTargetMatchWordBeginning": {
     "message": "単語の開始とマッチ",
-    "description": "フィルタリング対象に対して単語の開始とマッチするオプションラベル。"
+    "description": "フィルタリングターゲットに対して単語の開始とマッチするオプションラベル。"
   },
 
   "optionTargetMatchWordEnd": {
     "message": "単語の終了とマッチ",
-    "description": "フィルタリング対象に対して単語の終了とマッチするオプションラベル。"
+    "description": "フィルタリングターゲットに対して単語の終了とマッチするオプションラベル。"
   },
 
   "optionTargetWordNegative": {
     "message": "単語の否定",
-    "description": "フィルタリング対象に対して単語の否定とマッチするオプションタイトル。"
+    "description": "フィルタリングターゲットに対して単語の否定とマッチするオプションタイトル。"
   },
 
   "optionTargetAnyWordMatched": {
     "message": "どんな単語ともマッチします。",
-    "description": "フィルタリング対象に対してどんな単語ともマッチするオプションの説明。"
+    "description": "フィルタリングターゲットに対してどんな単語ともマッチするオプションの説明。"
   },
 
   "optionInsert": {
     "message": "挿入",
-    "description": "フィルタリング対象やニュース選択を挿入するオプションボタン。"
+    "description": "フィルタリングターゲットやニュース選択を挿入するオプションボタン。"
   },
 
   "optionAppend": {
@@ -1241,17 +1261,17 @@
 
   "optionLocalize": {
     "message": "全半角変換",
-    "description": "フィルタリング対象やニュース選択をローカライズするオプションボタン。"
+    "description": "フィルタリングターゲットやニュース選択の全半角を変換するオプションボタン。"
   },
 
   "optionUp": {
     "message": "上へ",
-    "description": "フィルタリング対象やニュース選択を上へ移動するオプションボタン。"
+    "description": "フィルタリングターゲットやニュース選択を上へ移動するオプションボタン。"
   },
 
   "optionDown": {
     "message": "下へ",
-    "description": "フィルタリング対象やニュース選択を下へ移動するオプションボタン。"
+    "description": "フィルタリングターゲットやニュース選択を下へ移動するオプションボタン。"
   },
 
   "optionEdit": {
@@ -1261,7 +1281,7 @@
 
   "optionRemove": {
     "message": "削除",
-    "description": "フィルタリング対象やニュース選択を削除するオプションボタン。"
+    "description": "フィルタリングターゲットやニュース選択を削除するオプションボタン。"
   },
 
   "optionNewsSelection": {
