@@ -619,76 +619,6 @@
     "description": "日本語で単語の後ろに付ける語。"
   },
 
-  "extractNewsSocietyFilteringCategoryName": {
-    "message": "国内",
-    "description": "国内に対するフィルタリングのカテゴリー名。"
-  },
-
-  "extractNewsSocietyFilteringCategoryTopics": {
-    "message": "国内,政治,社会",
-    "description": "国内に対するフィルタリングのカテゴリートピック。"
-  },
-
-  "extractNewsWorldFilteringCategoryName": {
-    "message": "国際",
-    "description": "国際に対するフィルタリングのカテゴリー名。"
-  },
-
-  "extractNewsWorldFilteringCategoryTopics": {
-    "message": "国際",
-    "description": "国際に対するフィルタリングのカテゴリートピック。"
-  },
-
-  "extractNewsBusinessFilteringCategoryName": {
-    "message": "経済",
-    "description": "経済に対するフィルタリングのカテゴリー名。"
-  },
-
-  "extractNewsBusinessFilteringCategoryTopics": {
-    "message": "経済,ビジネス,マネー",
-    "description": "経済に対するフィルタリングのカテゴリー名。"
-  },
-
-  "extractNewsTechnologyFilteringCategoryName": {
-    "message": "テクノロジー",
-    "description": "テクノロジーに対するフィルタリングのカテゴリー名。"
-  },
-
-  "extractNewsTechnologyFilteringCategoryTopics": {
-    "message": "テクノロジー,IT,科学",
-    "description": "テクノロジーに対するフィルタリングのカテゴリートピック。"
-  },
-
-  "extractNewsSportsFilteringCategoryName": {
-    "message": "スポーツ",
-    "description": "スポーツに対するフィルタリングのカテゴリー名。"
-  },
-
-  "extractNewsSportsFilteringCategoryTopics": {
-    "message": "スポーツ",
-    "description": "スポーツに対するフィルタリングのカテゴリートピック。"
-  },
-
-  "extractNewsEntertainmentFilteringCategoryName": {
-    "message": "エンタメ",
-    "description": "エンターテイメントに対するフィルタリングのカテゴリー名。"
-  },
-
-  "extractNewsEntertainmentFilteringCategoryTopics": {
-    "message": "エンタメ",
-    "description": "エンターテイメントに対するフィルタリングのカテゴリートピック。"
-  },
-
-  "extractNewsLifeFilteringCategoryName": {
-    "message": "ライフ",
-    "description": "ライフに対するフィルタリングのカテゴリー名。"
-  },
-
-  "extractNewsLifeFilteringCategoryTopics": {
-    "message": "ライフ",
-    "description": "ライフに対するフィルタリングのカテゴリートピック。"
-  },
-
   "extractNewsAllFilteringCategoryName": {
     "message": "すべて",
     "description": "すべての話題に対するフィルタリングのカテゴリー名。"
@@ -1195,7 +1125,7 @@
   },
 
   "optionInputFilteringCategoryTopics": {
-    "message": "トピックをコンマ区切りで入力して下さい",
+    "message": "トピックをコンマ区切って下さい",
     "description": "フィルタリングカテゴリーのトピックを入力するメッセージ。"
   },
 
@@ -1225,18 +1155,18 @@
   },
 
   "optionInputTargetWords": {
-    "message": "単語をコンマ区切りで入力して下さい",
+    "message": "単語をコンマ区切って下さい",
     "description": "フィルタリングターゲットの単語を入力するメッセージ。"
   },
 
   "optionTargetMatchWordBeginning": {
-    "message": "単語の開始とマッチ",
-    "description": "フィルタリングターゲットに対して単語の開始とマッチするオプションラベル。"
+    "message": "単語開始とマッチ",
+    "description": "フィルタリングターゲットに対して単語開始とマッチするオプションラベル。"
   },
 
   "optionTargetMatchWordEnd": {
-    "message": "単語の終了とマッチ",
-    "description": "フィルタリングターゲットに対して単語の終了とマッチするオプションラベル。"
+    "message": "単語終了とマッチ",
+    "description": "フィルタリングターゲットに対して単語終了とマッチするオプションラベル。"
   },
 
   "optionTargetWordNegative": {

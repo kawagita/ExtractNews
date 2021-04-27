@@ -86,10 +86,10 @@ ExtractNews.Design = (() => {
     _Design.ONESELF_QUERY_PROPERTIES = [ _Design.ONESELF_QUERY_PROPERTY ];
 
     // Query properties to get li elements contained in the news element
-    const LI_ELEMENTS_QUERY_PROPERTY = {
-        selectorsForAll: "li"
-      };
-    const LI_ELEMENTS_QUERY_PROPERTIES = [ LI_ELEMENTS_QUERY_PROPERTY ];
+    _Design.LI_ELEMENTS_QUERY_PROPERTY = { selectorsForAll: "li" };
+    _Design.LI_ELEMENTS_QUERY_PROPERTIES = [
+        _Design.LI_ELEMENTS_QUERY_PROPERTY
+      ];
 
     // Properties to search the first text node
     const FIRST_TEXT_SEARCH_PROPERTIES = [ EMPTY_PROPERTY ];
@@ -107,7 +107,7 @@ ExtractNews.Design = (() => {
     _Design.SUBTREE_OBSERVER_OPTIONS = { childList: true, subtree: true };
 
     const OBSERVED_TAG_NAME_SET = new Set([
-        "LI", "UL", "OL", "DIV", "ARTICLE", "ASIDE", "SECTION"
+        "LI", "UL", "OL", "DIV", "ARTICLE", "ASIDE", "SECTION", "NAV"
       ]);
 
     const SEARCH_TAG_NAME_SET = new Set([
@@ -152,18 +152,24 @@ ExtractNews.Design = (() => {
       //                      a subclass implements getObserverOptions().
       // observedProperties   Array of query properties by which the observed
       //                      node is gotten from the news parent.
-      // observedItemProperties  Array of query properties by which the news
-      //                         item for a node added to the observed node
-      //                         is gotten. Instead, a subclass implements
-      //                         getObservedNewsItemProperties().
+      // observedItemProperties   Array of query properties by which the news
+      //                          item for a node added to the observed node
+      //                          is gotten. Instead, a subclass implements
+      //                          getObservedNewsItemProperties().
+      // observedItemAddedAtOnce  Flag to stop the observer when news items
+      //                          are added firstly. Instead, a subclass
+      //                          implements isObservedNewsItemAddedAtOnce().
+      // observedItemMaxCount Maximum number of news items added to the news
+      //                      parent for observed nodes. Instead, a subclass
+      //                      implements getObservedNewsItemMaxCount().
       // commentProperties    Array of query properties by which the comment
       //                      node is gotten.
       constructor(designProperty = { }) {
         this.designProperty = designProperty;
-        this.arrangementObservers = undefined;
-        this.arrangedNewsParents = undefined;
-        this.arrangedNewsItemsMap = new Map();
-        this.arrangedNewsItemParamsMap = new Map();
+        this.newsParents = undefined;
+        this.newsItemsMap = new Map();
+        this.newsItemParamsMap = new Map();
+        this.newsObserverMap = new Map();
       }
 
       /*
@@ -219,7 +225,7 @@ ExtractNews.Design = (() => {
        * items contained in the specified element of a news parent, which is
        * gotten by "itemProperties" specified by the constructor or returend by
        * this.getNewsItemProperties(newsParent) if not undefined, otherwise,
-       * LI_ELEMENTS_QUERY_PROPERTIES.
+       * Design.LI_ELEMENTS_QUERY_PROPERTIES.
        */
       getNewsItemElements(newsParent) {
         var newsItems = new Array();
@@ -228,7 +234,7 @@ ExtractNews.Design = (() => {
           if (this.designProperty.itemProperties != undefined) {
             itemProperties = this.designProperty.itemProperties;
           } else {
-            itemProperties = LI_ELEMENTS_QUERY_PROPERTIES;
+            itemProperties = Design.LI_ELEMENTS_QUERY_PROPERTIES;
           }
         }
         itemProperties.forEach((property) => {
@@ -546,9 +552,9 @@ ExtractNews.Design = (() => {
       //                        the text node of a news topic.
       // senderSearchProperties Array of properties used by searching
       //                        the text node of a news sender.
-      _setNewsItemDisplaying(newsItem, newsSelector, newsDisplayOptions) {
+      _setNewsItemDisplaying(newsItem, newsSelector) {
         var newsItemDisplaying = true;
-        var newsItemParams = this.arrangedNewsItemParamsMap.get(newsItem);
+        var newsItemParams = this.newsItemParamsMap.get(newsItem);
         if (newsItemParams == undefined) {
           var itemTextProperty = this.getNewsItemTextProperty(newsItem);
           if (itemTextProperty == undefined) {
@@ -650,10 +656,11 @@ ExtractNews.Design = (() => {
               topicTextNode: topicSearchParams.textNode,
               senderTextNode: senderSearchParams.textNode
             };
-          this.arrangedNewsItemParamsMap.set(newsItem, newsItemParams);
+          this.newsItemParamsMap.set(newsItem, newsItemParams);
         }
 
         if (newsSelector != undefined && newsItemParams.arrangeable) {
+          var newsDisplayOptions = Site.getNewsDisplayOptions();
           var topicString =
             this.getNewsTopicText(newsItemParams.topicTextNode);
           var topicDropped = false;
@@ -719,6 +726,28 @@ ExtractNews.Design = (() => {
           return newsObservedNodes;
         }
         return EMPTY_NEWS_ELEMENTS;
+      }
+
+      /*
+       * Returns true if the observer of a DOM tree for the specified node is
+       * stopped when news items are firstly added to it.
+       */
+      isObservedNewsItemAddedAtOnce(observedNode) {
+        if (this.designProperty.observedItemAddedAtOnce != undefined) {
+          return this.designProperty.observedItemAddedAtOnce;
+        }
+        return false;
+      }
+
+      /*
+       * Returns the maximum number of news items added to the news parent
+       * including the spcecified observed node.
+       */
+      getObservedNewsItemMaxCount(observedNode) {
+        if (this.designProperty.observedItemMaxCount != undefined) {
+          return this.designProperty.observedItemMaxCount;
+        }
+        return -1;
       }
 
       /*
@@ -814,22 +843,18 @@ ExtractNews.Design = (() => {
         commentNode.style.display = "none";
       }
 
-      async _arrangeNewsItems(newsParent, newsSelector, newsDisplayOptions) {
-        var newsItems = this.arrangedNewsItemsMap.get(newsParent);
+      async _arrangeNewsItems(newsParent, newsSelector) {
+        var newsItems = this.newsItemsMap.get(newsParent);
         if (newsItems == undefined) {
-          if (newsSelector != undefined) {
-            newsItems = this.getNewsItemElements(newsParent);
-          } else {
-            newsItems = EMPTY_NEWS_ELEMENTS;
-          }
+          newsItems = this.getNewsItemElements(newsParent);
         }
         if (newsItems.length > 0) {
+          var newsDisplayOptions = Site.getNewsDisplayOptions();
           var newsItemDisplayingCount = 0;
 
           // Display and arrange news items by the specified selector.
           newsItems.forEach((newsItem) => {
-              if (this._setNewsItemDisplaying(
-                newsItem, newsSelector, newsDisplayOptions)) {
+              if (this._setNewsItemDisplaying(newsItem, newsSelector)) {
                 newsItemDisplayingCount++;
               }
             });
@@ -870,11 +895,11 @@ ExtractNews.Design = (() => {
         return Promise.resolve();
       }
 
-      async _observeNewsItems(
-        observedNode, observerOptions, newsSelector, newsDisplayOptions) {
-        var arrangementObserver = new MutationObserver((mutations) => {
-            var arrangedNodes = new Array();
-            var arrangedNewsItems = new Array();
+      async _observeNewsItems(newsObservedNode, newsObserverOptions) {
+        var newsObserver = new MutationObserver((mutations) => {
+            var newsSelector = Site.getNewsSelector();
+            var arrangementAddedNodes = new Array();
+            var observedNewsItems = new Array();
             var removedNodeSet = new Set();
             mutations.forEach((mutation) => {
                 if (mutation.type == "childList") {
@@ -891,116 +916,142 @@ ExtractNews.Design = (() => {
                         this.getObservedNewsItemElements(addedNode);
                       if (newsItems.length > 0) {
                         newsItems.forEach((newsItem) => {
-                            arrangedNewsItems.push(newsItem);
+                            observedNewsItems.push(newsItem);
                           });
                         if (removedNodeSet.has(addedNode)) {
                           // Exclude the removed node if added just after.
                           removedNodeSet.delete(addedNode);
                         }
-                        arrangedNodes.push(addedNode);
+                        arrangementAddedNodes.push(addedNode);
                       }
                     }
                   }
                 }
               });
-            if (arrangedNewsItems.length > 0) {
-              // Arrange added news items without reloading the whole.
-              (new Promise((resolve) => {
-                  arrangedNewsItems.forEach((arrangedNewsItem) => {
-                      this._setNewsItemDisplaying(
-                        arrangedNewsItem, newsSelector, newsDisplayOptions);
-                    });
-                  resolve();
-                })).then(() => {
-                  if (! this.designProperty.itemUnfixed) {
-                    var newsItemsMap = this.arrangedNewsItemsMap;
-                    // Cache added news items for each parent if not unfixed.
-                    arrangedNewsItems.forEach((arrangedNewsItem) => {
-                        for (const newsParent of this.arrangedNewsParents) {
-                          if (newsParent.contains(arrangedNewsItem)) {
-                            var newsItems = newsItemsMap.get(newsParent);
-                            if (newsItems == undefined) {
-                              newsItems = new Array();
-                              newsItemsMap.set(newsParent, newsItems);
-                            }
-                            newsItems.push(arrangedNewsItem);
-                            break;
-                          }
-                        }
-                      });
+            if (observedNewsItems.length > 0) {
+              var newsItems = undefined;
+              if (! this.designProperty.itemUnfixed) {
+                for (const newsParent of this.newsParents) {
+                  if (newsParent.contains(newsObservedNode)) {
+                    newsItems = this.newsItemsMap.get(newsParent);
+                    break;
                   }
-                  Debug.printMessage(
-                    "Display " + arrangedNewsItems.length + " news item"
-                    + (arrangedNewsItems.length > 1 ? "s" : "") + ".");
-                  Debug.printMessage("Arrange added nodes.");
-                  Debug.printNodes(arrangedNodes);
-                }).catch((error) => {
-                  Debug.printStackTrace(error);
+                }
+              }
+              // Arrange added news items without reloading the whole.
+              observedNewsItems.forEach((observedNewsItem) => {
+                  if (newsItems != undefined) {
+                    // Cache added news items for the news parent if not
+                    // unfixed nor changed as the key on a news site.
+                    newsItems.push(observedNewsItem);
+                  }
+                  this._setNewsItemDisplaying(observedNewsItem, newsSelector);
                 });
+              Debug.printMessage(
+                "Display " + observedNewsItems.length + " news item"
+                + (observedNewsItems.length > 1 ? "s" : "") + ".");
+              Debug.printMessage("Arrange added nodes.");
+              Debug.printNodes(arrangementAddedNodes);
+              // Don't continue to observe the node if unnecessarily.
+              var newsItemMaxCount =
+                this.getObservedNewsItemMaxCount(newsObservedNode);
+              if ((newsItemMaxCount >= 0 && newsItems != undefined
+                  && newsItems.length >= newsItemMaxCount)
+                || this.isObservedNewsItemAddedAtOnce(newsObservedNode)) {
+                var observer = this.newsObserverMap.get(newsObservedNode);
+                if (observer != undefined) {
+                  observer.disconnect();
+                  this.newsObserverMap.delete(newsObservedNode);
+                  Debug.printMessage("Delete the observed node.");
+                  Debug.printNodes(newsObservedNode);
+                }
+              }
             }
             if (removedNodeSet.size > 0
               && this.isObservedNewsItemsCleared(Array.from(removedNodeSet))) {
-              this.arrangedNewsItemsMap.clear();
-              this.arrangedNewsItemParamsMap.clear();
+              this.newsItemsMap.clear();
+              this.newsItemParamsMap.clear();
             }
           });
-        arrangementObserver.observe(observedNode, observerOptions);
-        this.arrangementObservers.push(arrangementObserver);
+        newsObserver.observe(newsObservedNode, newsObserverOptions);
+        this.newsObserverMap.set(newsObservedNode, newsObserver);
         return Promise.resolve();
       }
 
+      /*
+       * Displays news items in this design and returns the promise.
+       */
       async display() {
-        const displayingPromises = new Array();
-        if (! this.designProperty.itemUnfixed) {
-          var newsParents = this.getNewsParentElements();
+        var newsParents = this.getNewsParentElements();
+        if (newsParents.length > 0) {
+          if (! this.designProperty.itemUnfixed) {
+            // Cache news parents displayed firstly if not unfixed.
+            this.newsParents = newsParents;
+          }
+          const displayingPromises = new Array();
           newsParents.forEach((newsParent) => {
-              var newsItems = this.getNewsItemElements(newsParent);
-              if (newsItems.length > 0) {
-                this.arrangedNewsItemsMap.set(newsParent, newsItems);
-                displayingPromises.push(this._arrangeNewsItems(newsParent));
+              var newsItems = EMPTY_NEWS_ELEMENTS;
+              var observedNodes = this.getObservedNodes(newsParent);
+              if (! this.designProperty.itemUnfixed) {
+                newsItems = this.getNewsItemElements(newsParent);
+                if (newsItems.length > 0 || observedNodes.length > 0) {
+                  // Cache news items displayed firstly or added later.
+                  this.newsItemsMap.set(newsParent, newsItems);
+                  displayingPromises.push(this._arrangeNewsItems(newsParent));
+                }
               }
+              observedNodes.forEach((observedNode) => {
+                  if (newsItems.length > 0) {
+                    // Don't begin to observe the node if news items have
+                    // been displayed yet.
+                    var newsItemMaxCount =
+                      this.getObservedNewsItemMaxCount(observedNode);
+                    if ((newsItemMaxCount >= 0
+                        && newsItems.length >= newsItemMaxCount)
+                      || this.isObservedNewsItemAddedAtOnce(observedNode)) {
+                      return;
+                    }
+                  }
+                  displayingPromises.push(
+                    this._observeNewsItems(
+                      observedNode, this.getObserverOptions(newsParent)));
+                  Debug.printMessage("Set the observed node.");
+                  Debug.printNodes(observedNode);
+                });
             });
-          this.arrangedNewsParents = newsParents;
+          return Promise.all(displayingPromises);
         }
-        return Promise.all(displayingPromises);
+        return Promise.resolve();
       }
 
-      async arrange(newsSelector, newsDisplayOptions) {
-        if (newsSelector == undefined) {
-          throw newUnsupportedOperationException();
+      _setNewsArrangement(arrangingPromises, arrangeNewsParent) {
+        var newsSelector = Site.getNewsSelector();
+        var newsParents = this.newsParents;
+        if (newsParents == undefined) {
+          newsParents = this.getNewsParentElements();
         }
-        const arrangingPromises = new Array();
-        var arrangedNewsParents = this.arrangedNewsParents;
-        if (arrangedNewsParents == undefined) {
-          arrangedNewsParents = this.getNewsParentElements();
-        }
-        arrangedNewsParents.forEach((newsParent) => {
+        newsParents.forEach((newsParent) => {
+            if (arrangeNewsParent != undefined) {
+              arrangeNewsParent(newsParent);
+            }
             arrangingPromises.push(
-              this._arrangeNewsItems(
-                newsParent, newsSelector, newsDisplayOptions));
+              this._arrangeNewsItems(newsParent, newsSelector));
           });
-        if (this.arrangementObservers == undefined) {
-          this.arrangementObservers = new Array();
-          arrangedNewsParents.forEach((newsParent) => {
-              var observedNodes = this.getObservedNodes(newsParent);
-              if (observedNodes.length > 0) {
-                observedNodes.forEach((observedNode) => {
-                    arrangingPromises.push(
-                      this._observeNewsItems(
-                        observedNode, this.getObserverOptions(newsParent),
-                        newsSelector, newsDisplayOptions));
-                  });
-                Debug.printMessage("Set the observed nodes.");
-                Debug.printNodes(observedNodes);
-              }
-            });
+      }
+
+      /*
+       * Arranges news items in this design and returns the promise.
+       */
+      async arrange() {
+        const arrangingPromises = new Array();
+        this._setNewsArrangement(arrangingPromises);
+        if (this.rearrangementObservedNode == undefined) {
           // Set the observer to rearrange news items by changing attributes.
-          var rearrangementObservedNode = this.getRearrangementObservedNode();
-          if (rearrangementObservedNode != null) {
+          this.rearrangementObservedNode = this.getRearrangementObservedNode();
+          if (this.rearrangementObservedNode != null) {
             arrangingPromises.push(
               new Promise((resolve) => {
-                  var rearrangementObserver =
-                    new MutationObserver((mutations) => {
+                  var newsObserver = new MutationObserver((mutations) => {
                       var changedNode = null;
                       var changedNodes = new Array();
                       mutations.forEach((mutation) => {
@@ -1016,17 +1067,13 @@ ExtractNews.Design = (() => {
                           }
                         });
                       if (this.isRearrangementNewsItemsCleared(changedNodes)) {
-                        this.arrangedNewsItemsMap.clear();
-                        this.arrangedNewsItemParamsMap.clear();
+                        this.newsItemsMap.clear();
+                        this.newsItemParamsMap.clear();
                       }
                       if (changedNode != null) {
                         const rearrangingPromises = new Array();
-                        this.getNewsParentElements().forEach((newsParent) => {
-                            this.rearrangeNewsParent(newsParent);
-                            rearrangingPromises.push(
-                              this._arrangeNewsItems(
-                                newsParent, newsSelector, newsDisplayOptions));
-                          });
+                        this._setNewsArrangement(
+                          rearrangingPromises, this.rearrangeNewsParent);
                         Promise.all(rearrangingPromises).then(() => {
                             Debug.printMessage("Arrange by the changed node.");
                             Debug.printNodes(changedNode);
@@ -1035,43 +1082,49 @@ ExtractNews.Design = (() => {
                           });
                       }
                     });
-                  rearrangementObserver.observe(rearrangementObservedNode, {
+                  newsObserver.observe(this.rearrangementObservedNode, {
                       attributes: true,
                       subtree: true
                     });
-                  this.arrangementObservers.push(rearrangementObserver);
+                  this.rearrangementObserver = newsObserver;
                   resolve();
                 }));
             Debug.printMessage("Set the rearrangement observed node.");
-            Debug.printNodes(rearrangementObservedNode);
+            Debug.printNodes(this.rearrangementObservedNode);
           }
         }
         return Promise.all(arrangingPromises);
       }
 
+      /*
+       * Resets the information of dropping news topics in this design.
+       */
       reset() {
-        this.arrangedNewsItemParamsMap.forEach((newsItemParams) => {
+        this.newsItemParamsMap.forEach((newsItemParams) => {
             newsItemParams.topicDropped = undefined;
           });
-        if (this.arrangementObservers != undefined) {
-          var arrangementObservers = this.arrangementObservers.length;
-          if (arrangementObservers.length > 0) {
-            arrangementObservers.forEach((arrangementObserver) => {
-              arrangementObserver.disconnect();
-            });
-            Debug.printMessage(
-              "Clear " + arrangementObservers.length + " observed node"
-              (arrangementObservers.length > 1 ? "s" : "") + ".");
-          }
-          this.arrangementObservers = undefined;
-        }
       }
 
+      /*
+       * Clears the information of news items and observers in this design.
+       */
       clear() {
-        this.arrangedNewsParents = undefined;
-        this.arrangedNewsItemsMap.clear();
-        this.arrangedNewsItemParamsMap.clear();
-        this.reset();
+        if (this.rearrangementObserver != undefined) {
+          this.rearrangementObserver.disconnect();
+          this.rearrangementObserver = undefined;
+          Debug.printMessage("Clear the rearrangement observed node.");
+          Debug.printNodes(this.rearrangementObservedNode);
+          this.rearrangementObservedNode = undefined;
+        }
+        this.newsObserverMap.forEach((newsObserver, observedNode) => {
+            newsObserver.disconnect();
+            Debug.printMessage("Clear the observed node.");
+            Debug.printNodes(observedNode);
+          });
+        this.newsParents = undefined;
+        this.newsItemsMap.clear();
+        this.newsItemParamsMap.clear();
+        this.newsObserverMap.clear();
       }
     }
 

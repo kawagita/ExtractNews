@@ -64,6 +64,10 @@ const ExtractNews = (() => {
         // Key to read and write the flag whether the site is enabled
         SITE_ENABLED_KEY: "Enabled",
 
+        // Maximum count of news selections or fitlerings
+        SELECTION_MAX_COUNT: 100,
+        FILTERING_MAX_COUNT: 100,
+
         // Filtering ID for all categories
         FILTERING_FOR_ALL: "All",
 
@@ -502,14 +506,15 @@ const ExtractNews = (() => {
         _ExtractNews.TARGET_RETURN
       ]);
 
+    _ExtractNews.TARGET_NAME_SET = TARGET_NAME_SET;
+
     /*
      * Returns true if the specified string is a filtering target name.
      */
     function isFilteringTargetName(targetName) {
-      return ExtractNews.TARGET_NAME_SET.has(targetName.toUpperCase());
+      return TARGET_NAME_SET.has(targetName.toUpperCase());
     }
 
-    _ExtractNews.TARGET_NAME_SET = TARGET_NAME_SET;
     _ExtractNews.isFilteringTargetName = isFilteringTargetName;
 
     function _checkTargetName(targetName) {
@@ -719,17 +724,6 @@ const ExtractNews = (() => {
     _ExtractNews.Filtering = Filtering;
     _ExtractNews.newFiltering = newFiltering;
 
-
-    // Maximum count and index strings used by read or written functions
-    const SELECTION_MAX_COUNT = 100;
-    const SELECTION_INDEX_STRINGS = new Array();
-
-    for (let i = 0; i < SELECTION_MAX_COUNT; i++) {
-      SELECTION_INDEX_STRINGS.push(String(i));
-    }
-
-    _ExtractNews.SELECTION_MAX_COUNT = SELECTION_MAX_COUNT;
-    _ExtractNews.SELECTION_INDEX_STRINGS = SELECTION_INDEX_STRINGS;
 
     /*
      * The setting to select news topics and/or senders.

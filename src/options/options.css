@@ -73,12 +73,7 @@ li:first-child {
   border-left-style: none;
 }
 
-li:hover {
-  color: #000000;
-  z-index: 2;
-}
-
-li:focus {
+li.pointed {
   color: #000000;
   z-index: 2;
 }
@@ -145,7 +140,7 @@ input {
 }
 
 hr {
-  margin: 20px 5px;
+  margin: 0px 5px;
   border-style: solid;
   border-width: 1px;
   border-bottom: none;
@@ -264,7 +259,7 @@ select {
 }
 
 #FilteringCategory {
-  margin: 30px 0px 20px 0px;
+  margin: 25px 0px 15px 0px;
   padding: 0px 20px;
   align-items: flex-start;
 }
@@ -329,6 +324,11 @@ select {
 .narrow #FilteringCategoryAlways span {
   padding: 5px 16px;
   width: 264px;
+}
+
+#FilteringBlocks {
+  padding-bottom: 15px;
+  display: block;
 }
 
 .block {
@@ -404,13 +404,13 @@ select {
 }
 
 .target_name div {
-  margin: 0px 10px 5px 5px;
+  margin: 2px 10px 5px 5px;
   height: 26px;
   font-size: 14px;
 }
 
 .target_name label {
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .narrow .target_name {
@@ -427,7 +427,7 @@ select {
 .target_words > input {
   margin: 8px;
   padding: 2px 8px;
-  width: 225px;
+  width: 224px;
   border-radius: 5px;
   font-size: 14px;
 }
@@ -439,7 +439,7 @@ select {
 .target_words div:last-child {
   margin: 0px 5px 5px 5px;
   height: 26px;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .target_words label {
@@ -456,7 +456,7 @@ select {
 }
 
 .target_words_negative label {
-  padding: 3px;
+  padding: 0px 3px 3px 3px;
   width: 9px;
   opacity: 0;
 }
@@ -709,7 +709,7 @@ select {
 }
 
 #SelectionList {
-  margin: 10px 0px;
+  margin: 25px 0px;
   padding: 20px;
   border-radius: 5px;
   background-color: #c8c8c8;
@@ -761,6 +761,8 @@ select {
 }
 
 .page_header li.selected {
+  font-size: 16px;
+  font-weight: bold;
   background-color: #a9a9a9;
   color: #000000;
 }
@@ -769,12 +771,7 @@ select {
   display: none;
 }
 
-.page_header li:hover {
-  color: #000000;
-  z-index: 2;
-}
-
-.page_header li:focus {
+.page_header li.pointed {
   color: #000000;
   z-index: 2;
 }

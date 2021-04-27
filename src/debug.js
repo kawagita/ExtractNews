@@ -195,27 +195,6 @@ function newIndexOutOfBoundsException(name, index) {
 }
 
 /*
- * Creates an exception which occurs by invalid parameters are stored in
- * the array at run time.
- */
-function newArrayInvalidParametersException(array) {
-  if (array == undefined) {
-    throw newNullPointerException("array");
-  } else if (! Array.isArray(array)) {
-    throw newIllegalArgumentException("array");
-  }
-  var message = "[";
-  for (let i = 0; i < array.length; i++) {
-    if (i > 0) {
-      message += ",";
-    }
-    message += " " + array[i].toString();
-  }
-  message += " ]";
-  return newRuntimeException(message, "ArrayInvalidParametersException");
-}
-
-/*
  * Creates an exception which occurs by an empty string at run time.
  */
 function newEmptyStringException(name) {
@@ -226,64 +205,6 @@ function newEmptyStringException(name) {
   }
   return newRuntimeException(
     name + " is an empty string.", "EmptyStringException");
-}
-
-/*
- * Creates an exception which occurs by an empty array at run time.
- */
-function newEmptyArrayException(name) {
-  if (name == undefined) {
-    throw newNullPointerException("name");
-  } else if ((typeof name) != "string") {
-    throw newIllegalArgumentException("name");
-  }
-  return newRuntimeException(
-    name + " is an empty array.", "EmptyArrayException");
-}
-
-/*
- * Creates an exception which occurs by invalid URL on a site at run time.
- */
-function newInvalidSiteUrlException(url) {
-  if (url == undefined) {
-    throw newNullPointerException("url");
-  } else if ((typeof url) != "string") {
-    throw newIllegalArgumentException("url");
-  }
-  return newRuntimeException(url, "InvalidSiteURLException");
-}
-
-/*
- * Creates an exception which occurs by invalid access to the local storage
- * at run time.
- */
-function newInvalidStorageAccessException(key) {
-  if (key == undefined) {
-    throw newNullPointerException("key");
-  } else if ((typeof key) != "string") {
-    throw newIllegalArgumentException("key");
-  }
-  return newRuntimeException(
-    key + " is an invalid access in local storage.",
-    "InvalidStorageAccessException");
-}
-
-/*
- * Creates an exception which occurs by the storage consistency at run time.
- */
-function newStorageConsistencyException(key, value) {
-  if (key == undefined) {
-    throw newNullPointerException("key");
-  } else if ((typeof key) != "string") {
-    throw newIllegalArgumentException("key");
-  } else if ((typeof value) == "string") {
-    if (value == "") {
-      value = "empry string";
-    }
-  }
-  return newRuntimeException(
-    key + " is "  + value.toString() + " in local storage.",
-    "StorageConsistencyException");
 }
 
 /*

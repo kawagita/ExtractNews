@@ -415,78 +415,8 @@
   },
 
   "extractNewsFilteringIds": {
-    "message": "Society,World,Business,Technology,Sports,Entertainment,Life,All",
+    "message": "All",
     "description": "IDs of the filtering."
-  },
-
-  "extractNewsSocietyFilteringCategoryName": {
-    "message": "Society",
-    "description": "Category name of the filtering for society."
-  },
-
-  "extractNewsSocietyFilteringCategoryTopics": {
-    "message": "Society,News,Politics",
-    "description": "Category topics of the filtering for society."
-  },
-
-  "extractNewsWorldFilteringCategoryName": {
-    "message": "World",
-    "description": "Category name of the filtering for world."
-  },
-
-  "extractNewsWorldFilteringCategoryTopics": {
-    "message": "World",
-    "description": "Category topics of the filtering for world."
-  },
-
-  "extractNewsBusinessFilteringCategoryName": {
-    "message": "Business",
-    "description": "Category name of the filtering for business."
-  },
-
-  "extractNewsBusinessFilteringCategoryTopics": {
-    "message": "Business,Finance,Money",
-    "description": "Category topics of the filtering for business."
-  },
-
-  "extractNewsTechnologyFilteringCategoryName": {
-    "message": "Technology",
-    "description": "Category name of the filtering for technology."
-  },
-
-  "extractNewsTechnologyFilteringCategoryTopics": {
-    "message": "Technology,IT,Science",
-    "description": "Category topics of the filtering for technology."
-  },
-
-  "extractNewsSportsFilteringCategoryName": {
-    "message": "Sports",
-    "description": "Category name of the filtering for sports."
-  },
-
-  "extractNewsSportsFilteringCategoryTopics": {
-    "message": "Sports",
-    "description": "Category topics of the filtering for sports."
-  },
-
-  "extractNewsEntertainmentFilteringCategoryName": {
-    "message": "Entertainment",
-    "description": "Category name of the filtering for entertainment."
-  },
-
-  "extractNewsEntertainmentFilteringCategoryTopics": {
-    "message": "Entertainment",
-    "description": "Category topics of the filtering for entertainment."
-  },
-
-  "extractNewsLifeFilteringCategoryName": {
-    "message": "Life",
-    "description": "Category name of the filtering for life."
-  },
-
-  "extractNewsLifeFilteringCategoryTopics": {
-    "message": "Life",
-    "description": "Category topics of the filtering for life."
   },
 
   "extractNewsAllFilteringCategoryName": {

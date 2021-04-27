@@ -48,10 +48,11 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
       return ExtractNews.getLocalizedRegExp("ImpressWatch" + id);
     }
 
-    const ITEM_GROUP = "group";
+    const TOPIC_ITEM = "item";
+    const TOPIC_TITLE = "title";
+    const TOPIC_PROPERTIES = Array.of({ selectors: "." + TOPIC_TITLE });
 
-    const ITEM_PROPERTIES = Array.of({ selectorsForAll: ".item" });
-    const TITLE_PROPERTIES = Array.of({ selectors: ".title" });
+    const NATIVE_TIE_UP = "native-tie-up";
 
     /*
      * Panels of the top news on Impress Watch.
@@ -64,9 +65,20 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
               }),
             itemSelected: false,
             itemLayoutUnchanged: true,
-            topicProperties: TITLE_PROPERTIES
+            topicProperties: TOPIC_PROPERTIES
           });
       }
+    }
+
+    function _removeBreadcrumbItems(newsItems) {
+      for (let i = newsItems.length - 1; i >= 0; i--) {
+        var newsParentClassList = newsItems[i].parentNode.classList;
+        if (newsParentClassList.contains("breadcrumb")
+          || newsParentClassList.contains("list-label")) {
+          newsItems.splice(i, 1);
+        }
+      }
+      return newsItems;
     }
 
     /*
@@ -79,10 +91,22 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
                 selectorsForAll: "#main " + parentSelectors,
                 setNewsElement: setNewsParent
               }),
-            itemSelected: itemSelected,
-            itemProperties: ITEM_PROPERTIES,
-            topicProperties: TITLE_PROPERTIES
+            keepDisplaying: false,
+            itemSelected: itemSelected
           });
+      }
+
+      getNewsItemElements(newsParent) {
+        return _removeBreadcrumbItems(
+          Array.from(newsParent.querySelectorAll("." + TOPIC_ITEM)));
+      }
+
+      getNewsTopicElement(newsItem) {
+        if (! newsItem.classList.contains("ad")
+          && ! newsItem.classList.contains(NATIVE_TIE_UP)) {
+          return newsItem.querySelector("." + TOPIC_TITLE);
+        }
+        return null;
       }
     }
 
@@ -107,6 +131,8 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
           });
       }
     }
+
+    const BLOCK_ITEM_GROUP = "group";
 
     /*
      * Blocks of news topics displayed in the main area on Impress Watch.
@@ -142,7 +168,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
 
       _setGroupDisplay(newsItem, display) {
           var newsParent = newsItem.parentNode;
-          if (newsParent.classList.contains(ITEM_GROUP)) {
+          if (newsParent.classList.contains(BLOCK_ITEM_GROUP)) {
             for (let i = 0; i < newsParent.children.length; i++) {
               if (newsParent.children[i].style.display != display) {
                 return;
@@ -150,7 +176,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
             }
             var newsGroup = newsParent.parentNode;
             do {
-              if (newsGroup.classList.contains(ITEM_GROUP)) {
+              if (newsGroup.classList.contains(BLOCK_ITEM_GROUP)) {
                 newsGroup.style.display = display;
                 return;
               }
@@ -182,17 +208,21 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
       constructor() {
         super(".daily-block", (element, newsParents) => {
             if (element.id == "summary-block") {
-              element = element.querySelector("." + ITEM_GROUP);
+              element = element.querySelector("." + BLOCK_ITEM_GROUP);
             }
             newsParents.push(element);
           });
       }
 
       getObservedNodes(newsParent) {
-        if (newsParent.classList.contains(ITEM_GROUP)) {
+        if (newsParent.classList.contains(BLOCK_ITEM_GROUP)) {
           return Array.of(newsParent.querySelector("ul"));
         }
         return new Array();
+      }
+
+      isObserverNodesAddedAtOnce(observedNode) {
+        return true;
       }
 
       getObservedNewsItemElements(addedNode) {
@@ -214,19 +244,25 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
     /*
      * The list of news topics on Kodomo IT of Impress Watch.
      */
-    class ImpressWatchKodomoItList extends Design.NewsDesign {
+    class ImpressWatchKodomoItLists extends ImpressWatchMainLists {
       constructor() {
-        super({
-            parentProperties: Array.of({
-                selectors: "#main section"
-              }),
-            keepDisplaying: true,
-            itemSelected: true,
-            itemProperties: ITEM_PROPERTIES,
-            topicProperties: TITLE_PROPERTIES,
-            observerOptions: Design.SUBTREE_OBSERVER_OPTIONS,
-            observedProperties: Design.ONESELF_QUERY_PROPERTIES
+        super("section", (element, newsParents) => {
+            if (newsParents.length < 1) {
+              newsParents.push(element);
+            }
           });
+      }
+
+      keepNewsParentDisplaying(newsParent) {
+        return true;
+      }
+
+      getObserverOptions(newsParent) {
+        return Design.SUBTREE_OBSERVER_OPTIONS;
+      }
+
+      getObservedNodes(newsParent) {
+        return Array.of(newsParent);
       }
 
       getObservedNewsItemElements(addedNode) {
@@ -320,8 +356,10 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
                     newsParents.push(element.parentNode);
                   }
               }),
-            itemProperties: ITEM_PROPERTIES,
-            topicProperties: TITLE_PROPERTIES
+            itemProperties: Array.of({
+                selectorsForAll: "." + TOPIC_ITEM
+              }),
+            topicProperties: TOPIC_PROPERTIES
           });
       }
     }
@@ -351,33 +389,119 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
             observedProperties: Array.of({
                 selectors: "ul"
               }),
-            observedItemProperties: Design.ONESELF_QUERY_PROPERTIES
+            observedItemProperties: Design.ONESELF_QUERY_PROPERTIES,
+            observedItemAddedAtOnce: true
           });
       }
     }
 
     /*
-     * News topics observed in the main area on Impress Watch.
+     * News topics displayed later in the main area on Impress Watch.
      */
-    class ImpressWatchMainObservedTopics extends Design.NewsDesign {
-      constructor(parentSelectors, keepDisplaying = true) {
+    class ImpressWatchLateMainTopics extends Design.NewsDesign {
+      constructor(parentSelectors, itemMaxCount, keepDisplaying = true) {
         super({
             parentProperties: Array.of({
                 selectors: "#main " + parentSelectors
               }),
             keepDisplaying: keepDisplaying,
-            itemProperties: ITEM_PROPERTIES,
-            topicProperties: TITLE_PROPERTIES,
+            itemUnfixed: ! Number.isInteger(itemMaxCount),
+            itemProperties: Array.of({
+                selectorsForAll: "." + TOPIC_ITEM
+              }),
             observerOptions: Design.SUBTREE_OBSERVER_OPTIONS,
-            observedProperties: Design.ONESELF_QUERY_PROPERTIES
+            observedProperties: Design.ONESELF_QUERY_PROPERTIES,
+            observedItemMaxCount: itemMaxCount
           });
+      }
+
+      getNewsTopicElement(newsItem) {
+        if (! newsItem.classList.contains(NATIVE_TIE_UP)) {
+          return newsItem.querySelector("." + TOPIC_TITLE);
+        }
+        return null;
       }
 
       getObservedNewsItemElements(addedNode) {
         if (addedNode.tagName == "LI") {
           return Array.of(addedNode);
         }
-        return Array.from(addedNode.querySelectorAll("li"));
+        return Array.from(addedNode.querySelectorAll("li.item"));
+      }
+    }
+
+    const TRENDING_ALL_INITIAL_DISPLAY_COUNT = 10;
+    const TRENDING_INITIAL_DISPLAY_COUNT = 3;
+
+    /*
+     * The trending of news topics in the main area on Impress Watch.
+     */
+    class ImpressWatchTrending extends ImpressWatchLateMainTopics {
+      constructor() {
+        super("section.list");
+        this.newsItemInitialDisplaySet = new Set();
+      }
+
+      getNewsItemElements(newsParent) {
+        var newsItems =
+          _removeBreadcrumbItems(super.getNewsItemElements(newsParent));
+        newsItems.forEach((newsItem) => {
+            if (super.isNewsItemDisplaying(newsItem)) {
+              this.newsItemInitialDisplaySet.add(newsItem);
+            }
+          });
+        return newsItems;
+      }
+
+      showNewsItemElement(newsItem) {
+        var moreButton = newsItem.parentNode.nextElementSibling;
+        if (! super.isNewsItemDisplaying(moreButton)
+          || this.newsItemInitialDisplaySet.has(newsItem)) {
+          return super.showNewsItemElement(newsItem);
+        }
+        return false;
+      }
+
+      getObservedNewsItemElements(addedNode) {
+        var newsItems =
+          _removeBreadcrumbItems(super.getObservedNewsItemElements(addedNode));
+        var newsItemInitialDisplayCount = TRENDING_INITIAL_DISPLAY_COUNT;
+        if (addedNode.parentNode.id == "trending_all") {
+          newsItemInitialDisplayCount = TRENDING_ALL_INITIAL_DISPLAY_COUNT;
+        }
+        for (let i = 0; i < newsItemInitialDisplayCount; i++) {
+          this.newsItemInitialDisplaySet.add(newsItems[i]);
+        }
+        return newsItems;
+      }
+
+      getRearrangementObservedNode() {
+        return super.getNewsParentElements()[0];
+      }
+
+      isRearrangedBy(changedNode) {
+        if (changedNode.classList.contains("more")) {
+          return true;
+        }
+        return false;
+      }
+s    }
+
+    const ARTICLE_LIST = "article_list";
+
+    /*
+     * News topics in the main area on Impress Watch Zaitaku Life Tokushu.
+     */
+    class ImpressWatchLifeAtHome extends ImpressWatchLateMainTopics {
+      constructor() {
+        super("#" + ARTICLE_LIST);
+      }
+
+      getObservedNewsItemElements(addedNode) {
+        if (addedNode.parentNode.id == ARTICLE_LIST) {
+          return super.getObservedNewsItemElements(addedNode);
+        }
+        return new Array();
       }
     }
 
@@ -414,7 +538,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
                 selectors: ".corner",
               }),
             keepDisplaying: true,
-            topicProperties: TITLE_PROPERTIES
+            topicProperties: TOPIC_PROPERTIES
           }),
         // Links to outer articles
         new Design.NewsDesign({
@@ -428,10 +552,10 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
             parentProperties: Array.of({
                 selectorsForAll: ".related"
               }),
-            topicProperties: TITLE_PROPERTIES
+            topicProperties: TOPIC_PROPERTIES
           }),
         // TRENDING
-        new ImpressWatchMainObservedTopics("#chartbeat_recommend", false));
+        new ImpressWatchLateMainTopics("#chartbeat_recommend", 3, false));
     } else if (newsSiteUrlParser.parseDirectory()) { // Impress site's top
       if (siteIndex >= 0) { // INTERNET Watch, PC Watch, ..., and Watch Video
         Site.setNewsDesigns(
@@ -445,7 +569,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
           new ImpressWatchNewsLists());
       }
     } else if (newsSiteUrlParser.parse(KODOMO_IT_PATH)) { // Kodomo IT
-      Site.setNewsDesign(new ImpressWatchKodomoItList());
+      Site.setNewsDesign(new ImpressWatchKodomoItLists());
       Site.addNewsTopicWords(splitImpressWatchString("KodomoItTopicWords"));
     } else if (newsSiteUrlParser.parse(BACK_NUMBER_PATH)) { // Back number
       if (newsSiteUrlParser.parse(
@@ -464,13 +588,13 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
       Site.setNewsDesign(new ImpressWatchRanking("ranking-list"));
     } else if (newsSiteUrlParser.parse(HEADLINE_PATH)) { // News Headline
       Site.setNewsDesigns(
-        new ImpressWatchMainObservedTopics("article"),
+        new ImpressWatchLateMainTopics("article", 80),
         // TRENDING
-        new ImpressWatchMainObservedTopics("#chartbeat_recommend", false));
+        new ImpressWatchLateMainTopics("#chartbeat_recommend", 3, false));
     } else if (newsSiteUrlParser.parse(TRENDING_PATH)) { // Trending
-      Site.setNewsDesign(new ImpressWatchMainObservedTopics("section.list"));
+      Site.setNewsDesign(new ImpressWatchTrending());
     } else if (newsSiteUrlParser.parse(LIFE_AT_HOME_PATH)) { // Zaitaku Work
-      Site.setNewsDesign(new ImpressWatchMainObservedTopics("#article_list"));
+      Site.setNewsDesign(new ImpressWatchLifeAtHome());
     } else if (newsSiteUrlParser.parse(CATEGORY_PATH)) { // Each category
       if (newsSiteUrlParser.parse(
         getImpressWatchString("CategoryListHtml"))) { // Category Links
@@ -500,7 +624,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
           parentProperties: Array.of({
               selectors: ".latest"
             }),
-          topicProperties: TITLE_PROPERTIES
+          topicProperties: TOPIC_PROPERTIES
         }),
       new ImpressWatchRanking("ranking"),
       new ImpressWatchRanking("all-ranking"));

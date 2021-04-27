@@ -399,7 +399,7 @@ ExtractNews.Popup = (() => {
       if (! Array.isArray(newsSelections)) {
         throw newIllegalArgumentException("newsSelections");
       } else if (newsSelections.length == 0) {
-        throw newEmptyArrayException("newsSelections");
+        return Promise.resolve();
       }
       var tabGettingPromise;
       var newsSelectionObjects = new Array();

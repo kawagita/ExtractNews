@@ -165,18 +165,12 @@ ExtractNews.Storage = (() => {
                 if (items[newsFilteringKey] != undefined) {
                   filtering =
                     new ExtractNews.Filtering(items[newsFilteringKey]);
-                } else {
+                } else { // Only the category for all in the initial setting
                   filtering = ExtractNews.newFiltering();
                   filtering.setCategoryName(
                     ExtractNews.getLocalizedString(
                       filteringId + "FilteringCategoryName"));
-                  if (filteringId != ExtractNews.FILTERING_FOR_ALL) {
-                    filtering.setCategoryTopics(
-                      ExtractNews.splitLocalizedString(
-                        filteringId + "FilteringCategoryTopics"));
-                  } else {
-                    filtering.setPolicyTarget(ExtractNews.TARGET_ACCEPT);
-                  }
+                  filtering.setPolicyTarget(ExtractNews.TARGET_ACCEPT);
                 }
                 newsFilteringMap.set(filteringId, filtering);
               }));
@@ -248,24 +242,12 @@ ExtractNews.Storage = (() => {
 
     _Storage.readNewsSelectionCount = readNewsSelectionCount;
 
-    // Read and write functions for news selections as the key of index number
-
-    function _checkIndex(index, maxIndex) {
+    function _checkNewsSelectionIndex(index, maxIndex) {
       if (! Number.isInteger(index)) {
         throw newIllegalArgumentException("index");
       } else if (index < 0 || index > maxIndex) {
         throw newIndexOutOfBoundsException("news selections", index);
       }
-    }
-
-    function _getIndex(indexString, maxIndex) {
-      var index = Number(indexString);
-      _checkIndex(index, maxIndex);
-      return index;
-    }
-
-    function _checkIndexString(indexString, maxIndexNumber) {
-      _getIndex(indexString, maxIndexNumber);
     }
 
     /*
@@ -274,8 +256,8 @@ ExtractNews.Storage = (() => {
      */
     function readNewsSelection(index) {
       return readNewsSelectionCount().then((newsSelectionCount) => {
-          _checkIndex(index, newsSelectionCount - 1);
-          var indexString = ExtractNews.SELECTION_INDEX_STRINGS[index];
+          _checkNewsSelectionIndex(index, newsSelectionCount - 1);
+          var indexString = String(index);
           return ExtractNews.readStorage(indexString).then((items) => {
               return Promise.resolve(
                 new ExtractNews.Selection(items[indexString]));
@@ -298,7 +280,8 @@ ExtractNews.Storage = (() => {
       }
       return readNewsSelectionCount().then((newsSelectionCount) => {
           for (let i = 0; i < indexStrings.length; i++) {
-            _checkIndexString(indexStrings[i], newsSelectionCount - 1);
+            _checkNewsSelectionIndex(
+              Number(indexStrings[i]), newsSelectionCount - 1);
           }
           return ExtractNews.readStorage(indexStrings);
         }).then((items) => {
@@ -306,11 +289,10 @@ ExtractNews.Storage = (() => {
           for (let i = 0; i < indexStrings.length; i++) {
             var indexString = indexStrings[i];
             var newsSelectionObject = items[indexString];
-            if (newsSelectionObject == undefined) {
-              throw newStorageConsistencyException(indexString, "undefined");
+            if (newsSelectionObject != undefined) {
+              newsSelections.push(
+                new ExtractNews.Selection(newsSelectionObject));
             }
-            newsSelections.push(
-              new ExtractNews.Selection(newsSelectionObject));
           }
           return Promise.resolve(newsSelections);
         });
@@ -327,28 +309,24 @@ ExtractNews.Storage = (() => {
       if (newsSelection == undefined) {
         throw newNullPointerException("newsSelection");
       }
-      var writtenMaxIndex;
       return readNewsSelectionCount().then((newsSelectionCount) => {
-          writtenMaxIndex = newsSelectionCount;
-          if (writtenMaxIndex >= ExtractNews.SELECTION_MAX_COUNT) {
-            writtenMaxIndex--;
-          }
-          _checkIndex(index, writtenMaxIndex + 1);
-          var indexString = ExtractNews.SELECTION_INDEX_STRINGS[index];
+          _checkNewsSelectionIndex(index, newsSelectionCount);
+          var indexString = String(index);
           return ExtractNews.writeStorage({
               [indexString]: newsSelection.toObject()
+            }).then(() => {
+              if (index >= newsSelectionCount) {
+                return ExtractNews.writeStorage({
+                    [SELECTION_COUNT_KEY]: newsSelectionCount + 1
+                  });
+              }
+              return Promise.resolve();
             });
-        }).then(() => {
-          if (index >= writtenMaxIndex) {
-            return ExtractNews.writeStorage({
-                [SELECTION_COUNT_KEY]: index + 1
-              });
-          }
-          return Promise.resolve();
         });
     }
 
-    // Writes the specified objects of news selection to the local storage.
+    // Writes the specified news selection objects for the specified indexes
+    // into the local storage.
 
     function _writeNewsSelectionObject(indexStrings, newsSelectionObjects) {
       if (indexStrings.length > 0) {
@@ -369,35 +347,33 @@ ExtractNews.Storage = (() => {
      * the local storage and returns the promise.
      */
     function writeNewsSelections(indexStrings, newsSelections) {
-      if (! Array.isArray(newsSelections)) {
-        throw newIllegalArgumentException("newsSelections");
+      if (indexStrings == undefined) {
+        throw newNullPointerException("indexStrings");
       } else if (! Array.isArray(indexStrings)) {
         throw newIllegalArgumentException("indexStrings");
+      } else if (! Array.isArray(newsSelections)) {
+        throw newIllegalArgumentException("newsSelections");
+      } else if (indexStrings.length > newsSelections.length) {
+        throw newIndexOutOfBoundsException(
+          "news selections", indexStrings.length);
       } else if (indexStrings.length == 0) {
         return Promise.resolve();
       }
-      var writtenMaxIndex;
       return readNewsSelectionCount().then((newsSelectionCount) => {
-          writtenMaxIndex = newsSelectionCount;
-          if (writtenMaxIndex >= ExtractNews.SELECTION_MAX_COUNT) {
-            writtenMaxIndex--;
-          }
           var newsSelectionObjects = new Array();
           for (let i = 0; i < indexStrings.length; i++) {
-            if (newsSelections[i] == undefined) {
-              throw newArrayInvalidParametersException(newsSelections);
-            }
-            var indexString = indexStrings[i];
-            var index = _getIndex(indexString, writtenMaxIndex);
-            if (index >= writtenMaxIndex) {
-              writtenMaxIndex = index + 1;
+            var index = Number(indexStrings[i]);
+            _checkNewsSelectionIndex(index, newsSelectionCount);
+            if (index >= newsSelectionCount) {
+              newsSelectionCount++;
             }
             newsSelectionObjects.push(newsSelections[i].toObject());
           }
-          return _writeNewsSelectionObject(indexStrings, newsSelectionObjects);
-        }).then(() => {
-          return ExtractNews.writeStorage({
-              [SELECTION_COUNT_KEY]: writtenMaxIndex
+          return _writeNewsSelectionObject(
+            indexStrings, newsSelectionObjects).then(() => {
+              return ExtractNews.writeStorage({
+                  [SELECTION_COUNT_KEY]: newsSelectionCount
+                });
             });
         });
     }
@@ -413,26 +389,14 @@ ExtractNews.Storage = (() => {
       return removeNewsSelections([ String(index) ]);
     }
 
-    // Inserts the specified index string into the specified array of indexes
-    // which sorted by the number.
-
-    function _setSortedIndexes(indexString, sortedMaxIndex, sortedIndexes) {
-      var sortedIndex = _getIndex(indexString, sortedMaxIndex);
-      for (let i = 0; i < sortedIndexes.length; i++) {
-        if (sortedIndex < sortedIndexes[i]) {
-          sortedIndexes.splice(i, 0, sortedIndex);
-          return;
-        }
-      }
-      sortedIndexes.push(sortedIndex);
-    }
-
     /*
      * Removes news selections for index strings in the specified sorted arrray
      * from the local storage and returns the promise.
      */
     function removeNewsSelections(indexStrings) {
-      if (! Array.isArray(indexStrings)) {
+      if (indexStrings == undefined) {
+        throw newNullPointerException("indexStrings");
+      } else if (! Array.isArray(indexStrings)) {
         throw newIllegalArgumentException("indexStrings");
       } else if (indexStrings.length == 0) {
         return Promise.resolve();
@@ -443,21 +407,35 @@ ExtractNews.Storage = (() => {
       var retainedIndexStrings = new Array();
       return readNewsSelectionCount().then((newsSelectionCount) => {
           var removedIndexes = new Array();
-          for (let i = 0; i < indexStrings.length; i++) {
-            _setSortedIndexes(
-              indexStrings[i], newsSelectionCount - 1, removedIndexes);
-          }
+          indexStrings.forEach((indexString) => {
+              // Insert the index string into the array of removed indexes
+              // which sorted by the number.
+              var sortedIndex = Number(indexString);
+              _checkNewsSelectionIndex(sortedIndex, newsSelectionCount - 1);
+              for (let i = 0; i < removedIndexes.length; i++) {
+                if (sortedIndex < removedIndexes[i]) {
+                  removedIndexes.splice(i, 0, sortedIndex);
+                  return;
+                }
+              }
+              removedIndexes.push(sortedIndex);
+            });
           removedFirstIndex = removedIndexes[0];
           // Collect the string of indexes between news selections removed from
-          // the local storage into an array.
-          var retainedIndex = ExtractNews.SELECTION_MAX_COUNT;
+          // the local storage. See below, if the array of indexes [ 2, 5, 7 ]
+          // is removed, [ 1 ] is not moved, and [ 3, 4, 6, 8, 9, 10 ] is moved
+          // and retained for 10 news selections.
+          //
+          // removedIndexes  = [    2,       5,    7           ]
+          // retainedIndexes = [       3, 4,    6,    8, 9, 10 ]
+          var retainedIndex = newsSelectionCount;
           for (let i = 0; i < removedIndexes.length; i++) {
-            if (retainedIndex < ExtractNews.SELECTION_MAX_COUNT) {
+            if (retainedIndex < newsSelectionCount) {
               var removedIndex = removedIndexes[i];
               if (removedIndex > retainedIndex) {
                 do {
-                  retainedIndexStrings.push(
-                    ExtractNews.SELECTION_INDEX_STRINGS[retainedIndex++]);
+                  retainedIndexStrings.push(String(retainedIndex));
+                  retainedIndex++;
                 } while (removedIndex > retainedIndex);
               }
             } else {
@@ -466,11 +444,10 @@ ExtractNews.Storage = (() => {
             retainedIndex++;
           }
           while (retainedIndex < newsSelectionCount) {
-            retainedIndexStrings.push(
-              ExtractNews.SELECTION_INDEX_STRINGS[retainedIndex++]);
+            retainedIndexStrings.push(String(retainedIndex));
+            retainedIndex++;
           }
           retainedNewsSelectionSize = retainedIndexStrings.length;
-
           // Read news selections retained in the local storage.
           return ExtractNews.readStorage(retainedIndexStrings);
         }).then((items) => {
@@ -479,8 +456,7 @@ ExtractNews.Storage = (() => {
           var movedIndexStrings = new Array();
           var movedObjects = new Array();
           for (let i = 0; i < retainedNewsSelectionSize; i++) {
-            movedIndexStrings.push(
-              ExtractNews.SELECTION_INDEX_STRINGS[removedFirstIndex + i]);
+            movedIndexStrings.push(String(removedFirstIndex + i));
             movedObjects.push(items[retainedIndexStrings[i]]);
           }
           return _writeNewsSelectionObject(movedIndexStrings, movedObjects);
@@ -489,8 +465,8 @@ ExtractNews.Storage = (() => {
           var trailingIndexSrings = new Array();
           var trailingIndex = removedFirstIndex + retainedNewsSelectionSize;
           for (let i = 0; i < removedNewsSelectionSize; i++) {
-            trailingIndexSrings.push(
-              ExtractNews.SELECTION_INDEX_STRINGS[trailingIndex++]);
+            trailingIndexSrings.push(String(trailingIndex));
+            trailingIndex++;
           }
           return ExtractNews.removeStorage(trailingIndexSrings);
         }).then(() => {
@@ -509,7 +485,7 @@ ExtractNews.Storage = (() => {
       return readNewsSelectionCount().then((newsSelectionCount) => {
           var indexStrings = new Array();
           for (let i = 0; i < newsSelectionCount; i++) {
-            indexStrings.push(ExtractNews.SELECTION_INDEX_STRINGS[i]);
+            indexStrings.push(String(i));
           }
           return ExtractNews.removeStorage(indexStrings);
         }).then(() => {

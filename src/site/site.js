@@ -35,6 +35,25 @@ ExtractNews.Site = (() => {
     var newsTopicWordSet = new Set();
 
     /*
+     * Returns the selector which settle to show or hide news topics and/or
+     * senders on this site.
+     */
+    function getNewsSelector() {
+      return newsSelector;
+    }
+
+    _Site.getNewsSelector = getNewsSelector;
+
+    /*
+     * Returns the object of options to display news items on this site.
+     */
+    function getNewsDisplayOptions() {
+      return newsDisplayOptions;
+    }
+
+    _Site.getNewsDisplayOptions = getNewsDisplayOptions;
+
+    /*
      * Sets the specified news design into this site.
      */
     function setNewsDesign(design) {
@@ -48,7 +67,9 @@ ExtractNews.Site = (() => {
      * Sets news designs of the specified variable into this site.
      */
     function setNewsDesigns(...designs) {
-      if (! Array.isArray(designs)) {
+      if (designs == undefined) {
+        throw newNullPointerException("designs");
+      } else if (! Array.isArray(designs)) {
         throw newIllegalArgumentException("designs");
       }
       designs.forEach(setNewsDesign);
@@ -72,7 +93,9 @@ ExtractNews.Site = (() => {
      * Adds topics of the specified array to the set of topics word this site.
      */
     function addNewsTopicWords(topicWords) {
-      if (! Array.isArray(topicWords)) {
+      if (topicWords == undefined) {
+        throw newNullPointerException("topicWords");
+      } else if (! Array.isArray(topicWords)) {
         throw newIllegalArgumentException("topicWords");
       }
       topicWords.forEach(addNewsTopicWord);
@@ -85,7 +108,8 @@ ExtractNews.Site = (() => {
       const arrangingPromises = new Array();
       if (newsSelector != undefined) {
         newsDesigns.forEach((newsDesign) => {
-            if (newsDesign.hasComments()) {
+            if (newsDesign.hasComments != undefined
+              && newsDesign.hasComments()) {
               arrangingPromises.push(
                 new Promise((resolve) => {
                     var commentNodes = newsDesign.getCommentNodes();
@@ -100,8 +124,7 @@ ExtractNews.Site = (() => {
                     resolve();
                   }));
             }
-            arrangingPromises.push(
-              newsDesign.arrange(newsSelector, newsDisplayOptions));
+            arrangingPromises.push(newsDesign.arrange());
           });
       }
       return Promise.all(arrangingPromises);
@@ -114,8 +137,8 @@ ExtractNews.Site = (() => {
       case ExtractNews.COMMAND_SETTING_APPLY:
         if (message.newsFilteringTargetObjects != undefined) {
           newsDesigns.forEach((newsDesign) => {
-            newsDesign.reset();
-          });
+              newsDesign.reset();
+            });
           newsSelector.setNewsFilterings(message.newsFilteringTargetObjects);
           newsDisplayOptions.newsCommentHidden = message.newsCommentHidden;
           newsDisplayOptions.newsFilteringDisabled =
@@ -143,7 +166,7 @@ ExtractNews.Site = (() => {
           && message.newsSelectionDisabled
             == newsDisplayOptions.newsSelectionDisabled) {
           Debug.printMessage("Keep the same arrangement.");
-          break;
+          return;
         }
         newsDisplayOptions.newsCommentHidden = message.newsCommentHidden;
         newsDisplayOptions.newsFilteringDisabled =
@@ -173,8 +196,8 @@ ExtractNews.Site = (() => {
           if (message.command == ExtractNews.COMMAND_SETTING_DISPOSE) {
             newsSelector = undefined;
             newsDesigns.forEach((newsDesign) => {
-              newsDesign.clear();
-            });
+                newsDesign.clear();
+              });
             browser.runtime.onMessage.removeListener(_changeNewsDisplaying);
           }
           return Promise.resolve();

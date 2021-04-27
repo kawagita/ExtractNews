@@ -166,7 +166,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
                       thumbnailElement.nextElementSibling.firstElementChild);
                   }
               },
-              LI_ELEMENTS_QUERY_PROPERTY),
+              Design.LI_ELEMENTS_QUERY_PROPERTY),
             topicProperties: Array.of({
                 selectors: "p"
               }),
@@ -401,15 +401,28 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
       }
     }
 
+    const PAID_NEWS = getYahooJapanNewsString("PaidNews");
+
     /*
      * Lists of news topics displayed in the side on Yahoo! JAPAN News.
      */
     class YahooJapanNewsSideLists extends Design.NewsDesign {
-      constructor(setNewsParentElement) {
+      constructor(setHeadingTopic) {
         super({
             parentProperties: Array.of({
-                selectorsForAll: ".yjnSub_list section",
-                setNewsElement: setNewsParentElement
+                selectorsForAll: "div.yjnSub_list section",
+                setNewsElement: (element, newsParents) => {
+                    var headingElement = element.querySelector("h2");
+                    if (headingElement != null) {
+                      var headingText = headingElement.textContent.trim();
+                      if (headingText.indexOf(PAID_NEWS) >= 0) {
+                        return;
+                      } else if (setHeadingTopic != undefined) {
+                        setHeadingTopic(headingText);
+                      }
+                    }
+                    newsParents.push(element);
+                  }
               }),
             topicProperties: Design.ONESELF_QUERY_PROPERTIES,
             itemTextProperty: {
@@ -418,6 +431,44 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
                   })
               }
         });
+      }
+    }
+
+    /*
+     * Lists of news topics displayed later in the side on Yahoo! JAPAN News.
+     */
+    class YahooJapanNewsLateSideLists extends Design.NewsDesign {
+      constructor() {
+        super({
+            parentProperties: Array.of({
+                selectors: "div.yjnSub_list"
+              }),
+            topicProperties: Design.ONESELF_QUERY_PROPERTIES,
+            itemTextProperty: {
+                topicSearchProperties: Array.of({
+                    skippedTextRegexp: Design.NEWS_RANKING_NUMBER_REGEXP
+                  })
+              },
+            observedProperties: Design.ONESELF_QUERY_PROPERTIES,
+            observedItemAddedAtOnce: true
+        });
+      }
+
+      getNewsItemElements(newsParent) {
+        return new Array();
+      }
+
+      getObservedNewsItemElements(addedNode) {
+        if (addedNode.tagName == "SECTION") {
+          var headingElement = addedNode.querySelector("h2");
+          if (headingElement != null) {
+            var headingText = headingElement.textContent.trim();
+            if (headingText.indexOf(PAID_NEWS) < 0) {
+              return addedNode.querySelectorAll("li");
+            }
+          }
+        }
+        return new Array();
       }
     }
 
@@ -463,8 +514,6 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
     const TOPIC_SET = new Set(CATEGORIES);
     const HEADING_TOPIC_REGEXP = getYahooJapanNewsRegExp("HeadingTopic");
 
-    const PAID_NEWS = getYahooJapanNewsString("PaidNews");
-
     const CATEGORY_ROOT_PATH = getYahooJapanNewsString("CategoryRootPath");
     const FLASH_PATH = getYahooJapanNewsString("FlashPath");
     const LIVE_PATH = getYahooJapanNewsString("LivePath");
@@ -480,34 +529,27 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
     if (newsSiteUrlParser.parseFrom(ARTICLE_PATHS)) { // Articles
       Site.setNewsDesigns(
         new YahooJapanNewsArticlePane(),
-        new YahooJapanNewsSideLists((element, newsParents) => {
-            var headingElement = element.querySelector("h2");
-            if (headingElement != null) {
-              var headingText = headingElement.textContent.trim();
-              if (headingText.indexOf(PAID_NEWS) < 0) {
-                // Add topics for categories enclosed by "(" and ")"
-                // in the heading text to the array of topic words.
-                var headingTopicMatch =
-                  headingText.match(HEADING_TOPIC_REGEXP);
-                if (headingTopicMatch != null) {
-                  var headingTopics = Array.of(headingTopicMatch[1]);
-                  if (headingTopicMatch[2] != undefined) {
-                    headingTopics.push(headingTopicMatch[2]);
-                  }
-                  headingTopics.forEach((headingTopic) => {
-                      for (const category of CATEGORIES) {
-                        if (category == headingTopic) {
-                          Site.addNewsTopicWords(
-                            CATEGORY_TOPIC_WORDS_MAP.get(category));
-                          break;
-                        }
-                      }
-                    });
-                }
+        new YahooJapanNewsSideLists((headingText) => {
+            // Add topics for categories enclosed by "(" and ")"
+            // in the heading text to the array of topic words.
+            var headingTopicMatch = headingText.match(HEADING_TOPIC_REGEXP);
+            if (headingTopicMatch != null) {
+              var headingTopics = Array.of(headingTopicMatch[1]);
+              if (headingTopicMatch[2] != undefined) {
+                headingTopics.push(headingTopicMatch[2]);
               }
+              headingTopics.forEach((headingTopic) => {
+                  for (const category of CATEGORIES) {
+                    if (category == headingTopic) {
+                      Site.addNewsTopicWords(
+                        CATEGORY_TOPIC_WORDS_MAP.get(category));
+                      break;
+                    }
+                  }
+                });
             }
-            newsParents.push(element);
-          }));
+          }),
+        new YahooJapanNewsLateSideLists());
     } else { // Paths except for articles started from "/articles" or "/pickup"
       var newsCategorySet = undefined;
       if (newsSiteUrlParser.parseDirectory()) { // Top
@@ -546,16 +588,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
       }
       Site.setNewsDesigns(
         new YahooJapanNewsFeed(),
-        new YahooJapanNewsSideLists((element, newsParents) => {
-            var headingElement = element.querySelector("h2");
-            if (headingElement != null) {
-              var headingText = headingElement.textContent.trim();
-              if (headingText.indexOf(PAID_NEWS) >= 0) {
-                return;
-              }
-            }
-            newsParents.push(element);
-          }));
+        new YahooJapanNewsSideLists());
       // Add topics for categories of this page to the array of topic words.
       if (newsCategorySet == undefined) {
         newsCategorySet = new Set();

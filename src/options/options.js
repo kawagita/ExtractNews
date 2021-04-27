@@ -354,18 +354,6 @@ function createTargetWordsDiv(wordsString, wordsMatches, wordNegative) {
   return targetWordsDiv;
 }
 
-// Returns the node of a filtering target on which the specified event occurs.
-
-const FILTERING_TARGET = "target";
-
-function _getEventTargetDiv(event) {
-  var target = event.target;
-  do {
-    target = target.parentNode;
-  } while (! target.classList.contains(FILTERING_TARGET));
-  return target;
-}
-
 const FILTERING_TARGET_END_OF_BLOCK = "end_of_block";
 const FILTERING_TARGET_OPERATIONS = [ "Up", "Down", "Remove" ];
 
@@ -377,10 +365,11 @@ function createTargetDiv(targetData, policyTargetCreated = false) {
   var targetAnyDiv = document.createElement("div");
   var targetAnySpan = document.createElement("span");
   var targetDataDiv = document.createElement("div");
-  targetDiv.className = FILTERING_TARGET;
+  targetDiv.className = "target";
   targetAnyDiv.className = "target_any";
   targetAnySpan.textContent = _getTargetMessage("AnyWordMatched");
   targetAnyDiv.appendChild(targetAnySpan);
+  targetDataDiv.tabIndex = 0;
   targetDataDiv.appendChild(
     createTargetNameDiv(
       targetData.name, targetData.blorkTerminated, policyTargetCreated));
@@ -421,18 +410,6 @@ function _toggleTargetDivEndOfBlock(targetDiv) {
   }
 }
 
-// Returns the node of a news selection on which the specified event occurs.
-
-const SELECTION_SETTING = "setting";
-
-function _getEventSelectionDiv(event) {
-  var target = event.target;
-  do {
-    target = target.parentNode;
-  } while (! target.classList.contains(SELECTION_SETTING));
-  return target;
-}
-
 /*
  * Creates the div element to set a news selection and insert the previous.
  */
@@ -440,7 +417,7 @@ function createSelectionDiv(selectionData) {
   var selectionDiv = document.createElement("div");
   var selectionDataDiv = document.createElement("div");
   var selectionAppended = true;
-  selectionDiv.className = SELECTION_SETTING;
+  selectionDiv.className = "setting";
   if (selectionData != undefined) {
     var selectionCheckbox = document.createElement("input");
     var selectionLabel = document.createElement("label");
@@ -455,6 +432,7 @@ function createSelectionDiv(selectionData) {
     selectionLabel.textContent = selectionData.settingName;
     selectionImg.className = "favicon";
     selectionImg.src = selectionFavicon;
+    selectionDataDiv.tabIndex = 0;
     selectionDataDiv.appendChild(selectionCheckbox);
     selectionDataDiv.appendChild(selectionLabel);
     selectionDataDiv.appendChild(selectionImg);
@@ -593,7 +571,7 @@ optionDataReplacementCheckbox.addEventListener("input", (event) => {
       switch (optionMenuManager.getEventTarget().id.toLowerCase()) {
       case OPTION_FILTERING:
         optionImportButton.disabled =
-          optionFiltering.targetDataTotal >= _Alert.FILTERING_MAX_COUNT;
+          optionFiltering.targetDataTotal >= ExtractNews.FILTERING_MAX_COUNT;
         break;
       case OPTION_SELECTION:
         optionImportButton.disabled =
@@ -609,18 +587,19 @@ optionPointedGroup.addElements(
 
 var optionFiltering = new OptionFiltering();
 var optionFilteringDiv = document.getElementById("FilteringOption");
+var optionFilteringBlocksDiv = document.getElementById("FilteringBlocks");
 var optionFilteringTargetNodes = new Array();
 var optionFilteringPointedGroup = new _Event.PointedGroup();
 
 optionPointedGroup.setEventRelation(optionFilteringPointedGroup);
 
-// Returns data of a filtering target for the select, input, or button element
-// on which the specified event occurs.
-
-function _getEventTargetData(event) {
-  var targetDiv = _getEventTargetDiv(event);
-  var targetIndex = optionFilteringTargetNodes.indexOf(targetDiv);
-  return optionFiltering.getTargetData(targetIndex);
+function _getEventTargetNodeIndex(event) {
+  for (let i = 0; i < optionFilteringTargetNodes.length; i++) {
+    if (optionFilteringTargetNodes[i].contains(event.target)) {
+      return i;
+    }
+  }
+  return -1;
 }
 
 const FILTERING_BLOCK = "block";
@@ -643,7 +622,7 @@ function splitFilteringBlockAt(targetIndex) {
     } while (targetDiv != null);
   }
   splitBlockDiv.className = FILTERING_BLOCK;
-  optionFilteringDiv.insertBefore(splitBlockDiv, splitBlockNextDiv);
+  optionFilteringBlocksDiv.insertBefore(splitBlockDiv, splitBlockNextDiv);
 }
 
 /*
@@ -661,7 +640,7 @@ function joinFilteringBlockAt(targetIndex) {
         joinedBlockPreviousDiv.appendChild(targetDiv);
         targetDiv = targetNextDiv;
       } while (targetDiv != null);
-      optionFilteringDiv.removeChild(joinedBlockDiv);
+      optionFilteringBlocksDiv.removeChild(joinedBlockDiv);
     }
   }
 }
@@ -674,13 +653,12 @@ function addFilteringTargetNode(targetData, policyTargetAdded = false) {
     optionFilteringTargetNodes.length, targetData, policyTargetAdded);
 }
 
-function _fireFilteringTargetMoveEvent(event, targetMovedUp) {
-  var targetDiv = _getEventTargetDiv(event);
-  var movedUpDiv = targetDiv;
-  var movedUpIndex = optionFilteringTargetNodes.indexOf(targetDiv);
-  var movedDownDiv = movedUpDiv;
+function _fireFilteringTargetMoveEvent(event, movedUp) {
+  var movedUpIndex = _getEventTargetNodeIndex(event);
+  var movedUpDiv = optionFilteringTargetNodes[movedUpIndex];
   var movedDownIndex = movedUpIndex;
-  if (targetMovedUp) {
+  var movedDownDiv = movedUpDiv;
+  if (movedUp) {
     // Set the lock of "Up" button pressed on the filtering target.
     _setButtonDisabled(movedUpDiv, OPERATION_MOVE_UP);
     movedDownIndex--;
@@ -717,7 +695,7 @@ function _fireFilteringTargetMoveEvent(event, targetMovedUp) {
   }
   if (movedDownIndex <= 0) {
     // The lower fitering target is moved up to the top of filtering targets.
-    if (! targetMovedUp) {
+    if (! movedUp) {
       // Disable "Up" button of a filtering target moved up instead
       // of the target on which the specified event occurs.
       _setButtonDisabled(movedUpDiv, OPERATION_MOVE_UP);
@@ -725,7 +703,7 @@ function _fireFilteringTargetMoveEvent(event, targetMovedUp) {
       _focusButton(movedUpDiv, OPERATION_MOVE_DOWN);
     }
     _setButtonEnabled(movedDownDiv, OPERATION_MOVE_UP);
-  } else if (targetMovedUp) {
+  } else if (movedUp) {
     // Release the lock of "Up" button pressed on a filtering target
     // and focus it if not moved up to the top.
     _setButtonEnabled(movedUpDiv, OPERATION_MOVE_UP);
@@ -734,7 +712,7 @@ function _fireFilteringTargetMoveEvent(event, targetMovedUp) {
   if (movedUpIndex >= optionFilteringTargetNodes.length - 2) {
     // The upper fitering target is moved down to the bottom except for
     // the policy target.
-    if (targetMovedUp) {
+    if (movedUp) {
       // Disable "Down" button of a filtering target moved down instead
       // of the target on which the specified event occurs.
       _setButtonDisabled(movedDownDiv, OPERATION_MOVE_DOWN);
@@ -742,7 +720,7 @@ function _fireFilteringTargetMoveEvent(event, targetMovedUp) {
       _focusButton(movedDownDiv, OPERATION_MOVE_UP);
     }
     _setButtonEnabled(movedUpDiv, OPERATION_MOVE_DOWN);
-  } else if (! targetMovedUp) {
+  } else if (! movedUp) {
     // Release the lock of "Down" button pressed on a filtering target
     // and focus it if not moved down to the bottom except for the policy
     // target.
@@ -760,7 +738,7 @@ function insertFilteringTargetNode(
   targetIndex, targetData, policyTargetAdded = false) {
   var movedDownEnabledTarget = null;
   var movedUpEnabledTarget = null;
-  var addedBlockDiv = optionFilteringDiv.lastElementChild;
+  var addedBlockDiv = optionFilteringBlocksDiv.lastElementChild;
   var addedTargetDiv = createTargetDiv(targetData, policyTargetAdded);
   var addedTargetNextDiv = null;
   if (targetIndex < optionFilteringTargetNodes.length) {
@@ -787,7 +765,8 @@ function insertFilteringTargetNode(
   }
   var addedTargetTypeSelect = addedTargetDiv.querySelector("select");
   addedTargetTypeSelect.addEventListener("change", (event) => {
-      _getEventTargetData(event).name = event.target.value;
+      var selectedIndex = _getEventTargetNodeIndex(event);
+      optionFiltering.getTargetData(selectedIndex).name = event.target.value;
       optionSaveButton.disabled = false;
     });
   addedTargetTypeSelect.addEventListener("focus", (event) => {
@@ -799,7 +778,8 @@ function insertFilteringTargetNode(
       switch (input.value) {
       case ExtractNews.TARGET_WORD_BEGINNING:
         input.addEventListener("input", (event) => {
-            var inputData = _getEventTargetData(event);
+            var inputData =
+              optionFiltering.getTargetData(_getEventTargetNodeIndex(event));
             inputData.wordBeginningMatched = event.target.checked;
             if (inputData.wordsString != "") {
               optionSaveButton.disabled = false;
@@ -809,7 +789,8 @@ function insertFilteringTargetNode(
         break;
       case ExtractNews.TARGET_WORD_END:
         input.addEventListener("input", (event) => {
-            var inputData = _getEventTargetData(event);
+            var inputData =
+              optionFiltering.getTargetData(_getEventTargetNodeIndex(event));
             inputData.wordEndMatched = event.target.checked;
             if (inputData.wordsString != "") {
               optionSaveButton.disabled = false;
@@ -819,12 +800,14 @@ function insertFilteringTargetNode(
         break;
       case ExtractNews.TARGET_WORD_NEGATIVE:
         input.addEventListener("input", (event) => {
-            var inputData = _getEventTargetData(event);
+            var inputIndex = _getEventTargetNodeIndex(event);
+            var inputData = optionFiltering.getTargetData(inputIndex);
             inputData.wordNegative = event.target.checked;
             if (inputData.wordsString != "") {
               optionSaveButton.disabled = false;
             }
-            _changeTargetWordsNegativeLabel(_getEventTargetDiv(event));
+            _changeTargetWordsNegativeLabel(
+              optionFilteringTargetNodes[inputIndex]);
           });
         if (targetData.wordNegative) {
           _changeTargetWordsNegativeLabel(addedTargetDiv);
@@ -833,7 +816,8 @@ function insertFilteringTargetNode(
         break;
       default: // Words input
         input.addEventListener("input", (event) => {
-            var inputData = _getEventTargetData(event);
+            var inputData =
+              optionFiltering.getTargetData(_getEventTargetNodeIndex(event));
             inputData.wordsString = event.target.value;
             inputData.localizedWordSet = undefined;
             optionSaveButton.disabled = false;
@@ -845,8 +829,8 @@ function insertFilteringTargetNode(
       }
     } else { // Terminate block checkbox
       input.addEventListener("input", (event) => {
-          var targetDiv = _getEventTargetDiv(event);
-          var inputIndex = optionFilteringTargetNodes.indexOf(targetDiv);
+          var inputIndex = _getEventTargetNodeIndex(event);
+          var inputTargetDiv = optionFilteringTargetNodes[inputIndex];
           var inputData = optionFiltering.getTargetData(inputIndex);
           inputData.blorkTerminated = event.target.checked;
           if (inputData.blorkTerminated) {
@@ -856,11 +840,11 @@ function insertFilteringTargetNode(
             inputData.wordEndMatched = false;
             inputData.wordNegative = false;
             splitFilteringBlockAt(inputIndex + 1);
-            _changeTargetWordsNegativeLabel(targetDiv, true);
+            _changeTargetWordsNegativeLabel(inputTargetDiv, true);
           } else {
             joinFilteringBlockAt(inputIndex + 1);
           }
-          _toggleTargetDivEndOfBlock(targetDiv);
+          _toggleTargetDivEndOfBlock(inputTargetDiv);
           optionSaveButton.disabled = false;
         });
       optionFilteringPointedGroup.addElement(input);
@@ -871,13 +855,14 @@ function insertFilteringTargetNode(
     case OPERATION_INSERT:
       button.addEventListener(_Event.CLICK, (event) => {
           var focusedOperation = OPERATION_INSERT;
-          var targetDiv = _getEventTargetDiv(event);
-          var insertedIndex = optionFilteringTargetNodes.indexOf(targetDiv);
-          _setButtonDisabled(targetDiv, OPERATION_INSERT);
+          var insertedIndex = _getEventTargetNodeIndex(event);
+          var insertedTargetDiv = optionFilteringTargetNodes[insertedIndex];
+          _setButtonDisabled(insertedTargetDiv, OPERATION_INSERT);
           var emptyData = createTargetData();
           optionFiltering.insertTargetData(insertedIndex, emptyData);
           insertFilteringTargetNode(insertedIndex, emptyData);
-          if (optionFiltering.targetDataTotal >= _Alert.FILTERING_MAX_COUNT) {
+          var targetDataTotal = optionFiltering.targetDataTotal;
+          if (targetDataTotal >= ExtractNews.FILTERING_MAX_COUNT) {
             // Disable to insert new selection on all div elements.
             optionFilteringTargetNodes.forEach((targetDiv) => {
                 _setButtonDisabled(targetDiv, OPERATION_INSERT);
@@ -886,39 +871,18 @@ function insertFilteringTargetNode(
               ! optionDataReplacementCheckbox.checked;
             focusedOperation = OPERATION_REMOVE;
           } else {
-            _setButtonEnabled(targetDiv, OPERATION_INSERT);
+            _setButtonEnabled(insertedTargetDiv, OPERATION_INSERT);
           }
           _focusButton(
             optionFilteringTargetNodes[insertedIndex], focusedOperation);
           optionSaveButton.disabled = false;
         });
-      // Focus the insert button on the div element of the previous or next
-      // filtering target by the event of an arrow up or down key.
-      button.addEventListener("keydown", (event) => {
-          var focusedIndex = 0;
-          if (event.code == "ArrowUp") {
-            focusedIndex--;
-          } else if (event.code == "ArrowDown") {
-            focusedIndex++;
-          } else {
-            return;
-          }
-          focusedIndex +=
-            optionFilteringTargetNodes.indexOf(_getEventTargetDiv(event));
-          if (focusedIndex >= 0
-            && focusedIndex < optionFilteringTargetNodes.length) {
-            _focusButton(
-              optionFilteringTargetNodes[focusedIndex], OPERATION_INSERT);
-          }
-        });
       break;
     case OPERATION_LOCALIZE:
       button.addEventListener(_Event.CLICK, (event) => {
-          var targetDiv = _getEventTargetDiv(event);
-          var targetWordSet = new Set();
-          var targetWordsInput =
-            targetDiv.querySelector("." + FILTERING_TARGET_WORDS_INPUT);
-          var localizedIndex = optionFilteringTargetNodes.indexOf(targetDiv);
+          var localizedIndex = _getEventTargetNodeIndex(event);
+          var localizedTargetDiv = optionFilteringTargetNodes[localizedIndex];
+          var localizedWordSet = new Set();
           var localizedData = optionFiltering.getTargetData(localizedIndex);
           if (localizedData.wordsString != "") {
             localizedData.wordsString.split(",").forEach((word) => {
@@ -926,19 +890,23 @@ function insertFilteringTargetNode(
                   _Text.trimText(_Text.removeTextZeroWidthSpaces(word));
                 if (targetWord != "") {
                   var localizedContext = _Text.getLocalizedContext(targetWord);
-                  targetWordSet.add(localizedContext.halfwidthText.textString);
+                  localizedWordSet.add(
+                    localizedContext.halfwidthText.textString);
                   if (localizedContext.hasDifferentWidth()) {
-                    targetWordSet.add(
+                    localizedWordSet.add(
                       localizedContext.fullwidthText.textString);
                   }
                 }
               });
-            var localizedWordsString = Array.from(targetWordSet).join(",");
+            var localizedWordsString = Array.from(localizedWordSet).join(",");
             if (localizedWordsString.length
               <= _Alert.FILTERING_WORDS_MAX_UTF16_CHARACTERS) {
+              var localizedWordsInput =
+                localizedTargetDiv.querySelector(
+                  "." + FILTERING_TARGET_WORDS_INPUT);
+              localizedWordsInput.value = localizedWordsString;
               localizedData.wordsString = localizedWordsString;
-              localizedData.localizedWordSet = targetWordSet;
-              targetWordsInput.value = localizedData.wordsString;
+              localizedData.localizedWordSet = localizedWordSet;
               optionSaveButton.disabled = false;
               return;
             }
@@ -960,13 +928,13 @@ function insertFilteringTargetNode(
     case OPERATION_REMOVE:
       button.addEventListener(_Event.CLICK, (event) => {
           var focusedOperation = OPERATION_REMOVE;
-          var targetDiv = _getEventTargetDiv(event);
+          var removedIndex = _getEventTargetNodeIndex(event);
+          var removedTargetDiv = optionFilteringTargetNodes[removedIndex];
           var targetDataTotal = optionFiltering.targetDataTotal;
-          var removedIndex = optionFilteringTargetNodes.indexOf(targetDiv);
-          _setButtonDisabled(targetDiv, OPERATION_REMOVE);
+          _setButtonDisabled(removedTargetDiv, OPERATION_REMOVE);
           optionFiltering.removeTargetData(removedIndex);
           removeFilteringTargetNode(removedIndex);
-          if (targetDataTotal >= _Alert.FILTERING_MAX_COUNT) {
+          if (targetDataTotal >= ExtractNews.FILTERING_MAX_COUNT) {
             // Enable to insert new selection on all div elements.
             optionFilteringTargetNodes.forEach((targetDiv) => {
                 _setButtonEnabled(targetDiv, OPERATION_INSERT);
@@ -1038,15 +1006,14 @@ function removeFilteringTargetNode(targetIndex) {
  * Removes all nodes of filtering targets from this option page.
  */
 function clearFilteringTargetNodes() {
-  // Remove all blocks and create an empty div element of "block".
-  var removedBlockDivs =
-    optionFilteringDiv.querySelectorAll("." + FILTERING_BLOCK);
+  // Remove all blocks and create an empty div element of ".block".
+  var removedBlockDivs = Array.from(optionFilteringBlocksDiv.children);
   for (let i = removedBlockDivs.length - 1; i >= 0; i--) {
-    optionFilteringDiv.removeChild(removedBlockDivs[i]);
+    optionFilteringBlocksDiv.removeChild(removedBlockDivs[i]);
   }
   var emptyBlockDiv = document.createElement("div");
   emptyBlockDiv.className = FILTERING_BLOCK;
-  optionFilteringDiv.appendChild(emptyBlockDiv);
+  optionFilteringBlocksDiv.appendChild(emptyBlockDiv);
   optionFilteringPointedGroup.removeElementAll();
   optionFilteringTargetNodes = new Array();
 }
@@ -1129,7 +1096,7 @@ function reflectOptionFilteringData(targetIndex = 0) {
     _setButtonsEnabled(optionFilteringTargetNodes[i],
       i > 0, i < optionFilteringTargetNodes.length - 2);
   }
-  if (optionFiltering.targetDataTotal >= _Alert.FILTERING_MAX_COUNT) {
+  if (optionFiltering.targetDataTotal >= ExtractNews.FILTERING_MAX_COUNT) {
     // Disable to insert new selection on all div elements.
     optionFilteringTargetNodes.forEach((targetDiv) => {
         _setButtonDisabled(targetDiv, OPERATION_INSERT);
@@ -1205,6 +1172,15 @@ optionPointedGroup.addElements(
   optionSelectionDeleteCheckbox, optionSelectionDeleteButton);
 optionPointedGroup.setEventRelation(optionSelectionPointedGroup);
 optionPointedGroup.setEventRelation(optionSelectionEditPointedGroup);
+
+function _getEventSelectionNodeIndex(event) {
+  for (let i = 0; i < optionSelectionNodes.length; i++) {
+    if (optionSelectionNodes[i].contains(event.target)) {
+      return i;
+    }
+  }
+  return -1;
+}
 
 // Title of editing a news selection to which the number string is following
 var SELECTION_EDIT_NUMBER_SUFFIX = "#";
@@ -1289,15 +1265,14 @@ function addSelectionNode(selectionData) {
   insertSelectionNode(optionSelectionNodes.length, selectionData);
 }
 
-function _fireSelectionMoveEvent(event, selectionMovedUp) {
-  var selectionDiv = _getEventSelectionDiv(event);
+function _fireSelectionMoveEvent(event, movedUp) {
   var selectionPageFirstDataIndex =
     OPTION_SELECTION_NODE_SIZE * optionSelectionPageManager.pageIndex;
-  var movedUpDiv = selectionDiv;
-  var movedUpIndex = optionSelectionNodes.indexOf(selectionDiv);
-  var movedDownDiv = movedUpDiv;
+  var movedUpIndex = _getEventSelectionNodeIndex(event);
+  var movedUpDiv = optionSelectionNodes[movedUpIndex];
   var movedDownIndex = movedUpIndex;
-  if (selectionMovedUp) {
+  var movedDownDiv = movedUpDiv;
+  if (movedUp) {
     // Set the lock of "Up" button pressed on a news selection.
     _setButtonDisabled(movedUpDiv, OPERATION_MOVE_UP);
     movedDownIndex--;
@@ -1330,7 +1305,7 @@ function _fireSelectionMoveEvent(event, selectionMovedUp) {
     if (movedDownIndex <= 0
       && optionSelectionPageManager.isFirstPageKeeping()) {
       // The lower news selection is moved up to the top of the current page.
-      if (! selectionMovedUp) {
+      if (! movedUp) {
         // Disable "Up" button of a news selection moved up instead
         // of the selection on which the specified event occurs.
         _setButtonDisabled(movedUpDiv, OPERATION_MOVE_UP);
@@ -1338,7 +1313,7 @@ function _fireSelectionMoveEvent(event, selectionMovedUp) {
         _focusButton(movedUpDiv, OPERATION_MOVE_DOWN);
       }
       _setButtonEnabled(movedDownDiv, OPERATION_MOVE_UP);
-    } else if (selectionMovedUp) {
+    } else if (movedUp) {
       // Release the lock of "Up" button pressed on a news selection
       // and focus it if not moved up to the top.
       _setButtonEnabled(movedUpDiv, OPERATION_MOVE_UP);
@@ -1352,7 +1327,7 @@ function _fireSelectionMoveEvent(event, selectionMovedUp) {
       && optionSelectionPageManager.isLastPageKeeping()) {
       // The upper news selection is moved down to the bottom of the current
       // page except for the div element to append new selection.
-      if (selectionMovedUp) {
+      if (movedUp) {
         // Disable "Down" button of a news selection moved down instead
         // of the selection on which the specified event occurs.
         _setButtonDisabled(movedDownDiv, OPERATION_MOVE_DOWN);
@@ -1360,7 +1335,7 @@ function _fireSelectionMoveEvent(event, selectionMovedUp) {
         _focusButton(movedDownDiv, OPERATION_MOVE_UP);
       }
       _setButtonEnabled(movedUpDiv, OPERATION_MOVE_DOWN);
-    } else if (! selectionMovedUp) {
+    } else if (! movedUp) {
       // Release the lock of "Down" button pressed on a news selection
       // and focus it if not moved down to the bottom except for the div
       // element to append new selection.
@@ -1430,32 +1405,8 @@ function insertSelectionNode(selectionIndex, selectionData) {
           }
           setSelectionEditPane(
             optionSelectionPageManager.pageIndex * OPTION_SELECTION_NODE_SIZE
-              + optionSelectionNodes.indexOf(_getEventSelectionDiv(event)),
+              + _getEventSelectionNodeIndex(event),
             selectionDataOperation);
-        });
-      // Focus the insert button on the div element of the previous or next
-      // filtering target by the event of an arrow up or down key.
-      button.addEventListener("keydown", (event) => {
-          var focusedIndex = 0;
-          if (event.code == "ArrowUp") {
-            focusedIndex--;
-          } else if (event.code == "ArrowDown") {
-            focusedIndex++;
-          } else {
-            return;
-          }
-          focusedIndex +=
-            optionSelectionNodes.indexOf(_getEventSelectionDiv(event));
-          if (focusedIndex >= 0
-            && focusedIndex < optionSelectionNodes.length) {
-            var focusedOperation = OPERATION_INSERT;
-            if (focusedIndex >= optionSelectionNodes.length - 1
-              && optionSelection.dataSize < ExtractNews.SELECTION_MAX_COUNT
-              && optionSelectionPageManager.isLastPageKeeping()) {
-              focusedOperation = OPERATION_APPEND;
-            }
-            _focusButton(optionSelectionNodes[focusedIndex], focusedOperation);
-          }
         });
       break;
     case OPERATION_MOVE_UP:
@@ -1470,21 +1421,20 @@ function insertSelectionNode(selectionIndex, selectionData) {
       break;
     case OPERATION_EDIT:
       button.addEventListener(_Event.CLICK, (event) => {
-          var selectionDiv = _getEventSelectionDiv(event);
           var selectionDataIndex =
             optionSelectionPageManager.pageIndex * OPTION_SELECTION_NODE_SIZE
-            + optionSelectionNodes.indexOf(selectionDiv);
+            + _getEventSelectionNodeIndex(event);
           setSelectionEditPane(selectionDataIndex, OPERATION_EDIT);
         });
       break;
     case OPERATION_REMOVE:
       button.addEventListener(_Event.CLICK, (event) => {
           var focusedOperation = OPERATION_REMOVE;
-          var selectionDiv = _getEventSelectionDiv(event);
+          var removedIndex = _getEventSelectionNodeIndex(event);
+          var removedSelectionDiv = optionSelectionNodes[removedIndex];
           var selectionNodeTotal = optionSelection.dataSize;
           var selectionNodeLength = optionSelectionNodes.length;
-          var removedIndex = optionSelectionNodes.indexOf(selectionDiv);
-          _setButtonDisabled(selectionDiv, OPERATION_REMOVE);
+          _setButtonDisabled(removedSelectionDiv, OPERATION_REMOVE);
           optionSelection.removeData(
             OPTION_SELECTION_NODE_SIZE * optionSelectionPageManager.pageIndex
             + removedIndex);
@@ -1539,7 +1489,7 @@ function insertSelectionNode(selectionIndex, selectionData) {
             _setButtonsEnabled(
               optionSelectionNodes[OPTION_SELECTION_NODE_SIZE - 1]);
           }
-          if (_getSelectionDeleteCheckbox(selectionDiv).checked) {
+          if (_getSelectionDeleteCheckbox(removedSelectionDiv).checked) {
             // Clear the checkbox to delete news selections if not checked all.
             setSelectionDeletedCheck();
           }
@@ -1682,7 +1632,7 @@ optionFiltering.read().then(() => {
       });
     setOptionFilteringCategoryNames();
     reflectOptionFilteringData();
-    if (optionFiltering.targetDataTotal < _Alert.FILTERING_MAX_COUNT) {
+    if (optionFiltering.targetDataTotal < ExtractNews.FILTERING_MAX_COUNT) {
       optionImportDisabledMap.set(optionFilteringMenuItem.id, false);
     }
 
@@ -1828,7 +1778,8 @@ optionImportButton.addEventListener(_Event.CLICK, (event) => {
           }
           setOptionFilteringCategoryNames();
           reflectOptionFilteringData(targetAppendedIndex);
-          if (optionFiltering.targetDataTotal >= _Alert.FILTERING_MAX_COUNT) {
+          var targetDataTotal = optionFiltering.targetDataTotal;
+          if (targetDataTotal >= ExtractNews.FILTERING_MAX_COUNT) {
             optionImportButton.disabled = ! dataReplaced;
           }
           optionSaveButton.disabled = false;
@@ -1890,7 +1841,7 @@ optionSaveButton.addEventListener(_Event.CLICK, (event) => {
       savingPromise.catch((error) => {
           Debug.printStackTrace(error);
         });
-      // Focus the menu list because the save button is disabled
+      // Focus the menu list because the save button is disabled.
       optionMenuManager.getEventTarget().focus();
     }
   });
@@ -1938,21 +1889,101 @@ document.body.addEventListener("keydown", (event) => {
     case "Escape":
       if (optionSection.className == OPTION_SELECTION
         && optionSelectionDiv.classList.contains(OPERATION_EDIT)) {
+        // Close the edit pane for a news selection by the escape key.
         clearSelectionEditPane();
+        break;
+      }
+      // Focus the menu list by the escape key pressed on other elements.
+      optionMenuManager.getEventTarget().focus();
+      break;
+    case "PageUp":
+    case "PageDown":
+      if (optionSection.className == OPTION_FILTERING) {
+        if (optionFilteringBlocksDiv.contains(event.target)) {
+          // Focus the first or last filtering target by the page up
+          // or down key.
+          var targetIndex = 0;
+          if (event.code == "PageDown") {
+            targetIndex = optionFilteringTargetNodes.length - 1;
+          }
+          optionFilteringTargetNodes[targetIndex].lastElementChild.focus();
+          if (targetIndex == 0) {
+            window.scroll(0, optionFilteringDiv.getBoundingClientRect().top);
+          }
+          event.preventDefault();
+        }
+      } else if (optionSection.className == OPTION_SELECTION
+        && optionSelectionList.contains(event.target)) {
+        // Focus the first or last news selection by the page up or down key.
+        var selectionIndex = 0;
+        if (event.code == "PageDown") {
+          selectionIndex = optionSelectionNodes.length - 1;
+        }
+        var selectionDiv = optionSelectionNodes[selectionIndex];
+        if (_getSelectionDeleteCheckbox(selectionDiv)) {
+          selectionDiv.lastElementChild.focus();
+          if (selectionIndex == 0) {
+            window.scroll(0, optionSelectionDiv.getBoundingClientRect().top);
+          }
+        } else {
+          _focusButton(selectionDiv, OPERATION_APPEND);
+        }
+        event.preventDefault();
       }
       break;
-    case "ArrowLeft":
-      if (optionSection.className == OPTION_SELECTION
-        && ! optionSelectionDiv.classList.contains(OPERATION_EDIT)
-        && ! optionSelectionPageManager.isFirstPageKeeping()) {
-        optionSelectionPageManager.movePage(_Event.PAGE_MOVE_BACK_EVENT);
+    case "ArrowUp":
+    case "ArrowDown":
+      var focusedIndex = 0;
+      if (event.code == "ArrowUp") {
+        focusedIndex--;
+      } else if (event.code == "ArrowDown") {
+        focusedIndex++;
       }
-      break;
-    case "ArrowRight":
-      if (optionSection.className == OPTION_SELECTION
-        && ! optionSelectionDiv.classList.contains(OPERATION_EDIT)
-        && ! optionSelectionPageManager.isLastPageKeeping()) {
-        optionSelectionPageManager.movePage(_Event.PAGE_MOVE_FORWARD_EVENT);
+      if (optionSection.className == OPTION_FILTERING) {
+        if (event.target.tagName != "SELECT" && event.target.tagName != "INPUT"
+          && optionFilteringBlocksDiv.contains(event.target)) {
+          var targetIndex = _getEventTargetNodeIndex(event);
+          if (targetIndex < 0) {
+            break;
+          }
+          focusedIndex += targetIndex;
+          if (focusedIndex >= 0
+            && focusedIndex < optionFilteringTargetNodes.length) {
+            // Focus the previous or next filtering target by the arrow up
+            // or down key.
+            optionFilteringTargetNodes[focusedIndex].lastElementChild.focus();
+          }
+        }
+      } else if (optionSection.className == OPTION_SELECTION
+         && event.target.tagName != "INPUT"
+        && optionSelectionList.contains(event.target)) {
+        var selectionIndex = _getEventSelectionNodeIndex(event);
+        if (selectionIndex < 0) {
+          break;
+        }
+        var selectionDiv = optionSelectionNodes[selectionIndex];
+        focusedIndex += selectionIndex;
+        if (focusedIndex < 0) {
+          if (! optionSelectionPageManager.isFirstPageKeeping()) {
+            // Move the page of news selections back by the arrow up key.
+            optionSelectionPageManager.movePage(_Event.PAGE_MOVE_BACK_EVENT);
+            selectionDiv =
+              optionSelectionNodes[optionSelectionNodes.length - 1];
+          }
+        } else if (focusedIndex >= optionSelectionNodes.length) {
+          if (! optionSelectionPageManager.isLastPageKeeping()) {
+            // Move the page of news selections forward by the arrow down key.
+            optionSelectionPageManager.movePage(_Event.PAGE_MOVE_FORWARD_EVENT);
+            selectionDiv = optionSelectionNodes[0];
+          }
+        } else {
+          selectionDiv = optionSelectionNodes[focusedIndex];
+        }
+        if (_getSelectionDeleteCheckbox(selectionDiv)) {
+          selectionDiv.lastElementChild.focus();
+        } else {
+          _focusButton(selectionDiv, OPERATION_APPEND);
+        }
       }
       break;
     }

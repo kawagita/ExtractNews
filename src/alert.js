@@ -29,15 +29,13 @@ ExtractNews.Alert = (() => {
         SETTING_NAME_MAX_WIDTH: 30,
         REGEXP_MAX_UTF16_CHARACTERS: 256,
 
-        // Maximum numbers of filtering category or targets and the string of
-        // words separated by commas input or imported on the option page
-        FILTERING_MAX_COUNT: 100,
+        // Maximum numbers of the string of filtering words separated by commas
+        // input or imported on the option page
         FILTERING_WORDS_MAX_UTF16_CHARACTERS: 64
       };
 
     /*
-     * The warning which consists of a message and description displayed
-     * on the dialog.
+     * The information of a warning displayed on the message dialog.
      */
     class Warning {
       constructor(message, description = "", emphasisRegexpString = "") {

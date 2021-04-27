@@ -31,8 +31,8 @@ function _newRegexp(regexpString) {
 }
 
 /*
- * The selector whether to show or hide news topics and/or senders by arranging
- * news items on a news site.
+ * The selector which settles to show or hide news topics and/or senders by
+ * arranging news items on a news site.
  */
 class NewsSelector {
   constructor(language) {
@@ -48,7 +48,7 @@ class NewsSelector {
     }
     this.wordSuffixes =
       ExtractNews.splitLocalizedString(language + "WordSuffixes");
-    this.newsFilteringTargets = new Array();
+    this.newsFilteringTargets = undefined;
     this.newsTopicRegexp = undefined;
     this.newsSenderRegexp = undefined;
     this.newsExcludedRegexp = undefined;
@@ -58,6 +58,7 @@ class NewsSelector {
     if (! Array.isArray(filteringTargetObjects)) {
       throw newIllegalArgumentException("filteringTargetObjects");
     }
+    this.newsFilteringTargets = new Array();
     filteringTargetObjects.forEach((filteringTargetObject) => {
         var newsFilteringTarget =
           new ExtractNews.FilteringTarget(filteringTargetObject);
@@ -132,20 +133,22 @@ class NewsSelector {
   }
 
   drop(topicString) {
-    var targetBlockSkipped = false;
-    for (let i = 0; i < this.newsFilteringTargets.length; i++) {
-      var target = this.newsFilteringTargets[i];
-      if (targetBlockSkipped) {
-        targetBlockSkipped = ! target.terminatesBlock();
-        continue;
-      } else if (this._testTargetWords(target, topicString)) {
-        if (target.name != ExtractNews.TARGET_RETURN) {
-          return target.name == ExtractNews.TARGET_DROP;
+    if (this.newsFilteringTargets != undefined) {
+      var targetBlockSkipped = false;
+      for (let i = 0; i < this.newsFilteringTargets.length; i++) {
+        var target = this.newsFilteringTargets[i];
+        if (targetBlockSkipped) {
+          targetBlockSkipped = ! target.terminatesBlock();
+          continue;
+        } else if (this._testTargetWords(target, topicString)) {
+          if (target.name != ExtractNews.TARGET_RETURN) {
+            return target.name == ExtractNews.TARGET_DROP;
+          }
+          targetBlockSkipped = true;
         }
-        targetBlockSkipped = true;
       }
+      // Returns false for the final "RETURN" which is the same as "ACCEPT".
     }
-    // Returns false for the final "RETURN" which is the same as "ACCEPT".
     return false;
   }
 
@@ -154,11 +157,10 @@ class NewsSelector {
       && ! this.newsTopicRegexp.test(topicString)) {
       return false;
     }
-    if (senderString != undefined) {
-      if (this.newsSenderRegexp != undefined
-        && ! this.newsSenderRegexp.test(senderString)) {
-        return false;
-      }
+    if (senderString != undefined
+      && this.newsSenderRegexp != undefined
+      && ! this.newsSenderRegexp.test(senderString)) {
+      return false;
     }
     return true;
   }

@@ -24,6 +24,11 @@ const OPTION_SELECTION_PAGE_SIZE =
   Math.ceil(ExtractNews.SELECTION_MAX_COUNT / OPTION_SELECTION_NODE_SIZE);
 const OPTION_SELECTION_FAVICON_MAP = new Map();
 const OPTION_SELECTION_DEFAULT_FAVICON = "../icons/night-40.png";
+const OPTION_SELECTION_INDEX_STRINGS = new Array();
+
+for (let i = 0; i < ExtractNews.SELECTION_MAX_COUNT; i++) {
+  OPTION_SELECTION_INDEX_STRINGS.push(String(i));
+}
 
 /*
  * Returns data for the specified news selection on the option page.
@@ -85,7 +90,7 @@ class OptionSelection {
   _setDataIndexStrings(indexSize) {
     if (this.dataIndexStrings.length <= indexSize) {
       for (let i = this.dataIndexStrings.length; i < indexSize; i++) {
-        this.dataIndexStrings.push(ExtractNews.SELECTION_INDEX_STRINGS[i]);
+        this.dataIndexStrings.push(OPTION_SELECTION_INDEX_STRINGS[i]);
       }
     } else {
       this.dataIndexStrings.splice(indexSize);

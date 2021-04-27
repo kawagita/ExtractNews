@@ -155,7 +155,7 @@ ExtractNews.File = (() => {
       if (! Number.isInteger(filteringTargetTotal)) {
         throw newIllegalArgumentException("filteringTargetTotal");
       } else if (filteringTargetTotal < 0
-        || filteringTargetTotal >= _Alert.FILTERING_MAX_COUNT) {
+        || filteringTargetTotal >= ExtractNews.FILTERING_MAX_COUNT) {
         throw newIndexOutOfBoundsException(
           "filtering targets", filteringTargetTotal);
       } else if (callback == undefined) {
@@ -236,7 +236,7 @@ ExtractNews.File = (() => {
                 filtering.setCategoryName(importData);
                 continue;
               } else if (ExtractNews.isFilteringTargetName(importData)) {
-                if (filteringTargetTotal >= _Alert.FILTERING_MAX_COUNT) {
+                if (filteringTargetTotal >= ExtractNews.FILTERING_MAX_COUNT) {
                   sendImportWarningMessage(
                     _Alert.FILTERING_NOT_SAVED_ANY_MORE, i);
                   importLineErrorOccurred = true;

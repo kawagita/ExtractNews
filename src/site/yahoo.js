@@ -146,7 +146,8 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
                         newsItems.push(newsItem);
                       });
                   }
-              })
+              }),
+            observedItemAddedAtOnce: true
           });
       }
 
