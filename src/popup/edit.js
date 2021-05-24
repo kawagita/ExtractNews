@@ -47,7 +47,7 @@ function getEditButton(id) {
  */
 function sendEditWarningMessage(warning) {
   callAsynchronousAPI(browser.tabs.getCurrent).then((tab) => {
-      return ExtractNews.sendRuntimeMessage({
+      ExtractNews.sendRuntimeMessage({
           command: ExtractNews.COMMAND_DIALOG_OPEN,
           tabId: tab.id,
           warning: warning.toObject()
@@ -57,32 +57,28 @@ function sendEditWarningMessage(warning) {
     });
 }
 
+var newsSelectionNewEdit = false;
+var newsSelectionEditIndex;
+
 var newsSelectionEditQueryMap = _Popup.getQueryMap(document.URL);
 var newsSelectionEditPane =
-  _Popup.getNewsSelectionEditPane(
-    newsSelectionEditQueryMap.get(_Popup.QUERY_OPENER_TAB_ID));
+  _Popup.getSelectionEditPane(
+    "title", newsSelectionEditQueryMap.get(_Popup.QUERY_OPENER_TAB_ID));
+
 var newsSelectionEditSaveButton = getEditButton("Save");
 var newsSelectionEditRemoveButton = getEditButton("Remove");
 var newsSelectionEditPointedGroup = new _Event.PointedGroup();
 
-newsSelectionEditPane.nameInput.addEventListener("focus", (event) => {
-    newsSelectionEditPointedGroup.clearEventTarget();
-  });
-newsSelectionEditPane.regexps.forEach((editRegexp) => {
-    editRegexp.textarea.addEventListener("focus", (event) => {
-        newsSelectionEditPointedGroup.clearEventTarget();
-      });
-  });
-newsSelectionEditPane.urlSelect.addEventListener("focus", (event) => {
-    newsSelectionEditPointedGroup.clearEventTarget();
-  });
-
 newsSelectionEditPointedGroup.addElements(
-  newsSelectionEditSaveButton, newsSelectionEditRemoveButton);
+  Array.of(newsSelectionEditPane.nameInput, newsSelectionEditPane.urlSelect));
+newsSelectionEditPane.regexps.forEach((editRegexp) => {
+    newsSelectionEditPointedGroup.addElement(editRegexp.textarea);
+  });
 
 // Sets buttons to localize the regular expression of a news selection.
 
 newsSelectionEditPane.localizedButtons.forEach((localizedButton) => {
+    localizedButton.disabled = true;
     localizedButton.addEventListener(_Event.CLICK, (event) => {
         var editRegexp =
           newsSelectionEditPane.regexps[Number(event.target.value)];
@@ -95,7 +91,8 @@ newsSelectionEditPane.localizedButtons.forEach((localizedButton) => {
         if (regexpResult.errorCode < 0) {
           var regexpString = regexpResult.localizedText.textString;
           if (regexpString.length <= _Alert.REGEXP_MAX_UTF16_CHARACTERS) {
-            // Set localized string into text area and checked flag to true.
+            // Set the localized string into text area and checked flag to
+            // true.
             editRegexp.textarea.value = regexpString;
             editRegexp.errorChecked = true;
             return;
@@ -105,17 +102,98 @@ newsSelectionEditPane.localizedButtons.forEach((localizedButton) => {
           sendEditWarningMessage(
             _Regexp.getErrorWarning(editRegexp.name, regexpResult));
         }
+        editRegexp.textarea.focus();
       });
     newsSelectionEditPointedGroup.addElement(localizedButton);
   });
 
-var newsSelectionEditTitleElement = document.querySelector("title");
-var newsSelectionEditIndex;
-var newsSelectionNewEdit = false;
+newsSelectionEditSaveButton.disabled = true;
+newsSelectionEditRemoveButton.disabled = true;
 
-_Storage.readNewsSelectionCount().then((newsSelectionCount) => {
+// Registers the click event to save and remove the news selection.
+
+newsSelectionEditSaveButton.addEventListener(_Event.CLICK, (event) => {
+    var newsSelection = ExtractNews.newSelection();
+    var regexpStrings = new Array();
+    var settingName =
+      _Text.trimText(
+        _Text.removeTextZeroWidthSpaces(
+          newsSelectionEditPane.nameInput.value));
+    newsSelectionEditPane.nameInput.value = settingName;
+    if (_Text.getTextWidth(settingName) > _Alert.SETTING_NAME_MAX_WIDTH) {
+      sendEditWarningMessage(
+        _Alert.getWarning(_Alert.SETTING_NAME_MAX_WITDH_EXCEEDED));
+      newsSelectionEditPane.nameInput.focus();
+      return;
+    }
+    newsSelection.settingName = settingName;
+    // Check whether a regular expression of text area is valid.
+    for (let i = 0; i < newsSelectionEditPane.regexps.length; i++) {
+      var editRegexp = newsSelectionEditPane.regexps[i];
+      if (editRegexp.errorChecked) {
+        regexpStrings.push(editRegexp.textarea.value);
+        continue;
+      }
+      var regexpString =
+        _Text.trimText(
+          _Text.replaceTextLineBreaksToSpace(
+            _Text.removeTextZeroWidthSpaces(editRegexp.textarea.value)));
+      var regexpResult = _Regexp.checkRegularExpression(regexpString);
+      if (regexpResult.errorCode >= 0) {
+        sendEditWarningMessage(
+          _Regexp.getErrorWarning(editRegexp.name, regexpResult));
+        editRegexp.textarea.focus();
+        return;
+      }
+      // Set the checked string into text area and checked flag to true.
+      regexpStrings.push(regexpString);
+      editRegexp.textarea.value = regexpString;
+      editRegexp.errorChecked = true;
+    }
+
+    newsSelection.topicRegularExpression = regexpStrings[0];
+    newsSelection.senderRegularExpression = regexpStrings[1];
+    newsSelection.openedUrl = newsSelectionEditPane.urlSelect.value;
+    _Storage.writeSelection(newsSelectionEditIndex, newsSelection).then(() => {
+        Debug.printMessage(
+          "Save the news selection "
+          + _Popup.getSelectionEditTitleNumber(newsSelectionEditIndex) + ".");
+        Debug.printProperty("Setting Name", newsSelection.settingName);
+        Debug.printProperty(
+          "Selected Topic", newsSelection.topicRegularExpression);
+        Debug.printProperty(
+          "Selected Sender", newsSelection.senderRegularExpression);
+        Debug.printProperty("Opened URL", newsSelection.openedUrl);
+      }).catch((error) => {
+        Debug.printStackTrace(error);
+      }).finally(() => {
+        _Popup.closeSelectionEditWindow();
+      });
+  });
+newsSelectionEditRemoveButton.addEventListener(_Event.CLICK, (event) => {
+    var removingPromise = Promise.resolve();
+    if (! newsSelectionNewEdit) {
+      removingPromise =
+        _Storage.removeSelection(newsSelectionEditIndex).then(() => {
+            Debug.printMessage(
+              "Remove the news selection "
+              + _Popup.getSelectionEditTitleNumber(newsSelectionEditIndex)
+              + ".");
+          });
+    }
+    removingPromise.catch((error) => {
+        Debug.printStackTrace(error);
+      }).finally(() => {
+        _Popup.closeSelectionEditWindow();
+      });
+  });
+
+newsSelectionEditPointedGroup.addElements(
+  Array.of(newsSelectionEditSaveButton, newsSelectionEditRemoveButton));
+
+_Storage.readSelectionCount().then((newsSelectionCount) => {
     var editIndexStrings =
-      newsSelectionEditQueryMap.get(_Popup.QUERY_NEWS_SELECTION_INDEX_STRINGS);
+      newsSelectionEditQueryMap.get(_Popup.QUERY_SELECTION_INDEX_STRINGS);
     if (editIndexStrings.length != 1) {
       // Save a news selection edited from scratch or compounded setting
       // and never remove any news selection.
@@ -124,14 +202,12 @@ _Storage.readNewsSelectionCount().then((newsSelectionCount) => {
     } else {
       newsSelectionEditIndex = Number(editIndexStrings[0]);
     }
-    return _Storage.readNewsSelections(editIndexStrings);
+    _Popup.setSelectionEditTitle(
+      newsSelectionEditPane, newsSelectionEditIndex);
+    return _Storage.readSelections(editIndexStrings);
   }).then((newsSelections) => {
-    var editNumberString = "#" + String(newsSelectionEditIndex + 1);
-    newsSelectionEditTitleElement.textContent =
-      getEditMessage("NewsSelection") + " " + editNumberString;
-
-    // Concatenate the setting name and regular expressions of news selections
-    // for the specified index strings.
+    // Concatenate the setting name and regular expressions set into the news
+    // selection of the specified index strings.
     var newsSelection = ExtractNews.newSelection();
     if (newsSelections.length > 0) {
       var settingName = newsSelections[0].settingName;
@@ -145,19 +221,17 @@ _Storage.readNewsSelectionCount().then((newsSelectionCount) => {
         topicRegexpString =
           _Regexp.getAlternative(
             topicRegexpString, newsSelections[i].topicRegularExpression);
-        if (topicRegexpString.length > _Alert.REGEXP_MAX_UTF16_CHARACTERS) {
-          sendEditWarningMessage(
-            _Alert.WARNING_SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED);
-          break;
-        }
         senderRegexpString =
           _Regexp.getAlternative(
             senderRegexpString, newsSelections[i].senderRegularExpression);
-        if (topicRegexpString.length > _Alert.REGEXP_MAX_UTF16_CHARACTERS) {
-          sendEditWarningMessage(
-            _Alert.WARNING_SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED);
-          break;
-        }
+      }
+      if (topicRegexpString.length > _Alert.REGEXP_MAX_UTF16_CHARACTERS) {
+        topicRegexpString =
+          topicRegexpString.substring(0, _Alert.REGEXP_MAX_UTF16_CHARACTERS);
+      }
+      if (senderRegexpString.length > _Alert.REGEXP_MAX_UTF16_CHARACTERS) {
+        senderRegexpString =
+          senderRegexpString.substring(0, _Alert.REGEXP_MAX_UTF16_CHARACTERS);
       }
       newsSelection.settingName = settingName;
       newsSelection.topicRegularExpression = topicRegexpString;
@@ -174,87 +248,23 @@ _Storage.readNewsSelectionCount().then((newsSelectionCount) => {
       }
     }
 
-    // Set buttons to save or remove a new selection and localize the regular
-    // expression into the edit button group.
-
-    newsSelectionEditSaveButton.addEventListener(_Event.CLICK, (event) => {
-        var newsSelection = ExtractNews.newSelection();
-        var regexpStrings = new Array();
-        var settingName =
-          _Text.trimText(
-            _Text.removeTextZeroWidthSpaces(
-              newsSelectionEditPane.nameInput.value));
-        newsSelectionEditPane.nameInput.value = settingName;
-        if (_Text.getTextWidth(settingName) > _Alert.SETTING_NAME_MAX_WIDTH) {
-          sendEditWarningMessage(
-            _Alert.WARNING_SETTING_NAME_MAX_WITDH_EXCEEDED);
-          return;
-        }
-        newsSelection.settingName = settingName;
-        // Check whether a regular expression of text area is valid.
-        for (let i = 0; i < newsSelectionEditPane.regexps.length; i++) {
-          var editRegexp = newsSelectionEditPane.regexps[i];
-          if (editRegexp.errorChecked) {
-            regexpStrings.push(editRegexp.textarea.value);
-            continue;
-          }
-          var regexpString =
-            _Text.trimText(
-              _Text.replaceTextLineBreaksToSpace(
-                _Text.removeTextZeroWidthSpaces(editRegexp.textarea.value)));
-          var regexpResult = _Regexp.checkRegularExpression(regexpString);
-          if (regexpResult.errorCode >= 0) {
-            sendEditWarningMessage(
-              _Regexp.getErrorWarning(editRegexp.name, regexpResult));
-            return;
-          }
-          // Set checked string into text area and checked flag to true.
-          regexpStrings.push(regexpString);
-          editRegexp.textarea.value = regexpString;
-          editRegexp.errorChecked = true;
-        }
-
-        newsSelection.topicRegularExpression = regexpStrings[0];
-        newsSelection.senderRegularExpression = regexpStrings[1];
-        newsSelection.openedUrl = newsSelectionEditPane.urlSelect.value;
-        _Storage.writeNewsSelection(
-          newsSelectionEditIndex, newsSelection).then(() => {
-            Debug.printMessage(
-              "Change the news selection " + editNumberString + ".");
-            Debug.printProperty("Setting Name", newsSelection.settingName);
-            Debug.printProperty(
-              "Selected Topic", newsSelection.topicRegularExpression);
-            Debug.printProperty(
-              "Selected Sender", newsSelection.senderRegularExpression);
-            Debug.printProperty("Open Page URL", newsSelection.openedUrl);
-          }).catch((error) => {
-            Debug.printStackTrace(error);
-          }).finally(() => {
-            _Popup.closeNewsSelectionEditWindow();
+    _Storage.readSiteData().then((siteDataArray) => {
+        // Set URLs to open the news site to which above news selection is
+        // applied into the select element on the edit window.
+        siteDataArray.forEach((siteData) => {
+            ExtractNews.setNewsSite(new ExtractNews.NewsSite(siteData));
           });
-      });
-    newsSelectionEditRemoveButton.addEventListener(_Event.CLICK, (event) => {
-        var removingPromise = Promise.resolve();
-        if (! newsSelectionNewEdit) {
-          removingPromise =
-            _Storage.removeNewsSelection(newsSelectionEditIndex).then(() => {
-                Debug.printMessage(
-                  "Remove the news selection " + editNumberString + ".");
-              });
-        }
-        removingPromise.catch((error) => {
-            Debug.printStackTrace(error);
-          }).finally(() => {
-            _Popup.closeNewsSelectionEditWindow();
+        _Popup.setSelectionEditUrlSelect(
+          newsSelectionEditPane, newsSelection.openedUrl);
+
+        newsSelectionEditPane.localizedButtons.forEach((localizedButton) => {
+            localizedButton.disabled = false;
           });
+        newsSelectionEditSaveButton.disabled = false;
+        newsSelectionEditRemoveButton.disabled = false;
+
+        ExtractNews.getDebugMode();
       });
-
-    // Set URLs to open a news site to which above news selection is applied
-    // into the select element on the edit window.
-    _Popup.setNewsSelectionEditUrlSelect(
-      newsSelectionEditPane, newsSelection.openedUrl);
-
-    return ExtractNews.getDebugMode();
   }).catch((error) => {
     Debug.printStackTrace(error);
   });

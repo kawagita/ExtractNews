@@ -19,105 +19,80 @@
 
 "use strict";
 
+/*
+ * Returns the data of the specified URL if on the specified news site,
+ * otherwise, undefined;
+ */
+function getNewsSiteUrlData(site, url) {
+  var urlData = {
+      hostServer: "",
+      hostDomain: site.hostDomain,
+      path: ""
+    };
+  var urlHostPath;
+  if (url.startsWith(URL_HTTPS_SCHEME)) {
+    urlHostPath = url.substring(URL_HTTPS_SCHEME.length);
+  } else if (url.startsWith("//")) {
+    urlHostPath = url.substring(2);
+  } else if (url.startsWith(URL_PATH_SEPARATOR)) {
+    urlData.hostServer = site.hostServer;
+    urlData.path = url;
+    return urlData;
+  } else {
+    return undefined;
+  }
+  if (urlHostPath.startsWith(site.hostDomain)) {
+    urlData.path = urlHostPath.substring(site.hostDomain.length);
+  } else {
+    var urlHostDomainIndex =
+      urlHostPath.indexOf(URL_DOMAIN_LABEL_SEPARATOR) + 1;
+    var urlHostDomainPath = urlHostPath.substring(urlHostDomainIndex);
+    if (! urlHostDomainPath.startsWith(site.hostDomain)) {
+      return undefined;
+    }
+    urlData.hostServer = urlHostPath.substring(0, urlHostDomainIndex - 1);
+    urlData.path = urlHostDomainPath.substring(site.hostDomain.length);
+  }
+  if (urlData.path == "" || urlData.path.startsWith(URL_PATH_SEPARATOR)) {
+    return urlData;
+  }
+  return undefined;
+}
+
 const PATH_DIRECTORY_REGEXP = new RegExp(/^\/(?:index.html?)?$/);
 const PATH_HTML_DOCUMENT_REGEXP = new RegExp(/[^/]+\.html?$/);
 
 /*
- * The object to parse the URL into a host server, path, and query
- * sequentially for a news site.
+ * The object to parse the URL into the path and query sequentially.
+ * for a news site.
  */
 class NewsSiteUrlParser {
-  constructor(site, url) {
-    if (site == undefined) {
-      throw newNullPointerException("site");
-    } else if (url == undefined) {
-      throw newNullPointerException("url");
-    } else if ((typeof url) != "string") {
-      throw newIllegalArgumentException("url");
+  constructor(urlData) {
+    if (urlData == undefined) {
+      throw newNullPointerException("urlData");
     }
-    this.site = site;
-    this.url = url;
-    this.urlPathParsed = false;
-    this.urlParams = { path: "" };
-  }
-
-  /*
-   * Parses the host name on this site in the current position of URL.
-   */
-  parseHostName() {
-    if (this.urlParams.hostServer == undefined) {
-      var hostPath;
-      var hostServer = "";
-      var relativePath = undefined;
-      if (this.url.startsWith(URL_HTTPS_SCHEME)) {
-        hostPath = this.url.substring(URL_HTTPS_SCHEME.length);
-      } else if (this.url.startsWith("//")) {
-        hostPath = this.url.substring(2);
-      } else if (this.url.startsWith("/")) {
-        var domainIndex = document.URL.indexOf(this.site.domain);
-        if (domainIndex > 1) {
-          hostServer =
-            document.URL.substring(URL_HTTPS_SCHEME.length, domainIndex - 1);
-        }
-        relativePath = this.url;
-      } else {
-        return false;
+    this.urlData = urlData;
+    var relativePath = urlData.path;
+    if (relativePath != "") {
+      var fragmentIndex = relativePath.indexOf("#");
+      if (fragmentIndex >= 0) {
+        relativePath = relativePath.substring(0, fragmentIndex);
       }
-      if (relativePath == undefined) {
-        if (hostPath.startsWith(this.site.domain)) {
-          relativePath = hostPath.substring(this.site.domain.length);
-        } else {
-          var domainIndex = hostPath.indexOf(".") + 1;
-          var domainPath = hostPath.substring(domainIndex);
-          if (! domainPath.startsWith(this.site.domain)) {
-            return false;
-          }
-          hostServer = hostPath.substring(0, domainIndex - 1);
-          relativePath = domainPath.substring(this.site.domain.length);
-        }
-      }
-      if (relativePath == "" || relativePath.startsWith("/")) {
-        if (relativePath != "") {
-          var fragmentIndex = relativePath.indexOf("#");
-          if (fragmentIndex >= 0) {
-            relativePath = relativePath.substring(0, fragmentIndex);
-          }
-          var queryIndex = relativePath.indexOf("?");
-          if (queryIndex >= 0) {
-            relativePath = relativePath.substring(0, queryIndex);
-          }
-        }
-        this.urlParams.hostServer = hostServer;
-        this.urlParams.relativePath = relativePath;
-        if (this.site.rootDirectoryPath == "") {
-          this.urlPathParsed = true;
-        }
-        return true;
+      var queryIndex = relativePath.indexOf("?");
+      if (queryIndex >= 0) {
+        relativePath = relativePath.substring(0, queryIndex);
       }
     }
-    return false;
+    this.relativePath = relativePath;
+    this.path = "";
   }
 
   _parsePath(path) {
-    var relativePath = this.urlParams.relativePath.substring(path.length);
-    if (relativePath == "" || relativePath.startsWith("/")) {
-      this.urlParams.path += path;
-      this.urlParams.relativePath = relativePath;
+    var relativePath = this.relativePath.substring(path.length);
+    if (relativePath == "" || relativePath.startsWith(URL_PATH_SEPARATOR)) {
+      this.path += path;
+      this.relativePath = relativePath;
       return true;
-    }
-    return false;
-  }
-
-  /*
-   * Parses the root directory on this site in the current position of URL.
-   */
-  parseRootDirectory() {
-    if (this.urlParams.relativePath != undefined
-      && this.urlParams.relativePath.startsWith(this.site.rootDirectoryPath)) {
-      if (this._parsePath(this.site.rootDirectoryPath)) {
-        this.urlPathParsed = true;
-        return true;
-      }
     }
     return false;
   }
@@ -130,13 +105,13 @@ class NewsSiteUrlParser {
       throw newNullPointerException("path");
     } else if ((typeof path) != "string") {
       throw newIllegalArgumentException("path");
-    } else if (path == "/") {
+    } else if (path == URL_PATH_SEPARATOR) {
       throw newInvalidParameterException(path);
-    } else if (path != "" && this.urlPathParsed) {
-      if (path.endsWith("/")) {
+    } else if (path != "") {
+      if (path.endsWith(URL_PATH_SEPARATOR)) {
         path = path.substring(0, path.length - 1);
       }
-      if (this.urlParams.relativePath.startsWith(path)) {
+      if (this.relativePath.startsWith(path)) {
         return this._parsePath(path);
       }
     }
@@ -162,12 +137,9 @@ class NewsSiteUrlParser {
    * Parses the directory in the current position of URL.
    */
   parseDirectory() {
-    if (this.urlPathParsed) {
-      var directoryMatch =
-        this.urlParams.relativePath.match(PATH_DIRECTORY_REGEXP);
-      if (directoryMatch != null) {
-        return this._parsePath(directoryMatch[0]);
-      }
+    var directoryMatch = this.relativePath.match(PATH_DIRECTORY_REGEXP);
+    if (directoryMatch != null) {
+      return this._parsePath(directoryMatch[0]);
     }
     return false;
   }
@@ -176,12 +148,9 @@ class NewsSiteUrlParser {
    * Parses the directory hierarchy in the current position of URL.
    */
   parseDirectoryHierarchy() {
-    if (this.urlPathParsed) {
-      var lastPathIndex = this.urlParams.relativePath.lastIndexOf("/");
-      if (lastPathIndex >= 0) {
-        return this._parsePath(
-          this.urlParams.relativePath.substring(0, lastPathIndex));
-      }
+    var lastPathIndex = this.relativePath.lastIndexOf(URL_PATH_SEPARATOR);
+    if (lastPathIndex >= 0) {
+      return this._parsePath(this.relativePath.substring(0, lastPathIndex));
     }
     return false;
   }
@@ -190,10 +159,7 @@ class NewsSiteUrlParser {
    * Parses the path to the last from the current position of URL.
    */
   parseAll() {
-    if (this.urlPathParsed) {
-      return this._parsePath(this.urlParams.relativePath);
-    }
-    return false;
+    return this._parsePath(this.relativePath);
   }
 
   /*
@@ -205,10 +171,7 @@ class NewsSiteUrlParser {
     if (pathRegexp == undefined) {
       throw newNullPointerException("pathRegexp");
     }
-    if (this.urlPathParsed) {
-      return this.urlParams.relativePath.match(pathRegexp);
-    }
-    return null;
+    return this.relativePath.match(pathRegexp);
   }
 
   /*
@@ -224,69 +187,68 @@ class NewsSiteUrlParser {
    * Parses the key and value of query parameters in the URL.
    */
   parseQuery() {
-    var queryIndex = this.url.indexOf("?");
+    var queryIndex = this.urlData.path.indexOf("?");
     if (queryIndex >= 0) {
-      var query = this.url.substring(queryIndex);
+      var query = this.urlData.path.substring(queryIndex);
       var queryMap = new Map();
       (new URLSearchParams(query)).forEach((queryValue, queryKey) => {
           queryMap.set(queryKey, queryValue);
         });
-      this.urlParams.queryMap = queryMap;
+      this.queryMap = queryMap;
       return true;
     }
     return false;
   }
 
-  isCompleted() {
-    return this.urlPathParsed && this.urlParams.relativePath == "";
-  }
-
-  get hostServer() {
-    return this.urlParams.hostServer;
-  }
-
-  get path() {
-    return this.urlParams.path;
-  }
-
   getQueryValue(queryKey) {
-    if (this.urlParams.queryMap != undefined) {
-      return this.urlParams.queryMap.get(queryKey);
+    if (queryKey != undefined && this.queryMap != undefined) {
+      return this.queryMap.get(queryKey);
     }
     return undefined;
+  }
+
+  isCompleted() {
+    return this.relativePath == "";
+  }
+
+  endsWith(path) {
+    if (path == undefined) {
+      throw newNullPointerException("path");
+    }
+    return this.path.endsWith(path);
   }
 
   /*
    * Returns the string parsed to the current position of URL.
    */
   toString(queryKeys) {
-    if (this.path != "" && this.path != this.site.rootDirectoryPath) {
+    if (this.path != "") {
       var url = URL_HTTPS_SCHEME;
-      if (this.hostServer != "") {
-        url += this.hostServer + ".";
+      if (this.urlData.hostServer != "") {
+        url += this.urlData.hostServer + URL_DOMAIN_LABEL_SEPARATOR;
       }
-      url += this.site.domain;
-      if (this.path != "/") {
+      url += this.urlData.hostDomain;
+      if (this.path != URL_PATH_SEPARATOR) {
         url += this.path;
-        if (! this.path.endsWith("/")
-          && this.urlParams.relativePath != "") {
+        if (! this.path.endsWith(URL_PATH_SEPARATOR)
+          && this.relativePath != "") {
           // Append a slash to the end of directory path.
-          url += "/";
+          url += URL_PATH_SEPARATOR;
         }
       //} else {
       // Never appended a slash to only the host name.
       }
-      if (queryKeys != undefined && this.urlParams.queryMap != undefined) {
+      if (queryKeys != undefined && this.queryMap != undefined) {
         var query = "";
         queryKeys.forEach((queryKey) => {
-            var queryValue = this.urlParams.queryMap.get(queryKey);
+            var queryValue = this.queryMap.get(queryKey);
             if (queryValue != undefined) {
               if (query != "") {
                 query += "&";
               } else {
-                if (this.path == "/") {
+                if (this.path == URL_PATH_SEPARATOR) {
                   // Append a slash to only the host name, see above.
-                  query = "/";
+                  query = URL_PATH_SEPARATOR;
                 }
                 query += "?";
               }

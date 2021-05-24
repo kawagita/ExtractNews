@@ -26,7 +26,7 @@ ExtractNews.Popup = (() => {
     const _Popup = {
         // Query string added to URL of the edit window or dialog
         QUERY_OPENER_TAB_ID: "openerTabId",
-        QUERY_NEWS_SELECTION_INDEX_STRINGS: "newsSelectionIndexStrings"
+        QUERY_SELECTION_INDEX_STRINGS: "selectionIndexStrings"
       };
 
     function _getQueryString(name, value) {
@@ -41,7 +41,7 @@ ExtractNews.Popup = (() => {
 
     const QUERY_KEYS = [
         _Popup.QUERY_OPENER_TAB_ID,
-        _Popup.QUERY_NEWS_SELECTION_INDEX_STRINGS
+        _Popup.QUERY_SELECTION_INDEX_STRINGS
       ];
 
     /*
@@ -67,7 +67,7 @@ ExtractNews.Popup = (() => {
             case _Popup.QUERY_OPENER_TAB_ID:
               queryMap.set(queryKey, Number(queryValue));
               break;
-            case _Popup.QUERY_NEWS_SELECTION_INDEX_STRINGS:
+            case _Popup.QUERY_SELECTION_INDEX_STRINGS:
               var queryArray;
               if (queryValue != "") {
                 queryArray = queryValue.split(",");
@@ -84,6 +84,7 @@ ExtractNews.Popup = (() => {
 
     _Popup.getQueryMap = getQueryMap;
 
+
     /*
      * Finds the tab of the specified ID from all tabs opened on the browser
      * and returns the promise fulfilled with its information.
@@ -95,7 +96,6 @@ ExtractNews.Popup = (() => {
               return Promise.resolve(tabs[i]);
             }
           }
-          return Promise.resolve();
         })
     }
 
@@ -120,19 +120,35 @@ ExtractNews.Popup = (() => {
         });
     }
 
+    /*
+     * Counts the number of windows and returns the promise fulfilled with its
+     * value.
+     */
+    function getWindowCount() {
+      return callAsynchronousAPI(browser.tabs.query, { }).then((tabs) => {
+          var windowIdSet = new Set();
+          tabs.forEach((tab) => {
+              windowIdSet.add(tab.windowId);
+            });
+          return Promise.resolve(windowIdSet.size);
+        })
+    }
+
     _Popup.searchTab = searchTab;
     _Popup.getTab = getTab;
     _Popup.getWindowActiveTab = getWindowActiveTab;
+    _Popup.getWindowCount = getWindowCount;
 
-    function _getEditMessage(messageIdPrefix, id) {
-      return browser.i18n.getMessage(messageIdPrefix + id);
+
+    function _getEditMessage(id) {
+      return browser.i18n.getMessage("edit" + id);
     }
 
-    function _getEditElement(messageIdPrefix, id, tagName) {
+    function _getEditElement(id, tagName) {
       var element = document.getElementById(id);
       var label = element.querySelector("label");
       if (label != null) {
-        label.textContent = _getEditMessage(messageIdPrefix, id);
+        label.textContent = _getEditMessage(id);
       }
       if (tagName != undefined) {
         element = element.querySelector(tagName);
@@ -140,77 +156,41 @@ ExtractNews.Popup = (() => {
       return element;
     }
 
+    const SELECTION_EDIT_SETTING_NAME = "SettingName";
+    const SELECTION_EDIT_SELECTED_TOPIC = "SelectedTopic";
+    const SELECTION_EDIT_SELECTED_SENDER = "SelectedSender";
+    const SELECTION_EDIT_OPENED_URL = "OpenedUrl";
+
     /*
      * Returns an object to edit a news selection on the pane, which consists
      * of an inupt element for the setting name, the array of objects to input
      * the regular expression of selected topics and senders, and a select
      * element for the URL of news sites.
      */
-    function getNewsSelectionEditPane(editTabId) {
-      if (editTabId != undefined && ! Number.isInteger(editTabId)) {
+    function getSelectionEditPane(editTitleSelectors, editTabId) {
+      if (editTitleSelectors == undefined) {
+        throw newNullPointerException("editTitleSelectors");
+      } else if ((typeof editTitleSelectors) != "string") {
+        throw newIllegalArgumentException("editTitleSelectors");
+      } else if (editTabId != undefined && ! Number.isInteger(editTabId)) {
         throw newIllegalArgumentException("editTabId");
       }
-      var editMessageIdPrefix = "option";
       var editPane = {
-          nameInput: undefined,
-          regexps: undefined,
+          tabId: editTabId,
+          titleElement: document.querySelector(editTitleSelectors),
+          nameInput: _getEditElement(SELECTION_EDIT_SETTING_NAME, "input"),
+          regexps: new Array(),
           localizedButtons: new Array(),
-          urlSelect: undefined,
-          _openerTabNewsOpenedUrl: undefined,
-          _newsOpenedUrl: undefined
+          urlSelect: _getEditElement(SELECTION_EDIT_OPENED_URL, "select")
         };
+      var editRegexpDivs =
+        Array.of(
+          _getEditElement(SELECTION_EDIT_SELECTED_TOPIC),
+          _getEditElement(SELECTION_EDIT_SELECTED_SENDER));
       var editUILanguage = browser.i18n.getUILanguage();
-      var editNameInput =
-        _getEditElement(editMessageIdPrefix, "SettingName", "input");
-      var editSelectedTopicDiv =
-        _getEditElement(editMessageIdPrefix, "SelectedTopic");
-      var editSelectedSenderDiv =
-        _getEditElement(editMessageIdPrefix, "SelectedSender");
-      var editRegexps = new Array();
-      var editUrlSelect =
-        _getEditElement(editMessageIdPrefix, "OpenedUrl", "select");
-      editPane.nameInput = editNameInput;
-      editPane.regexps = editRegexps;
-      editPane.urlSelect = editUrlSelect;
 
-      if (editTabId != undefined) {
-        // Receive the news opened URL on the tab of the specified ID.
-        browser.runtime.onMessage.addListener((message) => {
-            if (message.command != ExtractNews.COMMAND_SETTING_INFORM) {
-              return;
-            }
-            for (const newsSite of ExtractNews.getNewsSites()) {
-              if (message.newsOpenedUrl == newsSite.url) {
-                // Never insert the duplicate URL as one of news sites.
-                return;
-              }
-            }
-            if (editPane._newsOpenedUrl == undefined
-              || editPane._newsOpenedUrl != message.newsOpenedUrl) {
-              // Insert the opener tab's URL which is not added by
-              // setNewsSelectionEditUrlSelect() to the top of select
-              // element on the edit pane.
-              var openerTabUrlOption = document.createElement("option");
-              openerTabUrlOption.value = message.newsOpenedUrl;
-              openerTabUrlOption.text = message.newsOpenedUrl;
-              editPane.urlSelect.insertBefore(
-                openerTabUrlOption, editPane.urlSelect.firstElementChild);
-              openerTabUrlOption.selected = true;
-              editPane._openerTabNewsOpenedUrl = message.newsOpenedUrl;
-            }
-          });
-        ExtractNews.sendRuntimeMessage({
-            command: ExtractNews.COMMAND_SETTING_REQUEST,
-            tabId: editTabId
-          });
-        editMessageIdPrefix = "edit";
-      }
-      editNameInput.maxLength = _Alert.SETTING_NAME_MAX_WIDTH;
-      editNameInput.placeholder =
-        _getEditMessage(editMessageIdPrefix, "InputTitle");
-      Array.of(
-        editSelectedTopicDiv,
-        editSelectedSenderDiv).forEach((editRegexpDiv) => {
+      editPane.nameInput.maxLength = _Alert.SETTING_NAME_MAX_WIDTH;
+      editRegexpDivs.forEach((editRegexpDiv) => {
           var editTextarea = editRegexpDiv.querySelector("textarea");
           var editRegexp = {
               name: editRegexpDiv.querySelector("label").textContent,
@@ -218,8 +198,7 @@ ExtractNews.Popup = (() => {
               errorChecked: false
             };
           editTextarea.maxLength = _Alert.REGEXP_MAX_UTF16_CHARACTERS;
-          editTextarea.placeholder =
-            _getEditMessage(editMessageIdPrefix, "InputRegularExpression");
+          editTextarea.placeholder = _getEditMessage("InputRegularExpression");
           editTextarea.addEventListener("input", (event) => {
               for (let i = 0; i < editPane.regexps.length; i++) {
                 if (event.target == editPane.regexps[i].textarea) {
@@ -231,47 +210,85 @@ ExtractNews.Popup = (() => {
           if (editUILanguage.startsWith("ja")) {
             // Enable the button to localize a regular expression.
             var editLocalizedButton = editRegexpDiv.querySelector(".localize");
-            editLocalizedButton.textContent =
-              _getEditMessage(editMessageIdPrefix, "Localize");
-            editLocalizedButton.value = String(editRegexps.length);
+            editLocalizedButton.textContent = _getEditMessage("Localize");
+            editLocalizedButton.value = String(editPane.regexps.length);
             editLocalizedButton.style.visibility = "visible";
-            if (editRegexpDiv == editSelectedTopicDiv) {
+            if (editRegexpDiv.id == SELECTION_EDIT_SELECTED_TOPIC) {
               editRegexp.warningMaxUtf16CharactersExceeded =
-                _Alert.WARNING_SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED;
+                _Alert.getWarning(
+                  _Alert.SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED);
             } else {
               editRegexp.warningMaxUtf16CharactersExceeded =
-                _Alert.WARNING_SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED;
+                _Alert.getWarning(
+                  _Alert.SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED);
             }
             editPane.localizedButtons.push(editLocalizedButton);
           }
-          editRegexps.push(editRegexp);
+          editPane.regexps.push(editRegexp);
         });
       return editPane;
     }
 
-    function _addEditOpenedUrl(editUrlSelect, openedUrl) {
+    function _addEditUrlOption(editUrlSelect, url) {
       var editUrlOption = document.createElement("option");
-      editUrlOption.value = openedUrl;
-      editUrlOption.text = openedUrl;
+      editUrlOption.value = url;
+      editUrlOption.text = url;
       editUrlSelect.appendChild(editUrlOption);
       return editUrlOption;
     }
 
+    const SELECTION_EDIT_TITLE = _getEditMessage("NewsSelection");
+    const SELECTION_EDIT_NUMBER_SUFFIX = "#";
+
     /*
-     * Sets the URL of news sites opened by a news selection into the select
-     * element in the specified object to edit it on the pane.
+     * Returns the title number string to edit the news selection
+     * of the specified index on the pane.
      */
-    function setNewsSelectionEditUrlSelect(editPane, newsOpenedUrl = "") {
+    function getSelectionEditTitleNumber(editIndex) {
+      if (! Number.isInteger(editIndex)) {
+        throw newIllegalArgumentException("editIndex");
+      }
+      return SELECTION_EDIT_NUMBER_SUFFIX + String(editIndex + 1);
+    }
+
+    /*
+     * Sets the title in the specified object to edit the news selection
+     * of the specified index on the pane.
+     */
+    function setSelectionEditTitle(editPane, editIndex) {
       if (editPane == undefined) {
         throw newNullPointerException("editPane");
       }
+      editPane.titleElement.textContent =
+        SELECTION_EDIT_TITLE + " " + getSelectionEditTitleNumber(editIndex);
+    }
+
+    /*
+     * Clears the title in the specified object to edit the news selection
+     * on the pane.
+     */
+    function clearSelectionEditTitle(editPane) {
+      if (editPane == undefined) {
+        throw newNullPointerException("editPane");
+      }
+      editPane.titleElement.textContent = "";
+    }
+
+    function _setEditUrlSelect(editPane, openedUrl, openerTabNewsOpenedUrl) {
       var editUrlSelect = editPane.urlSelect;
-      var newsOpenedUrlAppended = false;
-      if (newsOpenedUrl != "") {
-        if (newsOpenedUrl != URL_ABOUT_BLANK) {
-          newsOpenedUrlAppended = true;
+      var openedSiteId = undefined;
+      var openedUrlAppended = false;
+      if (openedUrl != "") {
+        if (openedUrl != URL_ABOUT_BLANK) {
+          if (openedUrl == openerTabNewsOpenedUrl) {
+            openerTabNewsOpenedUrl = undefined;
+          }
+          var openedSite = ExtractNews.getNewsSite(openedUrl);
+          if (openedSite != undefined) {
+            openedSiteId = openedSite.id;
+          }
+          openedUrlAppended = true;
         }
-        editPane._newsOpenedUrl = newsOpenedUrl;
       }
       // Put URLs to the select element on the edit pane in below order.
       //
@@ -285,32 +302,58 @@ ExtractNews.Popup = (() => {
       // is in the order of the opened URL, opener tab, and "about:blank".
       // If an opener tab is the same as the opened URL or one of news sites,
       // removed or not added by this function or event listner. 
-      ExtractNews.getNewsSites().forEach((newsSite) => {
-          var newsSiteUrl = newsSite.url;
-          var editUrlOption = _addEditOpenedUrl(editUrlSelect, newsSiteUrl);
-          if (newsSiteUrl == newsOpenedUrl) {
-            editUrlOption.selected = true;
-          } else if (newsOpenedUrlAppended) {
-            if (newsSite.containsUrl(newsOpenedUrl)) {
+      var editUrlSelectOption = undefined;
+      if (openerTabNewsOpenedUrl != undefined) { // Opener tab of a news site
+        editUrlSelectOption =
+          _addEditUrlOption(editUrlSelect, openerTabNewsOpenedUrl);
+      }
+      ExtractNews.forEachNewsSite((siteId, siteUrl) => {
+          if (openerTabNewsOpenedUrl != siteUrl) {
+            var editUrlOption = _addEditUrlOption(editUrlSelect, siteUrl);
+            if (openedUrl == siteUrl) { // Opened URL which equals a news site
+              editUrlSelectOption = editUrlOption;
+              openedUrlAppended = false;
+            } else if (openedSiteId == siteId) {
               // Append the option element for the specified opened URL to
-              // the next of news site which contains it.
-              _addEditOpenedUrl(editUrlSelect, newsOpenedUrl).selected = true;
-              if (newsOpenedUrl == editPane._openerTabNewsOpenedUrl) {
-                // Remove the opener tab's URL from the top if inserted ahead.
-                editUrlSelect.removeChild(editUrlSelect.firstElementChild);
-              }
-              newsOpenedUrlAppended = false;
+              // the next of a news site which contains it.
+              editUrlSelectOption =
+                _addEditUrlOption(editUrlSelect, openedUrl);
+              openedUrlAppended = false;
             }
           }
         });
-      if (newsOpenedUrlAppended) {
-        _addEditOpenedUrl(editUrlSelect, newsOpenedUrl).selected = true;
+      if (openedUrlAppended) { // Opened URL of no news site
+        editUrlSelectOption = _addEditUrlOption(editUrlSelect, openedUrl);
       }
-      var editUrlOption = _addEditOpenedUrl(editUrlSelect, URL_ABOUT_BLANK);
-      if (newsOpenedUrl == URL_ABOUT_BLANK
-        || (newsOpenedUrl == ""
-          && editPane._openerTabNewsOpenedUrl == undefined)) {
-        editUrlOption.selected = true;
+      var editBlankOption = _addEditUrlOption(editUrlSelect, URL_ABOUT_BLANK);
+      if (editUrlSelectOption == undefined) { // "about:blank" or new edit
+        editUrlSelectOption = editBlankOption;
+      }
+      editUrlSelectOption.selected = true;
+    }
+
+    /*
+     * Sets the URL of news sites opened by a news selection into the select
+     * element in the specified object to edit it on the pane.
+     */
+    function setSelectionEditUrlSelect(editPane, openedUrl = "") {
+      if (editPane == undefined) {
+        throw newNullPointerException("editPane");
+      } else if (editPane.tabId != undefined) {
+        // Receive the opened URL on the news site tab of the specified ID.
+        browser.runtime.onMessage.addListener((message) => {
+            if (message.command == ExtractNews.COMMAND_SETTING_INFORM) {
+              _setEditUrlSelect(editPane, openedUrl, message.newsOpenedUrl);
+            }
+          });
+        ExtractNews.sendRuntimeMessage({
+            command: ExtractNews.COMMAND_SETTING_REQUEST,
+            tabId: editPane.tabId
+          }).catch((error) => {
+            Debug.printStackTrace(error);
+          });
+      } else {
+        _setEditUrlSelect(editPane, openedUrl);
       }
     }
 
@@ -318,7 +361,7 @@ ExtractNews.Popup = (() => {
      * Clears the URL of news sites opened by a news selection into the select
      * element in the specified object to edit it on the pane.
      */
-    function clearNewsSelectionEditUrlSelect(editPane) {
+    function clearSelectionEditUrlSelect(editPane) {
       if (editPane == undefined) {
         throw newNullPointerException("editPane");
       }
@@ -327,12 +370,17 @@ ExtractNews.Popup = (() => {
       for (let i = 0; i < editUrlOptions.length; i++) {
         editUrlSelect.removeChild(editUrlOptions[i]);
       }
-      editPane._newsOpenedUrl = undefined;
     }
 
-    _Popup.getNewsSelectionEditPane = getNewsSelectionEditPane;
-    _Popup.setNewsSelectionEditUrlSelect = setNewsSelectionEditUrlSelect;
-    _Popup.clearNewsSelectionEditUrlSelect = clearNewsSelectionEditUrlSelect;
+    _Popup.getSelectionEditPane = getSelectionEditPane;
+
+    _Popup.getSelectionEditTitleNumber = getSelectionEditTitleNumber;
+    _Popup.setSelectionEditTitle = setSelectionEditTitle;
+    _Popup.clearSelectionEditTitle = clearSelectionEditTitle;
+
+    _Popup.setSelectionEditUrlSelect = setSelectionEditUrlSelect;
+    _Popup.clearSelectionEditUrlSelect = clearSelectionEditUrlSelect;
+
 
     // URL of edit window only opened on the extension
     const EDIT_WINDOW_URL = browser.runtime.getURL("popup/edit.html");
@@ -342,16 +390,16 @@ ExtractNews.Popup = (() => {
      * and the promise with fulfilled with its tab ID or rejected. If the array
      * has a negative or multiple indexes, edit for new setting.
      */
-    function openNewsSelectionEditWindow(indexStrings = new Array()) {
+    function openSelectionEditWindow(indexStrings = new Array()) {
       if (! Array.isArray(indexStrings)) {
         throw newIllegalArgumentException("indexStrings");
       }
       return getWindowActiveTab().then((tab) => {
-          return callAsynchronousAPI(browser.windows.create, {
+          callAsynchronousAPI(browser.windows.create, {
               url: EDIT_WINDOW_URL + "?"
                 + _getQueryString(_Popup.QUERY_OPENER_TAB_ID, tab.id)
                 + "&" + _getQueryString(
-                  _Popup.QUERY_NEWS_SELECTION_INDEX_STRINGS, indexStrings),
+                  _Popup.QUERY_SELECTION_INDEX_STRINGS, indexStrings),
               type: "popup",
               height: 575,
               width: 540
@@ -364,7 +412,7 @@ ExtractNews.Popup = (() => {
      * and returns the promise fulfilled with its tab ID if exists, otherwise,
      * browser.tabs.TAB_ID_NONE.
      */
-    function queryNewsSelectionEditWindow() {
+    function querySelectionEditWindow() {
       return callAsynchronousAPI(browser.tabs.query, { }).then((tabs) => {
           for (let i = 0; i < tabs.length; i++) {
             if (tabs[i].url.startsWith(EDIT_WINDOW_URL)) {
@@ -378,18 +426,18 @@ ExtractNews.Popup = (() => {
     /*
      * Closes the window to edit a news selection and returns the promise.
      */
-    function closeNewsSelectionEditWindow() {
-      return queryNewsSelectionEditWindow().then((editWindowTabId) => {
+    function closeSelectionEditWindow() {
+      return querySelectionEditWindow().then((editWindowTabId) => {
           if (editWindowTabId != browser.tabs.TAB_ID_NONE) {
             return callAsynchronousAPI(browser.tabs.remove, editWindowTabId);
           }
-          return Promise.resolve();
         });
     }
 
-    _Popup.openNewsSelectionEditWindow = openNewsSelectionEditWindow;
-    _Popup.queryNewsSelectionEditWindow = queryNewsSelectionEditWindow;
-    _Popup.closeNewsSelectionEditWindow = closeNewsSelectionEditWindow;
+    _Popup.openSelectionEditWindow = openSelectionEditWindow;
+    _Popup.querySelectionEditWindow = querySelectionEditWindow;
+    _Popup.closeSelectionEditWindow = closeSelectionEditWindow;
+
 
     /*
      * Applies the setting of news selections in the specified array to a tab
@@ -429,7 +477,7 @@ ExtractNews.Popup = (() => {
             if (newsSite != undefined) {
               // Update the active tab by the opened URL of news selections
               // if its site is not enabled.
-              tabUpdated = ! ExtractNews.isNewsSiteEnabled(newsSite.id);
+              tabUpdated = ! ExtractNews.isDomainEnabled(newsSite.domainId);
             }
             if (tabUpdated && newsSelections[0].openedUrl == URL_ABOUT_BLANK) {
               return Promise.resolve();
@@ -443,17 +491,17 @@ ExtractNews.Popup = (() => {
               newsSelectionObjects: newsSelectionObjects
             }).then(() => {
               if (tabUpdated) {
-                return callAsynchronousAPI(browser.tabs.update, tab.id, {
+                callAsynchronousAPI(browser.tabs.update, tab.id, {
                     active: ! tabOpen,
                     url: newsSelections[0].openedUrl
                   });
               }
-              return Promise.resolve();
             });
         });
     }
 
     _Popup.openNewsSelectionsInTab = openNewsSelectionsInTab;
+
 
     // URL of the warning dialog opened for each tab
     const MESSAGE_DIALOG_URL = browser.runtime.getURL("popup/dialog.html");

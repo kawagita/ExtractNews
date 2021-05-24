@@ -32,12 +32,16 @@ function getBrowserActionMessage(id) {
 
 const PAGE_INDEX_STRING_ARRAYS = new Array();
 const PAGE_LIST_ITEM_COUNT = 10;
-const PAGE_LIST_ITEM_FAVICON_MAP = new Map();
-const PAGE_LIST_ITEM_DEFAULT_FAVICON = "../icons/night-40.png";
+const PAGE_LIST_ITEM_FAVICON_DATA_MAP = new Map();
+const PAGE_LIST_ITEM_DEFAULT_FAVICON_PNG = "../icons/night-40.png";
+const PAGE_TO_PREVIOUS_BLACK_PNG = "../icons/to_previous_black.png";
+const PAGE_TO_PREVIOUS_WHITE_PNG = "../icons/to_previous_white.png";
+const PAGE_TO_NEXT_BLACK_PNG = "../icons/to_next_black.png";
+const PAGE_TO_NEXT_WHITE_PNG = "../icons/to_next_white.png";
 
 // The array of news selections displayed to list items on the current page.
 var listNewsSelections = new Array();
-var listFaviconIds = new Array();
+var listNewsSelectionSiteIds = new Array();
 
 /*
  * Removes news selections for the specified indexes on the list of a page
@@ -49,7 +53,7 @@ function removeNewsSelections(pageIndex, listItemIndexes) {
       removedIndexStrings.push(
         PAGE_INDEX_STRING_ARRAYS[pageIndex][listItemIndex]);
     });
-  return _Storage.removeNewsSelections(removedIndexStrings).then(() => {
+  return _Storage.removeSelections(removedIndexStrings).then(() => {
       Debug.printMessage(
         "Remove the news selection of " + removedIndexStrings.join(", ")
         + ".");
@@ -70,12 +74,15 @@ function removeNewsSelections(pageIndex, listItemIndexes) {
         PAGE_INDEX_STRING_ARRAYS[lastPageIndex].splice(- removedIndexCount);
       }
       // No longer reduce index strings by removing the last page.
-      return Promise.resolve();
     });
 }
 
 // The count of news selections displeyed on pages
 var pagesNewsSelectionCount = 0;
+
+// The manager of the index and size of pages on which the list of news
+// selections is displayed.
+var pageManager;
 
 // The list to display news selections on the current page
 var pageList = document.querySelector("#NewsSelections ol");
@@ -115,8 +122,8 @@ document.body.addEventListener(_Event.POINTER_DOWN, (event) => {
       && pagesNewsSelectionCount >= 0
       && pagesNewsSelectionCount < ExtractNews.SELECTION_MAX_COUNT) {
       if (listBottomPointEnabled) {
-        _Popup.closeNewsSelectionEditWindow().then(() => {
-            return _Popup.openNewsSelectionEditWindow();
+        _Popup.closeSelectionEditWindow().then(() => {
+            return _Popup.openSelectionEditWindow();
           }).catch((error) => {
             Debug.printStackTrace(error);
           }).finally(() => {
@@ -125,6 +132,25 @@ document.body.addEventListener(_Event.POINTER_DOWN, (event) => {
       }
     }
   });
+
+/*
+ * The close button on the user interface to act a news selection.
+ */
+class PageListActionUICloseButton extends _Event.PointedGroup {
+  constructor(actionUI, closeButtonElement) {
+    super();
+    this.actionUI = actionUI;
+    this.addElement(closeButtonElement);
+    closeButtonElement.addEventListener(_Event.POINTER_DOWN, (event) => {
+        this.actionUI.closeMenu(event);
+      });
+  }
+
+  setFocusedTarget(event) {
+    super.setFocusedTarget(event);
+    this.actionUI.clearPointedMenuItem();
+  }
+}
 
 const LIST_ITEM_OPEN_IN_PRESENT_TAB = "OpenInPresentTab";
 const LIST_ITEM_OPEN_IN_NEW_TAB = "OpenInNewTab";
@@ -136,28 +162,15 @@ const LIST_ITEM_REMOVE = "Remove";
  */
 class PageListActionUI {
   constructor() {
-    var actionUI = document.getElementById("NewsSelectionAction");
+    var actionNode = document.getElementById("NewsSelectionAction");
     var actionHeader = document.querySelector(".action_header");
     var actionTitle = actionHeader.firstElementChild;
-    var actionUICloseButton = actionHeader.lastElementChild;
+    var actionUICloseButton =
+      new PageListActionUICloseButton(this, actionHeader.lastElementChild);
     actionTitle.textContent = getBrowserActionMessage("HowToAct");
-    actionUICloseButton.tabIndex = -1;
-    actionUICloseButton.addEventListener(_Event.POINTER_DOWN, (event) => {
-        this.closeMenu(event);
-      });
-    actionUICloseButton.addEventListener("focus", (event) => {
-        if (this.actionMenuPointedIndex >= 0) {
-          this._toggleActionMenuItem(this.actionMenuPointedIndex);
-          this.actionMenuPointedIndex = -1;
-        }
-        this.actionUICloseButtonFocus = true;
-      });
-    actionUICloseButton.addEventListener("blur", (event) => {
-        this.actionUICloseButtonFocus = false;
-      });
-    this.actionUI = actionUI;
+    this.actionNode = actionNode;
     this.actionUICloseButton = actionUICloseButton;
-    this.actionMenuItems = Array.from(actionUI.querySelectorAll("li"));
+    this.actionMenuItems = Array.from(actionNode.querySelectorAll("li"));
     for (let i = 0; i < this.actionMenuItems.length; i++) {
       this.actionMenuItems[i].value = String(i);
     }
@@ -168,6 +181,7 @@ class PageListActionUI {
     this.openInPresentTabMenuIndex = -1;
     this.openInNewTabMenuIndex = -1;
     this.editMenuIndex = -1;
+    this.actionUnlocked = true;
   }
 
   addMenuItem(actionName, fireMenuItemEvent) {
@@ -187,12 +201,13 @@ class PageListActionUI {
             if (! this.actionMenuDisabled[menuIndex]
                 && menuIndex != this.actionMenuPointedIndex) {
               if (this.actionMenuPointedIndex >= 0) {
-                this._toggleActionMenuItem(this.actionMenuPointedIndex);
+                _Event.togglePointedTarget(
+                  this.actionMenuItems[this.actionMenuPointedIndex]);
               }
               _Event.togglePointedTarget(target);
               this.actionMenuPointedIndex = menuIndex;
             }
-            this.actionUICloseButton.blur();
+            this.actionUICloseButton.clearFocusedTarget(event);
           }
         });
       actionMenuItem.addEventListener(_Event.POINTER_LEAVE, (event) => {
@@ -205,11 +220,15 @@ class PageListActionUI {
           }
         });
       actionMenuItem.addEventListener(_Event.POINTER_DOWN, (event) => {
-          var target = _Event.getEventTarget(event, "LI");
-          if (target != null) {
-            var menuIndex = Number(target.value);
-            if (! this.actionMenuDisabled[menuIndex]) {
-              fireMenuItemEvent(event);
+          if (this.actionUnlocked) {
+            // Lock the action until this action UI is closed and opened again.
+            this.actionUnlocked = false;
+            var target = _Event.getEventTarget(event, "LI");
+            if (target != null) {
+              var menuIndex = Number(target.value);
+              if (! this.actionMenuDisabled[menuIndex]) {
+                this.fireMenuItemEvents[menuIndex](event);
+              }
             }
           }
         });
@@ -233,19 +252,15 @@ class PageListActionUI {
     this.actionMenuCount++;
   }
 
-  _toggleActionMenuItem(menuItemIndex) {
-    _Event.togglePointedTarget(this.actionMenuItems[menuItemIndex]);
-  }
-
   isMenuVisible() {
-    return this.actionUI.style.visibility == "visible";
+    return this.actionNode.style.visibility == "visible";
   }
 
-  hasCloseButtonFocus() {
-    return this.actionUICloseButtonFocus;
+  hasCloseButtonFocused() {
+    return this.actionUICloseButton.isFocused();
   }
 
-  execute(event) {
+  openMenu(event) {
     var editMenuClassName = "";
     var editMenuDisabled = false;
     var openInNewTabMenuDisabled = true;
@@ -264,11 +279,6 @@ class PageListActionUI {
         }
       }
     } else {
-      if (event.button == 0 || event.code == "Enter") {
-        // Open news selection's URL in the present tab by Left click or Enter.
-        this.fireMenuItemEvents[this.openInPresentTabMenuIndex](event);
-        return;
-      }
       openInNewTabMenuDisabled =
         listNewsSelections[listItemPointedIndex].openedUrl == URL_ABOUT_BLANK;
     }
@@ -278,9 +288,7 @@ class PageListActionUI {
     }
     this.actionMenuItems[this.editMenuIndex].className = editMenuClassName;
     this.actionMenuDisabled[this.editMenuIndex] = editMenuDisabled;
-    this.actionUICloseButton.tabIndex = 1;
-    this.actionUICloseButtonFocus = false;
-    this.actionUI.style.visibility = "visible";
+    this.actionNode.style.visibility = "visible";
   }
 
   closeMenu(event) {
@@ -295,36 +303,42 @@ class PageListActionUI {
     listItemMultiPointedIndexes.forEach(_toggleListItemPointedTarget);
     listItemMultiPointedIndexes = new Array();
     listItemPointedExpansion = 0;
-    if (this.actionMenuPointedIndex >= 0) {
-      this._toggleActionMenuItem(this.actionMenuPointedIndex);
-      this.actionMenuPointedIndex = -1;
-    }
+    this.clearPointedMenuItem();
+    this.actionUICloseButton.clearFocusedTarget(event);
     this.actionMenuItems[this.openInNewTabMenuIndex].className = "";
     this.actionMenuItems[this.editMenuIndex].className = "";
     this.actionMenuDisabled[this.openInNewTabMenuIndex] = false;
     this.actionMenuDisabled[this.editMenuIndex] = false;
-    this.actionUI.style.visibility = "hidden";
-    this.actionUICloseButton.tabIndex = -1;
+    this.actionNode.style.visibility = "hidden";
   }
 
-  selectMenuItem(event) {
-    if (this.actionMenuPointedIndex >= 0) {
+  firePointedMenuItemEvent(event) {
+    if (this.actionUnlocked && this.actionMenuPointedIndex >= 0) {
+      // Lock the action until this action UI is closed and opened again.
+      this.actionUnlocked = false;
       this.fireMenuItemEvents[this.actionMenuPointedIndex](event);
     }
+  }
+
+  fireOpenInPresentTabMenuItemEvent(event) {
+    this.actionMenuPointedIndex = this.openInPresentTabMenuIndex;
+    this.firePointedMenuItemEvent(event);
   }
 
   movePointedMenuItemUp(event) {
     if (this.actionMenuPointedIndex > 0
       && this.actionMenuPointedIndex < this.actionMenuItems.length) {
       if (this.actionMenuPointedIndex >= 0) {
-        this._toggleActionMenuItem(this.actionMenuPointedIndex);
+        _Event.togglePointedTarget(
+          this.actionMenuItems[this.actionMenuPointedIndex]);
       }
       this.actionMenuPointedIndex--;
       while (this.actionMenuDisabled[this.actionMenuPointedIndex]) {
         this.actionMenuPointedIndex--;
       }
-      this._toggleActionMenuItem(this.actionMenuPointedIndex);
-      this.actionUICloseButton.blur();
+      _Event.togglePointedTarget(
+        this.actionMenuItems[this.actionMenuPointedIndex]);
+      this.actionUICloseButton.clearFocusedTarget(event);
     }
   }
 
@@ -332,28 +346,109 @@ class PageListActionUI {
     if (this.actionMenuPointedIndex >= -1
       && this.actionMenuPointedIndex < this.actionMenuItems.length - 1) {
       if (this.actionMenuPointedIndex >= 0) {
-        this._toggleActionMenuItem(this.actionMenuPointedIndex);
+        _Event.togglePointedTarget(
+          this.actionMenuItems[this.actionMenuPointedIndex]);
       }
       this.actionMenuPointedIndex++;
       while (this.actionMenuDisabled[this.actionMenuPointedIndex]) {
         this.actionMenuPointedIndex++;
       }
-      this._toggleActionMenuItem(this.actionMenuPointedIndex);
-      this.actionUICloseButton.blur();
+      _Event.togglePointedTarget(
+        this.actionMenuItems[this.actionMenuPointedIndex]);
+      this.actionUICloseButton.clearFocusedTarget(event);
+    }
+  }
+
+  clearPointedMenuItem() {
+    if (this.actionMenuPointedIndex >= 0) {
+      _Event.togglePointedTarget(
+        this.actionMenuItems[this.actionMenuPointedIndex]);
+      this.actionMenuPointedIndex = -1;
     }
   }
 }
 
 var pageListActionUI = new PageListActionUI();
 
-// The manager of the index and size of pages on which the list of news
-// selections is displayed.
-var pageManager;
+// Sets menus to open, edit, and remove the news selection into the action UI
+// displayed when the list item is pointed down on the current page.
+
+pageListActionUI.addMenuItem(LIST_ITEM_OPEN_IN_PRESENT_TAB, (event) => {
+    var newsSelections = new Array();
+    var listItemIndexStrings = new Array();
+    _getListItemPointedIndexes().forEach((listItemIndex) => {
+        newsSelections.push(listNewsSelections[listItemIndex]);
+        listItemIndexStrings.push(String(listItemIndex));
+      });
+    _Popup.openNewsSelectionsInTab(false, newsSelections).then(() => {
+        Debug.printMessage(
+          "Open the list item of " + listItemIndexStrings.join(", ")
+          + " in present tab on Page " + String(pageManager.pageIndex + 1)
+          + ".");
+      }).finally(() => {
+        pageListActionUI.closeMenu(event);
+        window.close();
+      });
+  });
+pageListActionUI.addMenuItem(LIST_ITEM_OPEN_IN_NEW_TAB, (event) => {
+    const applyingPromises = new Array();
+    var listItemIndexStrings = new Array();
+    _getListItemPointedIndexes().forEach((listItemIndex) => {
+        var newsSelection = listNewsSelections[listItemIndex];
+        if (newsSelection.openedUrl != URL_ABOUT_BLANK) {
+          applyingPromises.push(
+            _Popup.openNewsSelectionsInTab(true, Array.of(newsSelection)));
+          listItemIndexStrings.push(String(listItemIndex));
+        }
+      });
+    Promise.all(applyingPromises).then(() => {
+        Debug.printMessage(
+          "Open the list item of " + listItemIndexStrings.join(", ")
+          + " in new tab on Page " + String(pageManager.pageIndex + 1) + ".");
+      }).catch((error) => {
+        Debug.printStackTrace(error);
+      }).finally(() => {
+        pageListActionUI.closeMenu(event);
+        window.close();
+      });
+  });
+pageListActionUI.addMenuItem(); // Separator as a menu item
+pageListActionUI.addMenuItem(LIST_ITEM_EDIT, (event) => {
+    var editIndexStrings = new Array();
+    var pageIndex = pageManager.pageIndex;
+    _getListItemPointedIndexes().forEach((listItemIndex) => {
+        editIndexStrings.push(
+          PAGE_INDEX_STRING_ARRAYS[pageIndex][listItemIndex]);
+      });
+    _Popup.closeSelectionEditWindow().then(() => {
+        Debug.printMessage(
+          "Edit the news selection of " + editIndexStrings.join(", ") + ".");
+        return _Popup.openSelectionEditWindow(editIndexStrings);
+      }).catch((error) => {
+        Debug.printStackTrace(error);
+      }).finally(() => {
+        pageListActionUI.closeMenu(event);
+        window.close();
+      });
+  });
+pageListActionUI.addMenuItem(); // Separator as a menu item
+pageListActionUI.addMenuItem(LIST_ITEM_REMOVE, (event) => {
+    var listItemIndexes = _getListItemPointedIndexes();
+    removeNewsSelections(pageManager.pageIndex, listItemIndexes).then(() => {
+        Debug.printMessage(
+          "Remove the list item of " + listItemIndexes.join(", ")
+          + " on Page " + String(pageManager.pageIndex + 1) + ".");
+        pagesNewsSelectionCount -= listItemIndexes.length;
+        pageManager.setPageSize(PAGE_INDEX_STRING_ARRAYS.length);
+      }).catch((error) => {
+        Debug.printStackTrace(error);
+      });
+  });
 
 // Enable or disable to change background colors of an item by pointer moving
 // and show the action UI when a control key is up or down.
 
-document.body.addEventListener("keyup", (event) => {
+document.body.addEventListener(_Event.KEYUP, (event) => {
     switch (event.code) {
     case "ControlLeft":
     case "ControlRight":
@@ -363,30 +458,31 @@ document.body.addEventListener("keyup", (event) => {
       if (! pageListActionUI.isMenuVisible()
           && ! event.ctrlKey && ! event.shiftKey
           && listItemMultiPointedIndexes.length > 0) {
-        pageListActionUI.execute(event);
+        pageListActionUI.openMenu(event);
       }
       break;
     }
   });
 
-document.body.addEventListener("keydown", (event) => {
+document.body.addEventListener(_Event.KEYDOWN, (event) => {
     switch (event.code) {
     case "Enter":
       if (pageListActionUI.isMenuVisible()) {
         // Close the menu of the action UI if the close button has focus,
-        // otherwise, select a menu item and execute the action for its.
-        if (pageListActionUI.hasCloseButtonFocus()) {
+        // otherwise, execute the action for a pointed menu item.
+        if (pageListActionUI.hasCloseButtonFocused()) {
           pageListActionUI.closeMenu(event);
         } else {
-          pageListActionUI.selectMenuItem(event);
+          pageListActionUI.firePointedMenuItemEvent(event);
         }
       } else if (listItemPointedIndex >= 0) {
-        // Show the action UI immediately if an item is selected on the list.
-        pageListActionUI.execute(event);
+        // Open the news selection of a pointed item in the present tab.
+        pageListActionUI.fireOpenInPresentTabMenuItemEvent(event);
       } else if (! event.ctrlKey && ! event.shiftKey
         && pagesNewsSelectionCount < ExtractNews.SELECTION_MAX_COUNT) {
-        _Popup.closeNewsSelectionEditWindow().then(() => {
-            return _Popup.openNewsSelectionEditWindow();
+        // Open the edit window for new news selection if no pointed item.
+        _Popup.closeSelectionEditWindow().then(() => {
+            return _Popup.openSelectionEditWindow();
           }).catch((error) => {
             Debug.printStackTrace(error);
           }).finally(() => {
@@ -401,7 +497,7 @@ document.body.addEventListener("keydown", (event) => {
       } else if (! event.ctrlKey && listNewsSelections.length > 0) {
         var lastListItemIndex =
           PAGE_INDEX_STRING_ARRAYS[pageManager.pageIndex].length - 1;
-        if (event.shiftKey) { // Expansion of pointed items with a shift key
+        if (event.shiftKey) { // Expansion of pointed items with the shift key
           if (listItemMultiPointedIndexes.length > 0) {
             if (listItemPointedExpansion <= 0) {
               // Expand pointed items upward on the list.
@@ -451,7 +547,7 @@ document.body.addEventListener("keydown", (event) => {
       } else if (! event.ctrlKey && listNewsSelections.length > 0) {
         var lastListItemIndex =
           PAGE_INDEX_STRING_ARRAYS[pageManager.pageIndex].length - 1;
-        if (event.shiftKey) { // Expansion of pointed items with a shift key
+        if (event.shiftKey) { // Expansion of pointed items with the shift key
           if (listItemMultiPointedIndexes.length > 0) {
             if (listItemPointedExpansion >= 0) {
               // Expand pointed items downward on the list.
@@ -490,21 +586,28 @@ document.body.addEventListener("keydown", (event) => {
       }
       break;
     case "ArrowLeft":
-      if (! pageManager.isFirstPageKeeping()
-          && ! event.ctrlKey && ! event.shiftKey) {
-        pageManager.movePage(_Event.PAGE_MOVE_BACK_EVENT);
+      if (! event.ctrlKey && ! event.shiftKey) {
+        if (! pageManager.isFirstPageKeeping()) {
+          pageManager.movePage(_Event.PAGE_MOVE_BACK_EVENT);
+        } else {
+          pageListActionUI.closeMenu(event);
+        }
       }
       break;
     case "ArrowRight":
-      if (! pageManager.isLastPageKeeping()
-          && ! event.ctrlKey && ! event.shiftKey) {
-        pageManager.movePage(_Event.PAGE_MOVE_FORWARD_EVENT);
+      if (! event.ctrlKey && ! event.shiftKey) {
+        if (! pageManager.isLastPageKeeping()) {
+          pageManager.movePage(_Event.PAGE_MOVE_FORWARD_EVENT);
+        } else {
+          pageListActionUI.closeMenu(event);
+        }
       }
       break;
     case "ControlLeft":
     case "ControlRight":
       // Clear changing the background color of a pointed item on the list.
-      if (! event.shiftKey && listItemPointedIndex >= 0) {
+      if (! pageListActionUI.isMenuVisible()
+        && ! event.shiftKey && listItemPointedIndex >= 0) {
         _toggleListItemPointedTarget(listItemPointedIndex);
         listItemPointedIndex = -1;
       }
@@ -512,7 +615,8 @@ document.body.addEventListener("keydown", (event) => {
     case "ShiftLeft":
     case "ShiftRight":
       // Add the origin of a range to the array of pointed items.
-      if (! event.ctrlKey && listItemPointedIndex >= 0) {
+      if (! pageListActionUI.isMenuVisible()
+        && ! event.ctrlKey && listItemPointedIndex >= 0) {
         listItemMultiPointedIndexes.push(listItemPointedIndex);
         listItemPointedIndex = -1;
       }
@@ -525,37 +629,31 @@ document.body.addEventListener("keydown", (event) => {
  * and returns the promise.
  */
 function displayPageList(pageIndex) {
-  return _Storage.readNewsSelections(
+  return _Storage.readSelections(
     PAGE_INDEX_STRING_ARRAYS[pageIndex]).then((newsSelections) => {
       const readingPromises = new Array();
       newsSelections.forEach((newsSelection) => {
-          var faviconId = undefined;
+          var siteId = "";
           if (newsSelection.openedUrl != URL_ABOUT_BLANK) {
             var newsSite = ExtractNews.getNewsSite(newsSelection.openedUrl);
             if (newsSite != undefined) {
-              faviconId =
-                ExtractNews.getNewsSiteFaviconId(
-                  newsSite.id, newsSelection.openedUrl);
+              siteId = newsSite.id;
             }
           }
-          if (faviconId != undefined) {
-            if (listFaviconIds.indexOf(faviconId) < 0
-              && ! PAGE_LIST_ITEM_FAVICON_MAP.has(faviconId)) {
-              // Read the favicon string from the local storage if not exist
-              // in the current list and buffered map.
-              readingPromises.push(
-                _Storage.readFavicon(faviconId).then((favicon) => {
-                    if (favicon != "") {
-                      PAGE_LIST_ITEM_FAVICON_MAP.set(faviconId, favicon);
-                    }
-                    return Promise.resolve();
-                  }));
-            }
-          } else { // No page opened by news selection
-            faviconId = "";
+          if (siteId != ""
+            && listNewsSelectionSiteIds.indexOf(siteId) < 0
+            && ! PAGE_LIST_ITEM_FAVICON_DATA_MAP.has(siteId)) {
+            // Read the favicon data from the storage if not exist
+            // in the current list and cached map.
+            readingPromises.push(
+              _Storage.readSiteFavicon(siteId).then((faviconData) => {
+                  if (faviconData != "") {
+                    PAGE_LIST_ITEM_FAVICON_DATA_MAP.set(siteId, faviconData);
+                  }
+                }));
           }
           listNewsSelections.push(newsSelection);
-          listFaviconIds.push(faviconId);
+          listNewsSelectionSiteIds.push(siteId);
         });
       return Promise.all(readingPromises);
     }).then(() => {
@@ -564,13 +662,13 @@ function displayPageList(pageIndex) {
         var listItem = document.createElement("li");
         var listItemTitle = document.createElement("span");
         var listItemFavicon = document.createElement("img");
-        var favicon = PAGE_LIST_ITEM_FAVICON_MAP.get(listFaviconIds[i]);
-        if (favicon != undefined) {
-          listItemFavicon.src = favicon;
-        } else {
-          listItemFavicon.src = PAGE_LIST_ITEM_DEFAULT_FAVICON;
+        var faviconData =
+          PAGE_LIST_ITEM_FAVICON_DATA_MAP.get(listNewsSelectionSiteIds[i]);
+        if (faviconData == undefined) {
+          faviconData = PAGE_LIST_ITEM_DEFAULT_FAVICON_PNG;
         }
         listItemTitle.textContent = newsSelection.settingName;
+        listItemFavicon.src = faviconData;
         listItem.value = String(i);
         listItem.addEventListener(_Event.POINTER_DOWN, (event) => {
             var target = _Event.getEventTarget(event, "LI");
@@ -586,12 +684,17 @@ function displayPageList(pageIndex) {
                     listItemMultiPointedIndexes.indexOf(listItemIndex), 1);
                 }
               } else if (! event.shiftKey) {
-                // Select an item and immediately show the action UI.
                 if (listItemPointedIndex < 0) {
                   _Event.togglePointedTarget(target);
                   listItemPointedIndex = listItemIndex;
                 }
-                pageListActionUI.execute(event);
+                // Open the news selection of a pointed item in the present
+                // tab by left click, otherwise, show the action UI.
+                if (event.button == 0) {
+                  pageListActionUI.fireOpenInPresentTabMenuItemEvent(event);
+                } else { // Right click
+                  pageListActionUI.openMenu(event);
+                }
               }
             }
           });
@@ -637,7 +740,7 @@ function clearPageList() {
     pageList.removeChild(listItems[i]);
   }
   listNewsSelections = new Array();
-  listFaviconIds = new Array();
+  listNewsSelectionSiteIds = new Array();
   listItemPointedIndex = -1;
   listItemMultiPointedIndexes = new Array();
   listItemPointedExpansion = 0;
@@ -659,6 +762,8 @@ function displayNewsSelectionMessage(pageMessageId) {
 {
   var pageHeader = document.querySelector(".page_header");
   var pageTitle = pageHeader.querySelector(".page_title");
+  var linkToPreviousPage = pageHeader.firstElementChild;
+  var linkToNextPage = pageHeader.lastElementChild;
 
   pageTitle.textContent = getBrowserActionMessage("NewsSelection");
   pageManager = new _Event.LinkedPageManager((event, pageIndex) => {
@@ -672,20 +777,50 @@ function displayNewsSelectionMessage(pageMessageId) {
       } else {
         displayNewsSelectionMessage("NewsSelectionNotExist");
       }
-    }, pageHeader.firstElementChild, pageHeader.lastElementChild);
+    }, linkToPreviousPage, linkToNextPage);
+
+  // Change the black link "<<" and ">>" into the white by a mouse over.
+  linkToPreviousPage.firstElementChild.src = PAGE_TO_PREVIOUS_BLACK_PNG;
+  linkToPreviousPage.addEventListener(_Event.POINTER_MOVE, (event) => {
+      var target = event.target;
+      if (target.tagName == "LI") {
+        target = target.firstElementChild;
+      }
+      target.src = PAGE_TO_PREVIOUS_WHITE_PNG;
+    });
+  linkToPreviousPage.addEventListener(_Event.POINTER_LEAVE, (event) => {
+      if (event.target.tagName == "LI") {
+        event.target.firstElementChild.src = PAGE_TO_PREVIOUS_BLACK_PNG;
+      }
+    });
+  linkToNextPage.firstElementChild.src = PAGE_TO_NEXT_BLACK_PNG;
+  linkToNextPage.addEventListener(_Event.POINTER_MOVE, (event) => {
+      var target = event.target;
+      if (target.tagName == "LI") {
+        target = target.firstElementChild;
+      }
+      target.src = PAGE_TO_NEXT_WHITE_PNG;
+    });
+  linkToNextPage.addEventListener(_Event.POINTER_LEAVE, (event) => {
+      if (event.target.tagName == "LI") {
+        event.target.firstElementChild.src = PAGE_TO_NEXT_BLACK_PNG;
+      }
+    });
 }
 
 // Sets the text label and event listener to the page header or action UI,
 // and lastly call displayPageList() if a news selection exist.
 
-_Storage.readEnabledNewsSiteIds().then((enabledSiteIds) => {
-    ExtractNews.setEnabledNewsSites(enabledSiteIds);
-    return _Popup.queryNewsSelectionEditWindow();
+_Storage.readEnabledDomainIds().then((enabledDomainIds) => {
+    enabledDomainIds.forEach((enabledDomainId) => {
+        ExtractNews.setDomainEnabled(enabledDomainId, true);
+      });
+    return _Popup.querySelectionEditWindow();
   }).then((editWindowTabId) => {
     if (editWindowTabId != browser.tabs.TAB_ID_NONE) {
       return Promise.resolve(-1);
     }
-    return _Storage.readNewsSelectionCount();
+    return _Storage.readSelectionCount();
   }).then((newsSelectionCount) => {
     if (newsSelectionCount >= 0) {
       var pageSize = 0;
@@ -696,85 +831,6 @@ _Storage.readEnabledNewsSiteIds().then((enabledSiteIds) => {
         }
         PAGE_INDEX_STRING_ARRAYS[pageSize - 1].push(String(i));
       }
-
-      // Set menus to open, edit, or remove a new selection into the action UI
-      // displayed when a list item is pointed down on the page.
-      pageListActionUI.addMenuItem(LIST_ITEM_OPEN_IN_PRESENT_TAB, (event) => {
-          var newsSelections = new Array();
-          var listItemIndexStrings = new Array();
-          _getListItemPointedIndexes().forEach((listItemIndex) => {
-              newsSelections.push(listNewsSelections[listItemIndex]);
-              listItemIndexStrings.push(String(listItemIndex));
-            });
-          _Popup.openNewsSelectionsInTab(false, newsSelections).then(() => {
-              Debug.printMessage(
-                "Open the list item of " + listItemIndexStrings.join(", ")
-                + " in present tab on Page "
-                + String(pageManager.pageIndex + 1) + ".");
-            }).finally(() => {
-              pageListActionUI.closeMenu(event);
-              window.close();
-            });
-        });
-      pageListActionUI.addMenuItem(LIST_ITEM_OPEN_IN_NEW_TAB, (event) => {
-          const applyingPromises = new Array();
-          var listItemIndexStrings = new Array();
-          _getListItemPointedIndexes().forEach((listItemIndex) => {
-              var newsSelection = listNewsSelections[listItemIndex];
-              if (newsSelection.openedUrl == URL_ABOUT_BLANK) {
-                return;
-              }
-              applyingPromises.push(
-                _Popup.openNewsSelectionsInTab(true, Array.of(newsSelection)));
-              listItemIndexStrings.push(String(listItemIndex));
-            });
-          Promise.all(applyingPromises).then(() => {
-              Debug.printMessage(
-                "Open the list item of " + listItemIndexStrings.join(", ")
-                + " in new tab on Page "
-                + String(pageManager.pageIndex + 1) + ".");
-            }).catch((error) => {
-              Debug.printStackTrace(error);
-            }).finally(() => {
-              pageListActionUI.closeMenu(event);
-              window.close();
-            });
-        });
-      pageListActionUI.addMenuItem(); // Separator as a menu item
-      pageListActionUI.addMenuItem(LIST_ITEM_EDIT, (event) => {
-          var editIndexStrings = new Array();
-          var pageIndex = pageManager.pageIndex;
-          _getListItemPointedIndexes().forEach((listItemIndex) => {
-              editIndexStrings.push(
-                PAGE_INDEX_STRING_ARRAYS[pageIndex][listItemIndex]);
-            });
-          _Popup.closeNewsSelectionEditWindow().then(() => {
-              Debug.printMessage(
-                "Edit the news selection of " + editIndexStrings.join(", ")
-                + ".");
-              return _Popup.openNewsSelectionEditWindow(editIndexStrings);
-            }).catch((error) => {
-              Debug.printStackTrace(error);
-            }).finally(() => {
-              pageListActionUI.closeMenu(event);
-              window.close();
-            });
-        });
-      pageListActionUI.addMenuItem(); // Separator as a menu item
-      pageListActionUI.addMenuItem(LIST_ITEM_REMOVE, (event) => {
-          var removedListItemIndexes = _getListItemPointedIndexes();
-          removeNewsSelections(
-            pageManager.pageIndex, removedListItemIndexes).then(() => {
-              Debug.printMessage(
-                "Remove the list item of " + removedListItemIndexes.join(", ")
-                + " on Page " + String(pageManager.pageIndex + 1) + ".");
-              pagesNewsSelectionCount -= removedListItemIndexes.length;
-              pageManager.setPageSize(PAGE_INDEX_STRING_ARRAYS.length);
-            }).catch((error) => {
-              Debug.printStackTrace(error);
-            });
-        });
-
       // Call the update function in the page manager, and display the link to
       // the previous or next page and list items on the first page, otherwise,
       // the message of no news selection.
@@ -784,7 +840,7 @@ _Storage.readEnabledNewsSiteIds().then((enabledSiteIds) => {
     }
     pagesNewsSelectionCount = newsSelectionCount;
 
-    return ExtractNews.getDebugMode();
+    ExtractNews.getDebugMode();
   }).catch((error) => {
     Debug.printStackTrace(error);
   });

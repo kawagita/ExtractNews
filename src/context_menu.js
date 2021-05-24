@@ -30,8 +30,6 @@ ExtractNews.Menus = (() => {
       return browser.i18n.getMessage("contextMenu" + id);
     }
 
-    const _Text = ExtractNews.Text;
-    const _Regexp = ExtractNews.Regexp;
     const _Menus = { };
 
     const ID_EXTRACT_NEWS_SETTINGS = "ExtractNewsSettings";
@@ -62,6 +60,7 @@ ExtractNews.Menus = (() => {
     _Menus.ID_EXCLUDE_NEWS_TOPIC = ID_EXCLUDE_NEWS_TOPIC;
     _Menus.ID_EXCLUDE_NEWS_TOPIC_ADDITIONALLY =
       ID_EXCLUDE_NEWS_TOPIC_ADDITIONALLY;
+
     _Menus.ID_DISABLE_TAB_LINK = ID_DISABLE_TAB_LINK;
     _Menus.ID_DISABLE_TAB_NEWS_SELECTION = ID_DISABLE_TAB_NEWS_SELECTION;
     _Menus.ID_SAVE_TAB_NEWS_SELECTION = ID_SAVE_TAB_NEWS_SELECTION;
@@ -216,8 +215,6 @@ ExtractNews.Menus = (() => {
               }
               browser.contextMenus.create(createProperties);
             });
-
-          return Promise.resolve();
         });
     }
 
@@ -246,7 +243,8 @@ ExtractNews.Menus = (() => {
       if (tabSetting == undefined) {
         throw newNullPointerException("tabSetting");
       }
-      return Promise.all(Array.of(
+      return Promise.all(
+        Array.of(
           _updateTabNewsSettingMenuDisabled(
             ID_SAVE_TAB_NEWS_SELECTION,
             tabSetting.newsSelectedTopicRegularExpression == ""
@@ -271,17 +269,15 @@ ExtractNews.Menus = (() => {
     function updateTabNewsSettingContextMenus(tabSetting) {
       return _updateTabNewsSettingMenus(tabSetting).then(() => {
           if (browser.contextMenus.refresh != undefined) {
-            return browser.contextMenus.refresh();
+            browser.contextMenus.refresh();
           }
-          return Promise.resolve();
         });
     }
 
     function _updateMenuChecked(menuId, checked) {
-      return callAsynchronousAPI(
-        browser.contextMenus.update, menuId, {
-            checked: checked
-          });
+      return callAsynchronousAPI(browser.contextMenus.update, menuId, {
+          checked: checked
+        });
     }
 
     /*
@@ -289,17 +285,17 @@ ExtractNews.Menus = (() => {
      * and returns the promise.
      */
     function updateContextMenus(tabSetting) {
-      return Promise.all(Array.of(
+      return Promise.all(
+        Array.of(
           _updateTabNewsSettingMenus(tabSetting),
           _updateMenuChecked(ID_DISABLE_TAB_LINK, tabSetting.linkDisabled),
-          _updateMenuChecked(ID_DISABLE_TAB_NEWS_SELECTION,
-            tabSetting.newsSelectionDisabled),
+          _updateMenuChecked(
+            ID_DISABLE_TAB_NEWS_SELECTION, tabSetting.newsSelectionDisabled),
           _updateMenuChecked(ID_HIDE_COMMENT, tabSetting.newsCommentHidden)
         )).then(() => {
           if (browser.contextMenus.refresh != undefined) {
-            return browser.contextMenus.refresh();
+            browser.contextMenus.refresh();
           }
-          return Promise.resolve();
         });
     }
 

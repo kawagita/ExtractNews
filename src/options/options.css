@@ -1,11 +1,11 @@
 * {
   margin: 0px;
   padding: 0px;
+  font-family: "__MSG_extensionMSFont__", "__MSG_extensionLinuxFont__", "__MSG_extensionOtherFont__";
   font-weight: normal;
 }
 
 body {
-  font-family: "__MSG_extensionFontFamily__";
   font-size: 16px;
   background-color: #eeeeee;
 }
@@ -73,16 +73,16 @@ li:first-child {
   border-left-style: none;
 }
 
-li.pointed {
-  color: #000000;
-  z-index: 2;
-}
-
 header li.selected {
   border-left-style: none;
   background-color: #c8c8c8;
   color: #000000;
   z-index: 1;
+}
+
+header li.pointed {
+  color: #ffcc33;
+  z-index: 2;
 }
 
 button {
@@ -107,19 +107,6 @@ button.pointed {
   outline: 3px dotted #ffcc33;
 }
 
-section {
-  margin: 0px 20px;
-}
-
-.narrow section {
-  margin: 0px 10px;
-  width: 340px;
-}
-
-.compact section {
-  width: 500px;
-}
-
 h1 {
   margin: 0px 12px;
   font-family: "Times New Roman";
@@ -136,7 +123,7 @@ h3 {
 }
 
 input {
-  margin: 10px;
+  margin: 10px 8px;
 }
 
 hr {
@@ -156,40 +143,61 @@ hr {
   outline: 3px dotted #ff9900;
 }
 
-#GeneralOption {
+.checked_option label {
+  margin-top: -1px;
+}
+
+#OptionPage {
+  margin: 0px 20px;
+}
+
+.narrow #OptionPage {
+  margin: 0px 10px;
+  width: 340px;
+}
+
+.compact #OptionPage {
+  width: 500px;
+}
+
+#GeneralPane {
   margin: 20px;
   display: none;
 }
 
-.general #GeneralOption {
+.general #GeneralPane {
   display: block;
 }
 
-.narrow #GeneralOption {
+.narrow #GeneralPane {
   margin: 30px 10px;
 }
 
-#GeneralOption > div {
+#GeneralPane > div {
   flex-flow: column nowrap;
 }
 
-#GeneralOption h3 {
-  margin-top: 30px;
+#GeneralPane h3 {
+  margin-top: 20px;
 }
 
-#GeneralOption .checked_option {
-  width: 220px;
+#GeneralPane input {
+  margin: 10px;
+}
+
+#GeneralPane .checked_option {
+  width: 210px;
   font-size: 14px;
   letter-spacing: 1px;
 }
 
 #EnablingSite > div {
-  margin: 20px 10px;
+  margin: 20px;
 }
 
 #Advanced > div {
-  margin: 20px 10px;
-  width: 300px;
+  margin: 20px;
+  width: 280px;
 }
 
 #Advanced .checked_option {
@@ -208,6 +216,10 @@ hr {
   letter-spacing: 1px;
 }
 
+#DataUpdate input {
+  margin: 10px;
+}
+
 #DataUpdate > div {
   margin: 10px 0px;
   justify-content: space-between;
@@ -217,7 +229,11 @@ hr {
 
 #DataUpdate .checked_option {
   margin: 10px 20px;
-  width: 260px;
+}
+
+.narrow #DataUpdate .checked_option {
+  margin: 10px;
+  width: 270px;
 }
 
 #DataButtonGroup {
@@ -229,8 +245,7 @@ hr {
   padding: 4px 8px;
   width: 100px;
   border-width: 3px;
-  font-size: 12px;
-  letter-spacing: 1px;
+  font-size: 13px;
 }
 
 select {
@@ -240,7 +255,7 @@ select {
   font-size: 14px;
 }
 
-#FilteringOption {
+#FilteringPane {
   margin: 10px 0px;
   padding: 0px 5px;
   display: none;
@@ -250,28 +265,29 @@ select {
   display: block;
 }
 
-.filtering #FilteringOption {
+.filtering #FilteringPane {
   display: block;
 }
 
-#FilteringOption > div {
+#FilteringPane > div {
   flex-flow: column nowrap;
 }
 
 #FilteringCategory {
   margin: 25px 0px 15px 0px;
   padding: 0px 20px;
+  width: 450px;
   align-items: flex-start;
 }
 
 .narrow #FilteringCategory {
   padding: 0px 10px;
+  width: auto;
 }
 
 #FilteringCategory label {
   margin: 13px 8px;
-  width: 128px;
-  font-weight: bold;
+  min-width: 128px;
 }
 
 #FilteringCategory select {
@@ -284,7 +300,6 @@ select {
 }
 
 #FilteringCategory input {
-  margin: 10px 8px;
   padding: 2px 8px;
   width: 270px;
   border-radius: 5px;
@@ -313,7 +328,7 @@ select {
 
 #FilteringCategoryAlways span {
   margin: 8px;
-  padding: 5px 75px;
+  padding: 5px 80px;
   width: 284px;
   border-radius: 5px;
   color: #4f4f4f;
@@ -323,7 +338,7 @@ select {
 
 .narrow #FilteringCategoryAlways span {
   padding: 5px 16px;
-  width: 264px;
+  width: 262px;
 }
 
 #FilteringBlocks {
@@ -350,15 +365,36 @@ select {
 .target > div {
   border-radius: 5px;
   align-items: center;
+  justify-content: flex-start;
 }
 
-.target > div:last-child:focus-within {
+.target > div:last-child {
+  min-width: 686px;
+}
+
+.narrow .target > div:last-child {
+  min-width: 310px;
+}
+
+.compact .target > div:last-child {
+  min-width: 450px;
+}
+
+.target > div:last-child.focused_in {
   color: #ffffff;
   background-color: #a9a9a9;
 }
 
-.target input {
-  margin: 10px 8px;
+.compact .target > div:last-child {
+  justify-content: flex-end;
+}
+
+.target .checked_option {
+  margin: 0px 5px;
+}
+
+.target label {
+  font-size: 14px;
 }
 
 .insertion {
@@ -392,25 +428,17 @@ select {
 
 .target_name {
   flex-flow: column wrap;
+  width: 144px;
 }
 
 .target_name select {
-  margin-top: 8px;
+  margin: 9px 10px;
   width: 120px;
+  font-size: 14px;
 }
 
 .target_name select:focus {
   background-color: #ffffa0;
-}
-
-.target_name div {
-  margin: 2px 10px 5px 5px;
-  height: 26px;
-  font-size: 14px;
-}
-
-.target_name label {
-  font-size: 14px;
 }
 
 .narrow .target_name {
@@ -420,14 +448,13 @@ select {
 }
 
 .target_words {
-  padding: 2px 0px;
-  width: 310px;
+  width: 306px;
 }
 
 .target_words > input {
   margin: 8px;
   padding: 2px 8px;
-  width: 224px;
+  width: 270px;
   border-radius: 5px;
   font-size: 14px;
 }
@@ -436,33 +463,8 @@ select {
   background-color: #ffffa0;
 }
 
-.target_words div:last-child {
-  margin: 0px 5px 5px 5px;
-  height: 26px;
-  font-size: 14px;
-}
-
-.target_words label {
-  padding-right: 10px;
-}
-
 .end_of_block .target_words {
   display: none;
-}
-
-.target_words_negative {
-  margin: 5px 0px 5px 5px;
-  user-select: none;
-}
-
-.target_words_negative label {
-  padding: 0px 3px 3px 3px;
-  width: 9px;
-  opacity: 0;
-}
-
-.target_words_negative label.negative {
-  opacity: 1;
 }
 
 .operation {
@@ -470,52 +472,79 @@ select {
   flex-flow: column wrap;
 }
 
-.operation button {
-  padding: 2px 0px;
-  border-width: 2px;
-  font-size: 14px;
-}
-
-.localize {
-  margin-top: 5px;
-  width: 100px;
-}
-
-.narrow .localize {
-  margin: 5px 1px;
-}
-
-.compact .localize {
-  margin: 5px 1px;
-}
-
-.end_of_block .localize {
-  display: none;
-}
-
-.operation div {
-  margin: 5px 0px;
-  height: 26px;
-}
-
-.operation div button {
-  margin: 0px 1px;
-  width: 72px;
-}
-
 .narrow .operation {
-  width: 100%;
+  margin: 0px 7px;
+  width: 296px;
   align-items: flex-end;
 }
 
 .compact .operation {
-  width: 100%;
+  margin: 0px 7px;
+  width: 292px;
   align-items: flex-end;
+}
+
+.operation button {
+  margin: 0px 1px;
+  padding: 2px 0px;
+  width: 72px;
+  border-width: 2px;
+  font-size: 14px;
+}
+
+.operation > div:first-child {
+  margin-top: 1px;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  flex-flow: row nowrap;
+}
+
+.end_of_block .operation > div:first-child {
+  display: none;
+}
+
+.operation > div:first-child button {
+  margin-top: 5px;
+}
+
+.operation > div:first-child input {
+  margin-left: 1px;
+}
+
+.focused_out .localize {
+  display: none;
+}
+
+.operation > div:last-child {
+  margin: 5px 0px;
+  height: 26px;
+}
+
+.focused_in .operation {
+  margin-bottom: 5px;
+}
+
+.focused_in .operation > div:last-child {
+  visibility: visible;
+  display: block;
+}
+
+.focused_out .operation > div:last-child {
+  visibility: hidden;
+}
+
+.narrow .focused_out .operation > div:last-child {
+  display: none;
+}
+
+.compact .focused_out .operation > div:last-child {
+  display: none;
 }
 
 .target_any {
   margin: 15px 0px;
-  width: 310px;
+  width: 306px;
   display: none;
 }
 
@@ -533,7 +562,7 @@ select {
   display: block;
 }
 
-#SelectionOption {
+#SelectionPane {
   margin: 10px 0px;
   padding: 0px 5px;
   display: none;
@@ -543,7 +572,7 @@ select {
   display: block;
 }
 
-.selection #SelectionOption {
+.selection #SelectionPane {
   display: block;
 }
 
@@ -584,20 +613,17 @@ select {
   font-weight: bold;
   font-size: 14px;
   color: #575757;
+  border-bottom: solid 1px #a9a9a9;
   display: inline;
 }
 
-.edit_header span:first-child {
-  border-bottom: solid 1px #a9a9a9;
-}
-
-.edit_header span:last-child {
+.edit_header img {
+  padding: 3px;
   border-radius: 16px 16px;
   outline: none;
-  user-select: none;
 }
 
-.edit_header span:last-child.pointed {
+.edit_header img.pointed {
   background-color: #969696;
 }
 
@@ -723,23 +749,32 @@ select {
   padding: 20px 10px;
 }
 
+#SelectionList input.pointed {
+  outline: 3px dotted #ff9900;
+}
+
 .page_header {
-  margin: 10px 0px 20px 0px;
+  margin: 10px 0px;
   width: 100%;
   justify-content: space-between;
   align-items: center;
 }
 
 .page_header div {
+  margin: 0px 5px;
   align-items: center;
 }
 
 .page_header button {
-  margin: 0px 3px;
+  margin: 0px 10px;
   padding: 2px 0px;
   width: 90px;
   border-width: 2px;
   font-size: 14px;
+}
+
+.narrow .page_header button {
+  margin-left: 8px;
 }
 
 .page_header ol {
@@ -763,66 +798,155 @@ select {
 .page_header li.selected {
   font-size: 16px;
   font-weight: bold;
-  background-color: #a9a9a9;
   color: #000000;
+  background-color: #a9a9a9;
+  z-index: 1;
+}
+
+.page_header li.pointed {
+  color: #ffcc33;
+  z-index: 2;
 }
 
 .page_header li.hidden {
   display: none;
 }
 
-.page_header li.pointed {
-  color: #000000;
-  z-index: 2;
-}
-
-.setting {
+.selection_item {
   width: 100%;
   flex-flow: column wrap;
 }
 
-.setting > div {
+.selection_item > div {
   border-radius: 5px;
   align-items: center;
 }
 
-.setting > div:last-child:focus-within {
+.selection_item > div:last-child {
+  min-width: 686px;
+  justify-content: space-between;
+}
+
+.narrow .selection_item > div:last-child {
+  min-width: 310px;
+}
+
+.compact .selection_item > div:last-child {
+  min-width: 450px;
+}
+
+.selection_item > div:last-child.focused_in {
   color: #ffffff;
   background-color: #549fe3;
 }
 
-#SelectionList input {
-  margin: 10px 15px 10px 8px;
+.selection_data {
+  margin: 0px 5px;
+  width: 440px;
+  align-items: center;
 }
 
-#SelectionList input.pointed {
-  outline: 3px dotted #ffffa0;
+.narrow .selection_data {
+  width: 100%;
 }
 
-.narrow #SelectionList input {
-  margin-right: 8px;
-}
-
-.setting_name {
-  margin: 10px;
-  width: 275px;
+.selection_data label {
+  margin: 10px 8px;
+  padding: 1px 0px;
+  width: 348px;
   letter-spacing: 1px;
+  user-select: none;
   white-space: nowrap;
   overflow: hidden;
 }
 
-.narrow .setting_name {
-  margin: 10px;
-  width: 250px;
+.narrow .selection_data label {
+  margin-right: 2px;
+  width: 216px;
 }
 
 .favicon {
-  margin-left: 8px;
-  margin-right: 18px;
-  width: 19px;
-  height: 19px;
+  position: relative;
+  margin-left: 4px;
 }
 
 .narrow .favicon {
+  margin-left: 2px;
+}
+
+.favicon > input {
+  margin: 1px 5px;
+  padding: 3px;
+  width: 20px;
+  height: 20px;
+}
+
+.favicon_list {
+  position: absolute;
+  top: -5px;
+  width: 34px;
+  border: solid 1px #ededed;
+  border-radius: 5px;
+  box-shadow: 2px 3px 4px rgba(0, 0, 0, 0.5);
+  flex-flow: column nowrap;
+  background-color: #eeeeee;
+  visibility: hidden;
+  z-index: 1;
+}
+
+.favicon_list div {
+  position: relative;
+  flex-basis: 34px;
+  flex-flow: row nowrap;
+}
+
+.favicon_list input {
+  margin: 5px;
+  padding: 3px 2px;
+  width: 20px;
+  height: 20px;
+  background-color: #eeeeee;
+}
+
+.favicon_list input.pointed {
+  outline: 3px dotted #ff9900;
+}
+
+.favicon_list input.pointed + span {
+  display: inline;
+}
+
+.favicon_list span:before {
+  position: absolute;
+  top: 10px;
+  left: -14px;
+  width: 0;
+  height: 0;
+  border: 6px solid transparent;
+  border-right: 8px solid #ffffa0;
+  content: "";
+}
+
+.favicon_list span {
+  position: absolute;
+  left: 45px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 14px;
+  color: #000000;
+  background-color: #ffffa0;
   display: none;
+}
+
+.compact .selection_item .operation {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.narrow .selection_item .operation > div:first-child {
+  margin: 0px;
+}
+
+.compact .selection_item .operation > div:first-child {
+  margin: 0px;
 }

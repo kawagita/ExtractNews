@@ -9,114 +9,139 @@
     "description": "アドオンの説明。"
   },
 
-  "extensionFontFamily": {
-    "message": "ＭＳ Ｐゴシック",
-    "description": "アドオンで使われるフォントファミリー。"
+  "extensionMSFont": {
+    "message": "メイリオ",
+    "description": "アドオンで使われるMSフォント。"
+  },
+
+  "extensionLinuxFont": {
+    "message": "VL Pゴシック",
+    "description": "アドオンで使われるLinuxフォント。"
+  },
+
+  "extensionOtherFont": {
+    "message": "IPA Pゴシック",
+    "description": "アドオンで使われるその他のフォント。"
+  },
+
+  "extractNewsYahooName": {
+    "message": "Yahoo!（米国）",
+    "description": "Yahoo!の名称。"
   },
 
   "extractNewsYahooJapanNewsName": {
-    "message": "Yahoo! JAPAN ニュース",
-    "description": "Yahoo! JAPAN ニュースの名称。"
+    "message": "Yahoo! ニュース",
+    "description": "Yahoo! ニュースの名称。"
   },
 
-  "extractNewsYahooJapanNewsUrlHostServerPatterns": {
+  "extractNewsYahooJapanNewsHostServerPatterns": {
     "message": "news",
-    "description": "Yahoo! JAPAN ニュースURLのホストサーバーのパターン。"
+    "description": "Yahoo! ニュースのホストサーバーパターン。"
   },
 
-  "extractNewsYahooJapanNewsUrlDomain": {
+  "extractNewsYahooJapanNewsDomain": {
     "message": "yahoo.co.jp",
-    "description": "Yahoo! JAPAN ニュースURLのドメイン。"
+    "description": "Yahoo! ニュースのドメイン。"
   },
 
-  "extractNewsYahooJapanNewsUrlRootDirectoryPath": {
+  "extractNewsYahooJapanNewsSitePaths": {
     "message": "",
-    "description": "Yahoo! JAPAN ニュースURLのルートディレクトリのパス。"
+    "description": "Yahoo! ニュースサイトのパス。"
+  },
+
+  "extractNewsYahooJapanNewsCommentHostServerPatterns": {
+    "message": "news",
+    "description": "Yahoo! ニュースでユーザーがコメントするホストサーバーパターン。"
+  },
+
+  "extractNewsYahooJapanNewsCommentSitePaths": {
+    "message": "",
+    "description": "Yahoo! ニュースでユーザーがコメントするサイトのパス。"
   },
 
   "extractNewsYahooJapanNewsArticlePaths": {
     "message": "/articles,/pickup",
-    "description": "Yahoo! JAPAN ニュースの記事のパス。"
+    "description": "Yahoo! ニュースの記事のパス。"
   },
 
   "extractNewsYahooJapanNewsCategoryRootPath": {
     "message": "/categories",
-    "description": "Yahoo! JAPAN ニュースのカテゴリーのルートパス。"
+    "description": "Yahoo! ニュースのカテゴリのルートパス。"
   },
 
   "extractNewsYahooJapanNewsCategoryPaths": {
     "message": ",/domestic,/world,/business,/entertainment,/sports,/it,/science,/life,/local",
-    "description": "Yahoo! JAPAN ニュースのカテゴリーのパス。"
+    "description": "Yahoo! ニュースのカテゴリのパス。"
   },
 
   "extractNewsYahooJapanNewsITScienceCategoryPath": {
     "message": "/it-science",
-    "description": "Yahoo! JAPAN ニュースのIT・科学カテゴリーのパス。"
+    "description": "Yahoo! ニュースのIT・科学カテゴリのパス。"
   },
 
   "extractNewsYahooJapanNewsCategories": {
     "message": "主要,国内,国際,経済,エンタメ,スポーツ,IT,科学,ライフ,地域",
-    "description": "Yahoo! JAPAN ニュースのカテゴリー。"
+    "description": "Yahoo! ニュースのカテゴリ。"
   },
 
   "extractNewsYahooJapanNewsITScienceCategories": {
     "message": "IT,科学",
-    "description": "Yahoo! JAPAN ニュースのIT・科学カテゴリー。"
+    "description": "Yahoo! ニュースのIT・科学カテゴリ。"
   },
 
   "extractNewsYahooJapanNewsCategoryTopicWords": {
     "message": "政治 社会 日本 世界 アメリカ 中国 マネー ビジネス 科学 テクノロジー IT エンタメ スポーツ ライフ 医療 東京 名古屋 大阪,政治 社会 メディア 日本,世界 アメリカ 英国 ロシア 中国 韓国,マネー マーケット ビジネス 自動車 バイク,エンタメ 映画 テレビ 音楽 アニメ ゲーム 韓流,スポーツ 野球 サッカー モータースポーツ 競馬 ゴルフ 格闘技,ビジネス テクノロジー IT 通信 インターネット ハードウェア PC モバイル,科学 テクノロジー 医療,ライフ 健康 文化,地方 北海道 東京 神奈川 名古屋 大阪 福岡 沖縄",
-    "description": "Yahoo! JAPAN ニュースのカテゴリーのトピックワード。"
+    "description": "Yahoo! ニュースのカテゴリのトピックワード。"
   },
 
   "extractNewsYahooJapanNewsHeadingTopicRegularExpression": {
     "message": "^.+（([^・]+)(?:・(.+))?）$$",
-    "description": "Yahoo! JAPAN ニュースの見出しトピックの正規表現。"
+    "description": "Yahoo! ニュースの見出しトピックの正規表現。"
   },
 
   "extractNewsYahooJapanNewsFlashPath": {
     "message": "/flash",
-    "description": "Yahoo! JAPAN ニュースの速報のパス。"
+    "description": "Yahoo! ニュースの速報のパス。"
   },
 
   "extractNewsYahooJapanNewsFlashNewsTitle": {
     "message": "速報ニュース",
-    "description": "Yahoo! JAPAN ニュースの速報ニュースのタイトル。"
+    "description": "Yahoo! ニュースの速報ニュースのタイトル。"
   },
 
   "extractNewsYahooJapanNewsLivePath": {
     "message": "/live",
-    "description": "Yahoo! JAPAN ニュースのライブのパス。"
+    "description": "Yahoo! ニュースのライブのパス。"
   },
 
   "extractNewsYahooJapanNewsLiveMovieTitle": {
     "message": "話題の動画",
-    "description": "Yahoo! JAPAN ニュースのライブ動画のタイトル。"
+    "description": "Yahoo! ニュースのライブ動画のタイトル。"
   },
 
   "extractNewsYahooJapanNewsTopicsPath": {
     "message": "/topics",
-    "description": "Yahoo! JAPAN ニュースのトピックス一覧のパス。"
+    "description": "Yahoo! ニュースのトピックス一覧のパス。"
   },
 
   "extractNewsYahooJapanNewsRankingRootPath": {
     "message": "/ranking",
-    "description": "Yahoo! JAPAN ニュースのランキングのルートパス。"
+    "description": "Yahoo! ニュースのランキングのルートパス。"
   },
 
   "extractNewsYahooJapanNewsRankingPaths": {
     "message": "/access/news,/access/photo,/access/video,/access/magazine,/access/byline,/comment",
-    "description": "Yahoo! JAPAN ニュースのランキングのパス。"
+    "description": "Yahoo! ニュースのランキングのパス。"
   },
 
   "extractNewsYahooJapanNewsPaidNews": {
     "message": "有料記事",
-    "description": "Yahoo! JAPAN ニュースの有料記事。"
+    "description": "Yahoo! ニュースの有料記事。"
   },
 
   "extractNewsYahooJapanNewsCommentCountRegularExpression": {
     "message": "^(:?[1-9][0-9]*|件/時)$$",
-    "description": "Yahoo! JAPAN ニュースのコメントカウントの正規表現。"
+    "description": "Yahoo! ニュースのコメントカウントの正規表現。"
   },
 
   "extractNewsImpressWatchName": {
@@ -124,19 +149,29 @@
     "description": "Impress Watchの名称。"
   },
 
-  "extractNewsImpressWatchUrlHostServerPatterns": {
+  "extractNewsImpressWatchHostServerPatterns": {
     "message": "*",
-    "description": "Impress Watch URLのホストサーバーのパターン。"
+    "description": "Impress Watchのホストサーバーパターン。"
   },
 
-  "extractNewsImpressWatchUrlDomain": {
+  "extractNewsImpressWatchDomain": {
     "message": "watch.impress.co.jp",
-    "description": "Impress Watch URLのドメイン。"
+    "description": "Impress Watchのドメイン。"
   },
 
-  "extractNewsImpressWatchUrlRootDirectoryPath": {
+  "extractNewsImpressWatchSitePaths": {
     "message": "",
-    "description": "Impress Watch URLのルートディレクトリのパス。"
+    "description": "Impress Watchサイトのパス。"
+  },
+
+  "extractNewsImpressWatchCommentHostServerPatterns": {
+    "message": "",
+    "description": "Impress Watchでユーザーがコメントするホストサーバーパターン。"
+  },
+
+  "extractNewsImpressWatchCommentSitePaths": {
+    "message": "",
+    "description": "Impress Watchでユーザーがコメントするサイトのパス。"
   },
 
   "extractNewsImpressWatchSiteHostServers": {
@@ -156,7 +191,7 @@
 
   "extractNewsImpressWatchSiteTopicWords": {
     "message": "テクノロジー IT 通信 インターネット セキュリティ,テクノロジー IT ハードウェア PC モバイル ソフトウェア OS,デジカメ,IT ハードウェア PC モバイル ソフトウェア OS ゲーム ライフ,テレビ オーディオ 映画 アニメ 音楽,家電 ライフ,マネー IT 通信 モバイル,ビジネス クラウド,ソフトウェア 開発 オープンソース,テクノロジー 自動車 バイク モータースポーツ,ライフ 旅行 ホテル,ライフ コンビニ ファーストフード,ハードウェア モバイル アニメ ゲーム,ホビー,モバイル デジカメ 家電",
-    "description": "Impress Watchサイトのカテゴリーのトピックワード。"
+    "description": "Impress Watchサイトのカテゴリのトピックワード。"
   },
 
   "extractNewsImpressWatchKodomoItPath": {
@@ -201,32 +236,47 @@
 
   "extractNewsImpressWatchCategoryPath": {
     "message": "/category",
-    "description": "Impress Watchのカテゴリーパス。"
+    "description": "Impress Watchのカテゴリパス。"
   },
 
   "extractNewsImpressWatchCategoryListHtml": {
     "message": "/list.html",
-    "description": "Impress Watchのカテゴリーリストのパス。"
+    "description": "Impress Watchのカテゴリリストのパス。"
+  },
+
+  "extractNewsITmediaName": {
+    "message": "ITmedia",
+    "description": "ITmediaの名称。"
+  },
+
+  "extractNewsITmediaHostServerPatterns": {
+    "message": "www",
+    "description": "ITmediaのホストサーバーパターン。"
+  },
+
+  "extractNewsITmediaDomain": {
+    "message": "itmedia.co.jp",
+    "description": "ITmediaのドメイン。"
+  },
+
+  "extractNewsITmediaSitePaths": {
+    "message": "/news",
+    "description": "ITmediaサイトのパス。"
+  },
+
+  "extractNewsITmediaCommentHostServerPatterns": {
+    "message": "",
+    "description": "ITmediaでユーザーがコメントするホストサーバーパターン。"
+  },
+
+  "extractNewsITmediaCommentSitePaths": {
+    "message": "",
+    "description": "ITmediaでユーザーがコメントするサイトのパス。"
   },
 
   "extractNewsITmediaNewsName": {
     "message": "ITmedia NEWS",
     "description": "ITmedia NEWSの名称。"
-  },
-
-  "extractNewsITmediaNewsUrlHostServerPatterns": {
-    "message": "www",
-    "description": "ITmedia NEWS URLのホストサーバーのパターン。"
-  },
-
-  "extractNewsITmediaNewsUrlDomain": {
-    "message": "itmedia.co.jp",
-    "description": "ITmedia NEWS URLのドメイン。"
-  },
-
-  "extractNewsITmediaNewsUrlRootDirectoryPath": {
-    "message": "/news",
-    "description": "ITmedia NEWS URLのルートディレクトリのパス。"
   },
 
   "extractNewsITmediaNewsCommonTopicWords": {
@@ -241,122 +291,122 @@
 
   "extractNewsITmediaNewsCategoryRootPath": {
     "message": "/subtop",
-    "description": "ITmedia NEWSのカテゴリーのルートパス。"
+    "description": "ITmedia NEWSのカテゴリのルートパス。"
   },
 
   "extractNewsITmediaNewsCategoryPaths": {
     "message": "/bursts,/industry,/products,/technology,/security,/studio,/society,/nettopics,/lifestyle,/aiplus,/clouduser,/quantum",
-    "description": "ITmedia NEWSのカテゴリーパス。"
+    "description": "ITmedia NEWSのカテゴリパス。"
   },
 
   "extractNewsITmediaNewsCategoryIds": {
     "message": "Bursts,Industry,Products,Technology,Security,Studio,Society,Nettopics,Lifestyle,Aiplus,Clouduser,Quantum",
-    "description": "ITmedia NEWSのカテゴリーID。"
+    "description": "ITmedia NEWSのカテゴリID。"
   },
 
   "extractNewsITmediaNewsBurstsCategoryPath": {
     "message": "/bursts",
-    "description": "ITmedia NEWSの速報カテゴリーのパス。"
+    "description": "ITmedia NEWSの速報カテゴリのパス。"
   },
 
   "extractNewsITmediaNewsBurstsCategoryTopicWords": {
     "message": "",
-    "description": "ITmedia NEWSの速報カテゴリーのトピックワード。"
+    "description": "ITmedia NEWSの速報カテゴリのトピックワード。"
   },
 
   "extractNewsITmediaNewsIndustryCategoryPath": {
     "message": "/industry",
-    "description": "ITmedia NEWSの業界・製品動向カテゴリーのパス。"
+    "description": "ITmedia NEWSの業界・製品動向カテゴリのパス。"
   },
 
   "extractNewsITmediaNewsIndustryCategoryTopicWords": {
     "message": "マネー,クラウド",
-    "description": "ITmedia NEWSの業界・製品動向カテゴリーのトピックワード。"
+    "description": "ITmedia NEWSの業界・製品動向カテゴリのトピックワード。"
   },
 
   "extractNewsITmediaNewsProductsCategoryTopicWords": {
     "message": "自動車,モバイル",
-    "description": "ITmedia NEWSの製品動向カテゴリーのトピックワード。"
+    "description": "ITmedia NEWSの製品動向カテゴリのトピックワード。"
   },
 
   "extractNewsITmediaNewsTechnologyCategoryTopicWords": {
     "message": "科学,自動車,AI",
-    "description": "ITmedia NEWSの科学・テクノロジーカテゴリーのトピックワード。"
+    "description": "ITmedia NEWSの科学・テクノロジーカテゴリのトピックワード。"
   },
 
   "extractNewsITmediaNewsSecurityCategoryTopicWords": {
     "message": "セキュリティ",
-    "description": "ITmedia NEWSのセキュリティカテゴリーのトピックワード。"
+    "description": "ITmedia NEWSのセキュリティカテゴリのトピックワード。"
   },
 
   "extractNewsITmediaNewsStudioCategoryTopicWords": {
     "message": "ソフトウェア",
-    "description": "ITmedia NEWSのSTUDIOカテゴリーのトピックワード。"
+    "description": "ITmedia NEWSのSTUDIOカテゴリのトピックワード。"
   },
 
   "extractNewsITmediaNewsStudioCategoryPath": {
     "message": "/studio",
-    "description": "ITmedia NEWSのSTUDIOカテゴリーのパス。"
+    "description": "ITmedia NEWSのSTUDIOカテゴリのパス。"
   },
 
   "extractNewsITmediaNewsSocietyCategoryTopicWords": {
     "message": "政治,社会,マネー",
-    "description": "ITmedia NEWSの社会とITカテゴリーのトピックワード。"
+    "description": "ITmedia NEWSの社会とITカテゴリのトピックワード。"
   },
 
   "extractNewsITmediaNewsNettopicsCategoryTopicWords": {
     "message": "政治,社会,モバイル,ゲーム,ライフ,トレンド",
-    "description": "ITmedia NEWSのネットの話題カテゴリーのトピックワード。"
+    "description": "ITmedia NEWSのネットの話題カテゴリのトピックワード。"
   },
 
   "extractNewsITmediaNewsLifestyleCategoryPath": {
     "message": "/lifestyle",
-    "description": "ITmedia NEWSのくらテクカテゴリーのパス。"
+    "description": "ITmedia NEWSのくらテクカテゴリのパス。"
   },
 
   "extractNewsITmediaNewsLifestyleCategoryTopicWords": {
     "message": "映画,アニメ,ゲーム,ライフ",
-    "description": "ITmedia NEWSのくらテクカテゴリーのトピックワード。"
+    "description": "ITmedia NEWSのくらテクカテゴリのトピックワード。"
   },
 
   "extractNewsITmediaNewsArchiveCategoryPath": {
     "message": "/archive",
-    "description": "ITmedia NEWSの過去記事カテゴリーのパス。"
+    "description": "ITmedia NEWSの過去記事カテゴリのパス。"
   },
 
   "extractNewsITmediaNewsArchiveCategoryTopicWords": {
     "message": "",
-    "description": "ITmedia NEWSの過去記事カテゴリーのトピックワード。"
+    "description": "ITmedia NEWSの過去記事カテゴリのトピックワード。"
   },
 
   "extractNewsITmediaNewsAiplusCategoryPath": {
     "message": "/aiplus",
-    "description": "ITmedia NEWSのAI+カテゴリーのパス。"
+    "description": "ITmedia NEWSのAI+カテゴリのパス。"
   },
 
   "extractNewsITmediaNewsAiplusCategoryTopicWords": {
     "message": "AI",
-    "description": "ITmedia NEWSのAI+カテゴリーのトピックワード。"
+    "description": "ITmedia NEWSのAI+カテゴリのトピックワード。"
   },
 
   "extractNewsITmediaNewsClouduserCategoryPath": {
     "message": "/clouduser",
-    "description": "ITmedia NEWSのCloud USERカテゴリーのパス。"
+    "description": "ITmedia NEWSのCloud USERカテゴリのパス。"
   },
 
   "extractNewsITmediaNewsClouduserCategoryTopicWords": {
     "message": "クラウド",
-    "description": "ITmedia NEWSのCloud USERカテゴリーのトピックワード。"
+    "description": "ITmedia NEWSのCloud USERカテゴリのトピックワード。"
   },
 
   "extractNewsITmediaNewsQuantumCategoryPath": {
     "message": "/features/quantum",
-    "description": "ITmedia NEWSの量子コンピューターカテゴリーのパス。"
+    "description": "ITmedia NEWSの量子コンピューターカテゴリのパス。"
   },
 
   "extractNewsITmediaNewsQuantumCategoryTopicWords": {
     "message": "科学",
-    "description": "ITmedia NEWSの量子コンピューターカテゴリーのトピックワード。"
+    "description": "ITmedia NEWSの量子コンピューターカテゴリのトピックワード。"
   },
 
   "extractNewsITmediaNewsArticleTypeAll": {
@@ -369,19 +419,29 @@
     "description": "スラドの名称。"
   },
 
-  "extractNewsSradUrlHostServerPatterns": {
+  "extractNewsSradHostServerPatterns": {
     "message": ",*",
-    "description": "スラドURLのホストサーバーのパターン。"
+    "description": "スラドのホストサーバーパターン。"
   },
 
-  "extractNewsSradUrlDomain": {
+  "extractNewsSradDomain": {
     "message": "srad.jp",
-    "description": "スラドURLのドメイン。"
+    "description": "スラドのドメイン。"
   },
 
-  "extractNewsSradUrlRootDirectoryPath": {
+  "extractNewsSradSitePaths": {
     "message": "",
-    "description": "スラドURLのルートディレクトリのパス。"
+    "description": "スラドサイトのパス。"
+  },
+
+  "extractNewsSradCommentHostServerPatterns": {
+    "message": ",*",
+    "description": "スラドでユーザーがコメントするホストサーバーパターン。"
+  },
+
+  "extractNewsSradCommentSitePaths": {
+    "message": "",
+    "description": "スラドでユーザーがコメントするサイトのパス。"
   },
 
   "extractNewsSradStoriesPathRegularExpression": {
@@ -594,19 +654,9 @@
     "description": "ニュースサイトの言語。"
   },
 
-  "extractNewsJapaneseSiteIds": {
-    "message": "YahooJapanNews,ImpressWatch,ITmediaNews,Srad",
-    "description": "日本語ニュースサイトのID。"
-  },
-
-  "extractNewsJapaneseCommentSiteIds": {
-    "message": "YahooJapanNews,Srad",
-    "description": "日本語コメントがあるニュースサイトのID。"
-  },
-
-  "extractNewsJapaneseHostFaviconSiteIds": {
-    "message": "ImpressWatch",
-    "description": "日本語のホストごとのFaviconがあるニュースサイトのID。"
+  "extractNewsJapaneseSitePrefixes": {
+    "message": "YahooJapanNews,ImpressWatch,ITmedia,Srad",
+    "description": "日本語ニュースサイトのプリフィックス。"
   },
 
   "extractNewsJapaneseWordSeparators": {
@@ -621,7 +671,7 @@
 
   "extractNewsAllFilteringCategoryName": {
     "message": "すべて",
-    "description": "すべての話題に対するフィルタリングのカテゴリー名。"
+    "description": "すべての話題に対するフィルタリングのカテゴリ名。"
   },
 
   "extractNewsTextConcatenation": {
@@ -659,7 +709,7 @@
     "description": "除外する話題でUTF-16エンコーディングで最大文字長を超えていることに対するメッセージ。"
   },
 
-  "extractNewsNewsSelectionNotSavedAnyMore": {
+  "extractNewsSelectionNotSavedAnyMore": {
     "message": "ニュース選択はこれ以上保存されません。",
     "description": "ニュース選択の最大数を超える保存に対するメッセージ。"
   },
@@ -674,33 +724,33 @@
     "description": "フィルタリングの最大数を超える保存に対するメッセージ。"
   },
 
-  "extractNewsNewsSettingNotInitialized": {
-    "message": "ニュース設定が初期化されていません。タブを再読み込みして下さい。",
-    "description": "ニュース設定が初期化されていないことに対するメッセージ。"
+  "extractNewsTabSettingNotEnabled": {
+    "message": "タブの設定を有効化するため、再読み込みして下さい。",
+    "description": "タブの設定が有効化されていないことに対するメッセージ。"
   },
 
   "regularExpressionControlEscapeNotFollowedByAlphabet": {
-    "message": "\\c の後はアルファベットを指定して下さい。",
+    "message": "\\c の後にアルファベットを指定して下さい。",
     "description": "正規表現でコントロールのエスケープに対するメッセージ。"
   },
 
   "regularExpressionControlEscapeNotCompleted": {
-    "message": "コントロールエスケープは完了していません。",
+    "message": "コントロールエスケープが完了していません。",
     "description": "正規表現でコントロールのエスケープに対するメッセージ。"
   },
 
   "regularExpressionHexadecimalEscapeNotFollowedByHexadecimalDigits": {
-    "message": "\\x の後は十六進数を指定して下さい。",
+    "message": "\\x の後に十六進数を指定して下さい。",
     "description": "正規表現で十六進数のエスケープに対するメッセージ。"
   },
 
   "regularExpressionHexadecimalEscapeNotCompleted": {
-    "message": "十六進数エスケープは完了していません。",
+    "message": "十六進数エスケープが完了していません。",
     "description": "正規表現で十六進数のエスケープに対するメッセージ。"
   },
 
   "regularExpressionUnicodeEscapeNotFollowedByHexDigits": {
-    "message": "\\u の後は十六進数を指定して下さい。",
+    "message": "\\u の後に十六進数を指定して下さい。",
     "description": "正規表現でUnicodeのエスケープに対するメッセージ。"
   },
 
@@ -710,7 +760,7 @@
   },
 
   "regularExpressionUnicodeEscapeNotCompleted": {
-    "message": "Unicodeエスケープは完了していません。",
+    "message": "Unicodeエスケープが完了していません。",
     "description": "正規表現でUnicodeのエスケープに対するメッセージ。"
   },
 
@@ -720,17 +770,17 @@
   },
 
   "regularExpressionGroupNameEscapeNotFollowedByLeftAngleBracket": {
-    "message": "\\k の後は右山括弧を指定して下さい。",
+    "message": "\\k の後に左山括弧を指定して下さい。",
     "description": "正規表現でグループ名のエスケープに対するメッセージ。"
   },
 
   "regularExpressionGroupNotCompleted": {
-    "message": "グループは右丸括弧が足りずに完了していません。",
+    "message": "グループが右丸括弧の不足により、完了していません。",
     "description": "正規表現でグループに対するメッセージ。"
   },
 
   "regularExpressionNonCapturingOrNamedCapturingGroupNotStartedCorrectly": {
-    "message": "非キャプチャか、名前付きキャプチャのグループが正しく開始していません。",
+    "message": "非キャプチャ、または、名前付きキャプチャのグループが正しく開始していません。",
     "description": "正規表現でグループに対するメッセージ。"
   },
 
@@ -750,7 +800,7 @@
   },
 
   "regularExpressionGroupNameNotCompleted": {
-    "message": "グループ名は右山括弧が足りずに完了していません。",
+    "message": "グループ名が右山括弧の不足により、完了していません。",
     "description": "正規表現でグループ名に対するメッセージ。"
   },
 
@@ -765,7 +815,7 @@
   },
 
   "regularExpressionCharacterSetNotCompleted": {
-    "message": "文字集合は右角括弧が足りずに完了していません。",
+    "message": "文字集合が右角括弧の不足により、完了していません。",
     "description": "正規表現で文字集合に対するメッセージ。"
   },
 
@@ -790,7 +840,7 @@
   },
 
   "regularExpressionOccurrenceNumberNotCompleted": {
-    "message": "出現回数は右波括弧が足りずに完了していません。",
+    "message": "出現回数が右波括弧の不足により、完了していません。",
     "description": "正規表現で出現回数に対するメッセージ。"
   },
 
@@ -800,7 +850,7 @@
   },
 
   "regularExpressionEscapeCharacterNotFollowedByCharacter": {
-    "message": "最後のエスケープ文字の後には一文字が必要です。",
+    "message": "最後のエスケープ文字の後に一文字が必要です。",
     "description": "正規表現でエスケープ文字に対するメッセージ。"
   },
 
@@ -830,13 +880,13 @@
   },
 
   "fileImportLineFilteringCategoryNotTerminatedByEndOfBlock": {
-    "message": "フィルタリングカテゴリーのブロック終端がありません。",
-    "description": "インポート行でフィルタリングカテゴリーのブロック終端がないことの説明。"
+    "message": "フィルタリングカテゴリのブロック終端がありません。",
+    "description": "インポート行でフィルタリングカテゴリのブロック終端がないことの説明。"
   },
 
   "fileImportLineFilteringCategoryNameNotSpecified": {
-    "message": "フィルタリングカテゴリーの名称が指定されていません。",
-    "description": "インポート行でフィルタリングカテゴリーの名称が指定されていないことの説明。"
+    "message": "フィルタリングカテゴリの名称が指定されていません。",
+    "description": "インポート行でフィルタリングカテゴリの名称が指定されていないことの説明。"
   },
 
   "fileImportLineFilteringTargetNameNotSpecified": {
@@ -849,9 +899,9 @@
     "description": "インポート行で不明なフィルタリングのターゲットの説明。"
   },
 
-  "fileImportLineUnknownFilteringWordMatching": {
-    "message": "不明なフィルタリングのワードマッチング 「$1」",
-    "description": "インポート行で不明なフィルタリングのワードマッチングの説明。"
+  "fileImportLineUnknownFilteringWordOption": {
+    "message": "不明なフィルタリングの単語オプション 「$1」",
+    "description": "インポート行で不明なフィルタリングの単語オプションの説明。"
   },
 
   "fileImportLineSettingNameNotEnclosedByDoubleQuotes": {
@@ -985,7 +1035,7 @@
   },
 
   "browserActionNewsSelectionNotExist": {
-    "message": "選択設定はありません。",
+    "message": "ニュース選択はありません。",
     "description": "ニュース選択がないことを示すラベル。"
   },
 
@@ -1002,11 +1052,6 @@
   "editSettingName": {
     "message": "設定名称",
     "description": "ニュース選択の設定名称に対する編集ラベル。"
-  },
-
-  "editInputTitle": {
-    "message": "タイトルを入力して下さい。",
-    "description": "ニュース選択の設定名称を入力するメッセージ。"
   },
 
   "editSelectedTopic": {
@@ -1115,23 +1160,23 @@
   },
 
   "optionFilteringCategoryName": {
-    "message": "カテゴリー名称",
-    "description": "フィルタリングのカテゴリー名称のオプションラベル。"
+    "message": "カテゴリ名称",
+    "description": "フィルタリングのカテゴリ名称のオプションラベル。"
   },
 
   "optionFilteringCategoryTopics": {
-    "message": "カテゴリートピック",
-    "description": "フィルタリングのカテゴリートピックのオプションラベル。"
+    "message": "カテゴリトピック",
+    "description": "フィルタリングのカテゴリトピックのオプションラベル。"
   },
 
-  "optionInputFilteringCategoryTopics": {
+  "optionSeparateFilteringCategoryTopicsByCommas": {
     "message": "トピックをコンマ区切って下さい",
-    "description": "フィルタリングカテゴリーのトピックを入力するメッセージ。"
+    "description": "フィルタリングのカテゴリに対してトピックをコンマで区切るメッセージ。"
   },
 
   "optionFilteringCategoryAlways": {
-    "message": "このカテゴリーは常に適応されます。",
-    "description": "すべてに対してフィルタリングカテゴリーを適応するオプションの説明。"
+    "message": "このカテゴリは常に適応されます。",
+    "description": "すべてに対してフィルタリングカテゴリを適応するオプションの説明。"
   },
 
   "optionTargetAccept": {
@@ -1154,24 +1199,24 @@
     "description": "フィルタリングブロックを終了するオプションラベル。"
   },
 
-  "optionInputTargetWords": {
-    "message": "単語をコンマ区切って下さい",
-    "description": "フィルタリングターゲットの単語を入力するメッセージ。"
+  "optionSeparateTargetWordsByCommas": {
+    "message": "対象とする単語をコンマ区切って下さい",
+    "description": "フィルタリングターゲットに対して単語をコンマで区切るメッセージ。"
   },
 
   "optionTargetMatchWordBeginning": {
-    "message": "単語開始とマッチ",
+    "message": "開始とマッチ",
     "description": "フィルタリングターゲットに対して単語開始とマッチするオプションラベル。"
   },
 
   "optionTargetMatchWordEnd": {
-    "message": "単語終了とマッチ",
+    "message": "終了とマッチ",
     "description": "フィルタリングターゲットに対して単語終了とマッチするオプションラベル。"
   },
 
-  "optionTargetWordNegative": {
-    "message": "単語の否定",
-    "description": "フィルタリングターゲットに対して単語の否定とマッチするオプションタイトル。"
+  "optionTargetExcludeWords": {
+    "message": "単語を含まない",
+    "description": "フィルタリングターゲットに対して単語を含まないオプションタイトル。"
   },
 
   "optionTargetAnyWordMatched": {
@@ -1190,8 +1235,8 @@
   },
 
   "optionLocalize": {
-    "message": "全半角変換",
-    "description": "フィルタリングターゲットやニュース選択の全半角を変換するオプションボタン。"
+    "message": "全半角",
+    "description": "フィルタリングターゲットの全半角を変換するオプションボタン。"
   },
 
   "optionUp": {
@@ -1212,41 +1257,6 @@
   "optionRemove": {
     "message": "削除",
     "description": "フィルタリングターゲットやニュース選択を削除するオプションボタン。"
-  },
-
-  "optionNewsSelection": {
-    "message": "ニュース選択",
-    "description": "ニュース選択に対するオプションラベル。"
-  },
-
-  "optionSettingName": {
-    "message": "設定名称",
-    "description": "ニュース選択の設定名称に対するオプションラベル。"
-  },
-
-  "optionInputTitle": {
-    "message": "タイトルを入力して下さい。",
-    "description": "ニュース選択の設定名称を入力するメッセージ。"
-  },
-
-  "optionSelectedTopic": {
-    "message": "選択する話題",
-    "description": "ニュース選択の選択する話題に対するオプションラベル。"
-  },
-
-  "optionSelectedSender": {
-    "message": "選択する発信元",
-    "description": "ニュース選択の選択する発信元に対するオプションラベル。"
-  },
-
-  "optionInputRegularExpression": {
-    "message": "正規表現を入力して下さい。\n改行とインデントの空白は削除されます。",
-    "description": "設定で選択されるニュースの話題や発信元の正規表現を入力するメッセージ。"
-  },
-
-  "optionOpenedUrl": {
-    "message": "ページを開くURL",
-    "description": "ニュース選択のページを開くURLに対するオプションラベル。"
   },
 
   "optionApply": {

@@ -69,8 +69,6 @@ ExtractNews.Site = (() => {
     function setNewsDesigns(...designs) {
       if (designs == undefined) {
         throw newNullPointerException("designs");
-      } else if (! Array.isArray(designs)) {
-        throw newIllegalArgumentException("designs");
       }
       designs.forEach(setNewsDesign);
     }
@@ -200,7 +198,6 @@ ExtractNews.Site = (() => {
               });
             browser.runtime.onMessage.removeListener(_changeNewsDisplaying);
           }
-          return Promise.resolve();
         }).catch((error) => {
           Debug.printStackTrace(error);
         });
@@ -230,7 +227,7 @@ ExtractNews.Site = (() => {
           var newsTopicWordsString = Array.from(newsTopicWordSet).join(",");
           Debug.printProperty("Opened URL", openedUrl);
           Debug.printProperty("Topic Words", newsTopicWordsString);
-          return ExtractNews.sendRuntimeMessage({
+          ExtractNews.sendRuntimeMessage({
               command: ExtractNews.COMMAND_SETTING_REQUEST,
               openedUrl: openedUrl,
               topicWordsString: newsTopicWordsString

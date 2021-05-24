@@ -11,13 +11,11 @@
       <h1>ExtractNews</h1>
     </div>
     <ol id="OptionMenu">
-      <li id="General" tabindex="1"></li>
-      <li id="Filtering" tabindex="2"></li>
-      <li id="Selection" tabindex="3"></li>
+      <li id="General" tabindex="1"></li><li id="Filtering" tabindex="2"></li><li id="Selection" tabindex="3"></li>
     </ol>
   </header>
-  <section id="Options" class="general">
-    <div id="GeneralOption">
+  <section id="OptionPage" class="general">
+    <section id="GeneralPane">
       <div id="EnablingSite">
         <h3></h3>
         <div>
@@ -36,8 +34,8 @@
           </div>
         </div>
       </div>
-    </div>
-    <div id="DataUpdate">
+    </section>
+    <aside id="DataUpdate">
       <p>
       <div>
         <div id="DataReplacement" class="checked_option">
@@ -50,8 +48,8 @@
           <button id="Save" tabindex="7"></button>
         </div>
       </div>
-    </div>
-    <div id="FilteringOption">
+    </aside>
+    <section id="FilteringPane">
       <hr>
       <div id="FilteringCategory">
         <div id="FilteringCategoryName">
@@ -70,13 +68,13 @@
         <div class="block">
         </div>
       </div>
-    </div>
-    <div id="SelectionOption">
+    </section>
+    <section id="SelectionPane">
       <hr>
       <div id="SelectionEdit">
         <div class="edit_header">
           <span></span>
-          <span class="close" tabindex="15">&#x274c;</span>
+          <img src="../icons/close-20.png" class="close" tabindex="15">
         </div>
         <div class="edit_pane">
           <div id="SettingName">
@@ -112,11 +110,13 @@
             <input type="checkbox" tabindex="8">
             <button id="Delete" tabindex="9"></button>
           </div>
-          <ol id="SelectionPageList">
+          <ol class="page_number_list">
           </ol>
         </div>
+        <div class="selection_list">
+        </div>
       </div>
-    </div>
+    </section>
   </section>
   <script src="../debug.js"></script>
   <script src="../extractnews.js"></script>
@@ -126,6 +126,7 @@
   <script src="../event.js"></script>
   <script src="../file.js"></script>
   <script src="../popup/popup.js"></script>
+  <script src="general.js"></script>
   <script src="filtering.js"></script>
   <script src="selection.js"></script>
   <script src="options.js"></script>

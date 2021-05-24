@@ -101,8 +101,6 @@ class Logger {
       throw newNullPointerException("separator");
     } else if ((typeof separator) != "string") {
       throw newIllegalArgumentException("separator");
-    } else if (! Array.isArray(values)) {
-      throw newIllegalArgumentException("values");
     }
     console.log(values.join(separator));
   }
@@ -163,19 +161,22 @@ function newIllegalArgumentException(name) {
 /*
  * Creates an exception which occurs by an invalid parameter at run time.
  */
-function newInvalidParameterException(value) {
-  if (value == undefined) {
-    throw newNullPointerException("value");
-  } else if (Array.isArray(value) && value.length == 0) {
-    value = "empry array";
-  } else if ((typeof value) == "string") {
-    if (value == "") {
-      value = "empry string";
-    }
+function newInvalidParameterException(...values) {
+  if (values == undefined) {
+    throw newNullPointerException("values");
   }
-  return newRuntimeException(
-    value.toString() + " is an invalid parameter.",
-    "InvalidParameterException");
+  var valuesString = "";
+  for (let i = 0; i < values.length; i++) {
+    if (i > 0) {
+      valuesString += ", ";
+    }
+    var value = String(values[i]);
+    if (value == "") {
+      value = "<empry string>";
+    }
+    valuesString += value;
+  }
+  return newRuntimeException(valuesString, "InvalidParameterException");
 }
 
 /*

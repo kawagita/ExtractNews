@@ -517,12 +517,12 @@ s    }
     const TRENDING_PATH = getImpressWatchString("TrendingPath");
     const CATEGORY_PATH = getImpressWatchString("CategoryPath");
 
-    var newsSiteUrlParser = new NewsSiteUrlParser(newsSite, document.URL);
-    newsSiteUrlParser.parseHostName();
+    var newsSiteUrlData = getNewsSiteUrlData(newsSite, document.URL);
+    var newsSiteUrlParser = new NewsSiteUrlParser(newsSiteUrlData);
 
     const SITE_HOST_SERVERS = splitImpressWatchString("SiteHostServers");
 
-    var siteIndex = SITE_HOST_SERVERS.indexOf(newsSiteUrlParser.hostServer);
+    var siteIndex = SITE_HOST_SERVERS.indexOf(newsSiteUrlData.hostServer);
     if (siteIndex >= 0) { // INTERNET Watch, PC Watch, ..., and Watch Video
       Site.addNewsTopicWords(
         splitImpressWatchString("SiteTopicWords")[siteIndex].split(" "));
@@ -629,6 +629,10 @@ s    }
       new ImpressWatchRanking("ranking"),
       new ImpressWatchRanking("all-ranking"));
 
-    Site.displayNewsDesigns(
-      newsSiteUrlParser.toString(), new NewsSelector(newsSite.language));
+    var newsSelector =
+      new NewsSelector(ExtractNews.getDomainLanguage(newsSite.domainId));
+
+    Site.displayNewsDesigns(newsSiteUrlParser.toString(), newsSelector);
+  }).catch((error) => {
+    Debug.printStackTrace(error);
   });

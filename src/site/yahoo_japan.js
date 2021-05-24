@@ -52,7 +52,6 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
     const NEWS_FEED_ITEM = "newsFeed_item";
     const NEWS_FEED_ITEM_TITLE = "newsFeed_item_title";
     const NEWS_FEED_ITEM_MEDIA = "newsFeed_item_media";
-
     const NEWS_FEED_PRICE = "newsFeedPrice";
 
     const CONTENTS_WRAP = "contentsWrap";
@@ -523,8 +522,8 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
     const RANKING_PATHS = splitYahooJapanNewsString("RankingPaths");
 
     var newsOpenedUrl = "";
-    var newsSiteUrlParser = new NewsSiteUrlParser(newsSite, document.URL);
-    newsSiteUrlParser.parseHostName();
+    var newsSiteUrlData = getNewsSiteUrlData(newsSite, document.URL);
+    var newsSiteUrlParser = new NewsSiteUrlParser(newsSiteUrlData);
 
     if (newsSiteUrlParser.parseFrom(ARTICLE_PATHS)) { // Articles
       Site.setNewsDesigns(
@@ -600,6 +599,10 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
       newsOpenedUrl = newsSiteUrlParser.toString();
     }
 
-    Site.displayNewsDesigns(
-      newsOpenedUrl, new NewsSelector(newsSite.language));
+    var newsSelector =
+      new NewsSelector(ExtractNews.getDomainLanguage(newsSite.domainId));
+
+    Site.displayNewsDesigns(newsOpenedUrl, newsSelector);
+  }).catch((error) => {
+    Debug.printStackTrace(error);
   });

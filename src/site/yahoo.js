@@ -632,14 +632,14 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
           for (let i = newsItems.length - 1; i >= 0; i--) {
             var navTopicElement = newsItems[i].querySelector("a");
             if (navTopicElement != null) {
-              var navTopicUrlParser =
-                new NewsSiteUrlParser(newsSite, navTopicElement.href);
-              if (! navTopicUrlParser.parseHostName()
-                || (navTopicUrlParser.hostServer != URL_DEFAULT_HOST_SERVER
-                  && navTopicUrlParser.hostServer != NEWS_HOST_SERVER
-                  && navTopicUrlParser.hostServer != FINANCE_HOST_SERVER
-                  && navTopicUrlParser.hostServer != MONEY_HOST_SERVER
-                  && navTopicUrlParser.hostServer != SPORTS_HOST_SERVER)) {
+              var navTopicUrlData =
+                getNewsSiteUrlData(newsSite, navTopicElement.href);
+              if (navTopicUrlData == undefined
+                || (navTopicUrlData.hostServer != URL_DEFAULT_HOST_SERVER
+                  && navTopicUrlData.hostServer != NEWS_HOST_SERVER
+                  && navTopicUrlData.hostServer != FINANCE_HOST_SERVER
+                  && navTopicUrlData.hostServer != MONEY_HOST_SERVER
+                  && navTopicUrlData.hostServer != SPORTS_HOST_SERVER)) {
                 // Remove the element for no news site from news items.
                 newsItems.splice(i, 1);
               }
@@ -656,14 +656,14 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
     // topics or senders, waiting the settings from the background script.
 
     var newsSiteCategory = "";
-    var newsSiteUrlParser = new NewsSiteUrlParser(newsSite, document.URL);
-    newsSiteUrlParser.parseHostName();
+    var newsSiteUrlData = getNewsSiteUrlData(newsSite, document.URL);
+    var newsSiteUrlParser = new NewsSiteUrlParser(newsSiteUrlData);
 
     if (newsSiteUrlParser.matchHtmlDocument() != null) { // Articles
       Site.setNewsDesigns(new YahooSimpleList());
     } else {
       if (newsSiteUrlParser.parseDirectory()
-        || newsSiteUrlParser.hostServer != URL_DEFAULT_HOST_SERVER
+        || newsSiteUrlData.hostServer != URL_DEFAULT_HOST_SERVER
         || ! newsSiteUrlParser.parse(getYahooString("LifePath"))) {
         Site.setNewsDesigns(
           new YahooTopPanels(),
@@ -680,9 +680,9 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
           new YahooContentViewer(),
           // The list of panels like Yahoo! Life categories
           new YahooSimpleList());
-        if (newsSiteUrlParser.hostServer != URL_DEFAULT_HOST_SERVER
+        if (newsSiteUrlData.hostServer != URL_DEFAULT_HOST_SERVER
           || ! newsSiteUrlParser.parse(getYahooString("EntertainmentPath"))) {
-          switch(newsSiteUrlParser.hostServer) {
+          switch(newsSiteUrlData.hostServer) {
           case NEWS_HOST_SERVER: // Yahoo! News
             Site.setNewsDesigns(
               new YahooNavigation(YDC_NAV),
@@ -807,5 +807,8 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
       });
 
     Site.displayNewsDesigns(
-      newsSiteUrlParser.toString(), new NewsSelector(newsSite.language));
+      newsSiteUrlParser.toString(),
+      new NewsSelector(ExtractNews.getDomainLanguage(newsSite.domainId)));
+  }).catch((error) => {
+    Debug.printStackTrace(error);
   });

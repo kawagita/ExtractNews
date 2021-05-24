@@ -25,10 +25,12 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
       return;
     }
 
-    var newsSiteUrlParser = new NewsSiteUrlParser(newsSite, document.URL);
-    newsSiteUrlParser.parseHostName();
-    newsSiteUrlParser.parseAll();
+    var newsSiteUrlData = getNewsSiteUrlData(newsSite, document.URL);
+    var newsSiteUrlParser = new NewsSiteUrlParser(newsSiteUrlData);
 
     Site.displayNewsDesigns(
-      newsSiteUrlParser.toString(), new NewsSelector(newsSite.language));
+      newsSiteUrlParser.toString(),
+      new NewsSelector(ExtractNews.getDomainLanguage(newsSite.domainId));
+  }).catch((error) => {
+    Debug.printStackTrace(error);
   });

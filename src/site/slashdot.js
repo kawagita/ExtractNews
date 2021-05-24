@@ -51,8 +51,9 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
         (language == ExtractNews.SITE_ENGLISH ? "Slashdot": "Srad") + id);
     }
 
-    const STORY_TOPIC_REGEXP =
-      getSlashdotRegExp("StoryTopic", newsSite.language);
+    const LANGUAGE = ExtractNews.getDomainLanguage(newsSite.domainId);
+
+    const STORY_TOPIC_REGEXP = getSlashdotRegExp("StoryTopic", LANGUAGE);
     const STORY_SOURCE_ENCLOSING_START =
       getSlashdotString("StorySourceEnclosingStart");
     const STORY_SOURCE_ENCLOSING_END =
@@ -61,7 +62,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
     const STORY_CLICKGEN = "clickgen";
 
     const STORY_BOX_NAME_SET =
-      new Set(splitSlashdotString("StoryBoxNames", newsSite.language));
+      new Set(splitSlashdotString("StoryBoxNames", LANGUAGE));
     const STORY_BOX_TITLE_FOR_COMMENTS =
       getSlashdotString("StoryBoxTitleForComments");
 
@@ -94,13 +95,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
                 selectorsForAll: "article"
               }),
             topicProperties: Array.of({
-                selectors: "h2",
-                setNewsElement: (element, newsTopics) => {
-                    var storyTopicElement = element.previousElementSibling;
-                    if (storyTopicElement.id.startsWith("topic-")) {
-                      newsTopics.push(element);
-                    }
-                  }
+                selectors: "h2"
               }),
             itemTextProperty: {
                 topicSearchProperties: Array.of({
@@ -109,9 +104,9 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
                     tagName: "a"
                   }),
                 topicSearchFirst: true,
-                senderFollowing: newsSite.language == ExtractNews.SITE_ENGLISH
+                senderFollowing: LANGUAGE == ExtractNews.SITE_ENGLISH
               },
-            observedProperties: newsSite.language == ExtractNews.SITE_ENGLISH ?
+            observedProperties: LANGUAGE == ExtractNews.SITE_ENGLISH ?
               undefined : Design.ONESELF_QUERY_PROPERTIES,
             observedItemProperties: Array.of({
                 setNewsElement: (element, newsItems) => {
@@ -153,12 +148,11 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
     function _addStoryTopicWords(storyTopics) {
       for (const topicId of splitSlashdotString("TopicIds")) {
         var topicSet =
-          new Set(
-            splitSlashdotString(topicId + "StoryTopics", newsSite.language));
+          new Set(splitSlashdotString(topicId + "StoryTopics", LANGUAGE));
         for (const storyTopic of storyTopics) {
           if (topicSet.has(storyTopic)) {
             Site.addNewsTopicWords(
-              splitSlashdotString(topicId + "TopicWords", newsSite.language));
+              splitSlashdotString(topicId + "TopicWords", LANGUAGE));
             break;
           }
         }
@@ -196,7 +190,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
                     }
                     _addStoryTopicWords(Array.from(storyTopicSet));
                     var storyFooter;
-                    if (newsSite.language == ExtractNews.SITE_ENGLISH) {
+                    if (LANGUAGE == ExtractNews.SITE_ENGLISH) {
                       storyFooter = element.querySelector("#newa2footerv2");
                     } else {
                       storyFooter =
@@ -249,7 +243,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
     class SlashdotComments extends Design.NewsDesign {
       constructor() {
         super({
-            parentProperties: newsSite.language == ExtractNews.SITE_ENGLISH ?
+            parentProperties: LANGUAGE == ExtractNews.SITE_ENGLISH ?
               Array.of({
                   selectors: "#" + STORY_CLICKGEN,
                   setNewsElement: (element, newsParents) => {
@@ -272,7 +266,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
                       }
                     }
                 }),
-            commentProperties: newsSite.language == ExtractNews.SITE_ENGLISH ?
+            commentProperties: LANGUAGE == ExtractNews.SITE_ENGLISH ?
               Array.of({
                   selectors: "#" + STORY_CLICKGEN,
                   setNewsElement: (element, commentNodes) => {
@@ -325,7 +319,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
             topicProperties: Array.of({
                 selectors: "a"
               }),
-            commentProperties: newsSite.language == ExtractNews.SITE_ENGLISH ?
+            commentProperties: LANGUAGE == ExtractNews.SITE_ENGLISH ?
               Array.of({
                 selectorsForAll: "#slashboxes header",
                 setNewsElement: (element, commentNodes) => {
@@ -447,12 +441,11 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
 
     function _addStoryTopicKeyword(storyTopicKeyword) {
       const STORY_TOPIC_KEYWORDS =
-        splitSlashdotString("StoryTopicKeywords", newsSite.language);
+        splitSlashdotString("StoryTopicKeywords", LANGUAGE);
       var storyTopics = new Array();
       var storyTopicIndex = STORY_TOPIC_KEYWORDS.indexOf(storyTopicKeyword);
       if (storyTopicIndex >= 0) {
-        const STORY_TOPICS =
-          splitSlashdotString("StoryTopics", newsSite.language);
+        const STORY_TOPICS = splitSlashdotString("StoryTopics", LANGUAGE);
         var storyTopicMatch =
           STORY_TOPICS[storyTopicIndex].match(STORY_TOPIC_REGEXP);
         storyTopics.push(storyTopicMatch[1]);
@@ -473,14 +466,14 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
     const STORY_FILTER_QUERY_KEY = getSlashdotString("StoryFilterQueryKey");
 
     var storyQueryKeys = undefined;
-    var newsSiteUrlParser = new NewsSiteUrlParser(newsSite, document.URL);
-    newsSiteUrlParser.parseHostName();
 
-    Site.addNewsTopicWords(
-      splitSlashdotString("CommonTopicWords", newsSite.language));
+    var newsSiteUrlData = getNewsSiteUrlData(newsSite, document.URL);
+    var newsSiteUrlParser = new NewsSiteUrlParser(newsSiteUrlData);
 
-    if (newsSiteUrlParser.hostServer != "") { // "xxx.slashdot.org"
-      _addStoryTopicKeyword(newsSiteUrlParser.hostServer);
+    Site.addNewsTopicWords(splitSlashdotString("CommonTopicWords", LANGUAGE));
+
+    if (newsSiteUrlData.hostServer != "") { // "xxx.slashdot.org"
+      _addStoryTopicKeyword(newsSiteUrlData.hostServer);
     }
     if (newsSiteUrlParser.parseQuery()) {
       var storyFilterValue =
@@ -492,8 +485,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
 
     const STORY_PATH_REGEXP = getSlashdotRegExp("StoryPath");
     const STORY_ARCHIVE_PATH = getSlashdotString("StoryArchivePath");
-    const STORIES_PATH_REGEXP =
-      getSlashdotRegExp("StoriesPath", newsSite.language);
+    const STORIES_PATH_REGEXP = getSlashdotRegExp("StoriesPath", LANGUAGE);
     const TAGGED_STORIES_PATH = getSlashdotString("TaggedStoriesPath");
 
     if (newsSiteUrlParser.match(STORY_PATH_REGEXP)) { // A story
@@ -515,7 +507,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
       Site.setNewsDesign(new SlashdotTaggedStories());
       newsSiteUrlParser.parseAll();
     }
-    if (newsSite.language != ExtractNews.SITE_ENGLISH) {
+    if (LANGUAGE != ExtractNews.SITE_ENGLISH) {
       Site.setNewsDesign(
         // Menus including Apple, Microsoft, and Google on Srad
         new Design.NewsDesign({
@@ -526,7 +518,9 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
           }));
     }
     Site.setNewsDesign(new SlashdotStoryBoxes());
+
     Site.displayNewsDesigns(
-      newsSiteUrlParser.toString(storyQueryKeys),
-      new NewsSelector(newsSite.language));
+      newsSiteUrlParser.toString(storyQueryKeys), new NewsSelector(LANGUAGE));
+  }).catch((error) => {
+    Debug.printStackTrace(error);
   });

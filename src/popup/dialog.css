@@ -1,13 +1,14 @@
 * {
   margin: 0px;
   padding: 0px;
+  font-family: "__MSG_extensionMSFont__", "__MSG_extensionLinuxFont__", "__MSG_extensionOtherFont__";
+  font-weight: normal;
 }
 
 body {
   padding: 10px;
   flex-direction: column;
   display: flex;
-  font-family: "__MSG_extensionFontFamily__";
   background-color: #cfcfcf;
 }
 

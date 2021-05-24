@@ -24,14 +24,32 @@
  */
 ExtractNews.Alert = (() => {
     const _Alert = {
+        // Warning IDs for the error of news selections
+        SETTING_NAME_MAX_WITDH_EXCEEDED: "SettingNameMaxWidthExceeded",
+        SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED:
+          "SelectedTopicMaxUTF16CharactersExceeded",
+        SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED:
+          "SelectedSenderMaxUTF16CharactersExceeded",
+        EXCLUDED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED:
+          "ExcludedTopicMaxUTF16CharactersExceeded",
+        SELECTION_NOT_SAVED_ANY_MORE: "SelectionNotSavedAnyMore",
+
         // Maximum numbers for the setting name and regular expressions input
         // on the edit window or option page and selected by the context menu
         SETTING_NAME_MAX_WIDTH: 30,
         REGEXP_MAX_UTF16_CHARACTERS: 256,
 
+        // Warning IDs for the error of filterings
+        FILETERING_WORDS_MAX_UTF16_CHARACTERS_EXCEEDED:
+          "FilteringWordsMaxUTF16CharactersExceeded",
+        FILTERING_NOT_SAVED_ANY_MORE: "FilteringNotSavedAnyMore",
+
         // Maximum numbers of the string of filtering words separated by commas
         // input or imported on the option page
-        FILTERING_WORDS_MAX_UTF16_CHARACTERS: 64
+        FILTERING_WORDS_MAX_UTF16_CHARACTERS: 64,
+
+        // Warning IDs for the error of tab settings
+        TAB_SETTING_NOT_ENABLED: "TabSettingNotEnabled"
       };
 
     /*
@@ -50,29 +68,27 @@ ExtractNews.Alert = (() => {
         } else if ((typeof emphasisRegexpString) != "string") {
           throw newIllegalArgumentException("emphasisRegexpString");
         }
-        this._message = message;
-        this._description = description;
-        this._emphasisRegularExpression = emphasisRegexpString;
+        this.warning = {
+            message: message,
+            description: description,
+            emphasisRegularExpression: emphasisRegexpString
+          };
       }
 
       get message() {
-        return this._message;
+        return this.warning.message;
       }
 
       get description() {
-        return this._description;
+        return this.warning.description;
       }
 
       get emphasisRegularExpression() {
-        return this._emphasisRegularExpression;
+        return this.warning.emphasisRegularExpression;
       }
 
       toObject() {
-        return {
-            message: this._message,
-            description: this._description,
-            emphasisRegularExpression: this._emphasisRegularExpression
-          };
+        return this.warning;
       }
     }
 
@@ -81,60 +97,66 @@ ExtractNews.Alert = (() => {
         ExtractNews.getLocalizedString(messageId, substitutions));
     }
 
-    _Alert.Warning = Warning;
+    // Map of warnings for message IDs
+    const WARNING_MAP = new Map();
 
-    // Warnings for the error of news selections
+    {
+      var settingNameMaxWidth = String(_Alert.SETTING_NAME_MAX_WIDTH);
 
-    _Alert.SETTING_NAME_MAX_WITDH_EXCEEDED = "SettingNameMaxWidthExceeded";
-    _Alert.SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED =
-      "SelectedTopicMaxUTF16CharactersExceeded";
-    _Alert.SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED =
-      "SelectedSenderMaxUTF16CharactersExceeded";
-    _Alert.EXCLUDED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED =
-      "ExcludedTopicMaxUTF16CharactersExceeded";
-    _Alert.NEWS_SELECTION_NOT_SAVED_ANY_MORE = "NewsSelectionNotSavedAnyMore";
-
-    var settingNameMaxWidth = String(_Alert.SETTING_NAME_MAX_WIDTH);
-
-    if (browser.i18n.getUILanguage().startsWith("ja")) {
-      var localizedContext =
-        ExtractNews.Text.getLocalizedContext(
-          String(_Alert.SETTING_NAME_MAX_WIDTH / 2));
-      if (localizedContext.hasDifferentWidth()) {
-        settingNameMaxWidth = localizedContext.fullwidthText.textString;
+      if (browser.i18n.getUILanguage().startsWith("ja")) {
+        var localizedContext =
+          ExtractNews.Text.getLocalizedContext(
+            String(_Alert.SETTING_NAME_MAX_WIDTH / 2));
+        if (localizedContext.hasDifferentWidth()) {
+          settingNameMaxWidth = localizedContext.fullwidthText.textString;
+        }
       }
+
+      WARNING_MAP.set(
+        _Alert.SETTING_NAME_MAX_WITDH_EXCEEDED,
+        _newWarning(
+          _Alert.SETTING_NAME_MAX_WITDH_EXCEEDED, settingNameMaxWidth));
+      WARNING_MAP.set(
+        _Alert.SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED,
+        _newWarning(
+          _Alert.SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED,
+          String(_Alert.REGEXP_MAX_UTF16_CHARACTERS)));
+      WARNING_MAP.set(
+        _Alert.SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED,
+        _newWarning(
+          _Alert.SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED,
+          String(_Alert.REGEXP_MAX_UTF16_CHARACTERS)));
+      WARNING_MAP.set(
+        _Alert.EXCLUDED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED,
+        _newWarning(
+          _Alert.EXCLUDED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED,
+          String(_Alert.REGEXP_MAX_UTF16_CHARACTERS)));
+      WARNING_MAP.set(
+        _Alert.SELECTION_NOT_SAVED_ANY_MORE,
+        _newWarning(_Alert.SELECTION_NOT_SAVED_ANY_MORE));
+      WARNING_MAP.set(
+        _Alert.FILETERING_WORDS_MAX_UTF16_CHARACTERS_EXCEEDED,
+        _newWarning(
+          _Alert.FILETERING_WORDS_MAX_UTF16_CHARACTERS_EXCEEDED,
+          String(_Alert.FILTERING_WORDS_MAX_UTF16_CHARACTERS)));
+      WARNING_MAP.set(
+        _Alert.FILTERING_NOT_SAVED_ANY_MORE,
+        _newWarning(_Alert.FILTERING_NOT_SAVED_ANY_MORE));
+      WARNING_MAP.set(
+        _Alert.TAB_SETTING_NOT_ENABLED,
+        _newWarning(_Alert.TAB_SETTING_NOT_ENABLED));
     }
 
-    _Alert.WARNING_SETTING_NAME_MAX_WITDH_EXCEEDED =
-      _newWarning(_Alert.SETTING_NAME_MAX_WITDH_EXCEEDED, settingNameMaxWidth);
-    _Alert.WARNING_SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED =
-      _newWarning(_Alert.SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED,
-        String(_Alert.REGEXP_MAX_UTF16_CHARACTERS));
-    _Alert.WARNING_SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED =
-      _newWarning(_Alert.SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED,
-        String(_Alert.REGEXP_MAX_UTF16_CHARACTERS));
-    _Alert.WARNING_EXCLUDED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED =
-      _newWarning(_Alert.EXCLUDED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED,
-        String(_Alert.REGEXP_MAX_UTF16_CHARACTERS));
-    _Alert.WARNING_NEWS_SELECTION_NOT_SAVED_ANY_MORE =
-      _newWarning(_Alert.NEWS_SELECTION_NOT_SAVED_ANY_MORE);
+    /*
+     * Returns the information of a warning for the specified ID displayed
+     * on the message dialog if exists, otherwise, undefined.
+     */
+    function getWarning(messageId) {
+      return WARNING_MAP.get(messageId);
+    }
 
-    // Warnings for the error of word filterings
-
-    _Alert.FILETERING_WORDS_MAX_UTF16_CHARACTERS_EXCEEDED =
-      "FilteringWordsMaxUTF16CharactersExceeded";
-    _Alert.FILTERING_NOT_SAVED_ANY_MORE = "FilteringNotSavedAnyMore";
-
-    _Alert.WARNING_FILETERING_WORDS_MAX_UTF16_CHARACTERS_EXCEEDED =
-      _newWarning(_Alert.FILETERING_WORDS_MAX_UTF16_CHARACTERS_EXCEEDED,
-        String(_Alert.FILTERING_WORDS_MAX_UTF16_CHARACTERS));
-    _Alert.WARNING_FILTERING_NOT_SAVED_ANY_MORE =
-      _newWarning(_Alert.FILTERING_NOT_SAVED_ANY_MORE);
-
-    // Warnings for the error of the news setting
-
-    _Alert.WARNING_NEWS_SETTING_NOT_INITIALIZED =
-      _newWarning("NewsSettingNotInitialized");
+    _Alert.Warning = Warning;
+    _Alert.getWarning = getWarning;
 
     return _Alert;
   })();

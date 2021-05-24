@@ -9,9 +9,19 @@
     "description": "Description of the add-on."
   },
 
-  "extensionFontFamily": {
-    "message": "Helvetica",
-    "description": "Font family used by this add-on."
+  "extensionMSFont": {
+    "message": "Segoe UI",
+    "description": "MS font used by this add-on."
+  },
+
+  "extensionLinuxFont": {
+    "message": "Liberation Sans",
+    "description": "Linux font used by this add-on."
+  },
+
+  "extensionOtherFont": {
+    "message": "Noto Sans",
+    "description": "Other font used by this add-on."
   },
 
   "extractNewsYahooName": {
@@ -19,19 +29,29 @@
     "description": "Name of Yahoo!."
   },
 
-  "extractNewsYahooUrlHostServerPatterns": {
+  "extractNewsYahooHostServerPatterns": {
     "message": "www,news,finance,money,sports",
-    "description": "Host server patterns of Yahoo! URL."
+    "description": "Host server patterns of Yahoo!."
   },
 
-  "extractNewsYahooUrlDomain": {
+  "extractNewsYahooDomain": {
     "message": "yahoo.com",
-    "description": "Domain of Yahoo! URL."
+    "description": "Domain of Yahoo!."
   },
 
-  "extractNewsYahooUrlRootDirectoryPath": {
+  "extractNewsYahooSitePaths": {
     "message": "",
-    "description": "Root directory path of Yahoo! URL."
+    "description": "Paths of Yahoo! site."
+  },
+
+  "extractNewsYahooCommentHostServerPatterns": {
+    "message": "",
+    "description": "Host server patterns of Yahoo! on which users comment."
+  },
+
+  "extractNewsYahooCommentSitePaths": {
+    "message": "",
+    "description": "Paths of Yahoo! site on which users comment."
   },
 
   "extractNewsYahooSiteCategories": {
@@ -94,19 +114,29 @@
     "description": "Name of Slashdot."
   },
 
-  "extractNewsSlashdotUrlHostServerPatterns": {
+  "extractNewsSlashdotHostServerPatterns": {
     "message": ",*",
-    "description": "Host server patterns of Slashdot URL."
+    "description": "Host server patterns of Slashdot."
   },
 
-  "extractNewsSlashdotUrlDomain": {
+  "extractNewsSlashdotDomain": {
     "message": "slashdot.org",
-    "description": "Domain of Slashdot URL."
+    "description": "Domain of Slashdot."
   },
 
-  "extractNewsSlashdotUrlRootDirectoryPath": {
+  "extractNewsSlashdotSitePaths": {
     "message": "",
-    "description": "Root directory path of Slashdot URL."
+    "description": "Paths of Slashdot site."
+  },
+
+  "extractNewsSlashdotCommentHostServerPatterns": {
+    "message": ",*",
+    "description": "Host server patterns of Slashdot on which users comment."
+  },
+
+  "extractNewsSlashdotCommentSitePaths": {
+    "message": "",
+    "description": "Paths of Slashdot site on which users comment."
   },
 
   "extractNewsSlashdotStoryPathRegularExpression": {
@@ -389,19 +419,9 @@
     "description": "Languages of news site."
   },
 
-  "extractNewsEnglishSiteIds": {
+  "extractNewsEnglishSitePrefixes": {
     "message": "Yahoo,Slashdot",
-    "description": "IDs of news site in English."
-  },
-
-  "extractNewsEnglishCommentSiteIds": {
-    "message": "Slashdot",
-    "description": "IDs whose news site has comments in English."
-  },
-
-  "extractNewsEnglishHostFaviconSiteIds": {
-    "message": "",
-    "description": "IDs whose news site has favicons for each host in English."
+    "description": "Prefixes of the news site in English."
   },
 
   "extractNewsEnglishWordSeparators": {
@@ -420,7 +440,7 @@
   },
 
   "extractNewsAllFilteringCategoryName": {
-    "message": "All",
+    "message": "ALL",
     "description": "Category name of the filtering for all topics."
   },
 
@@ -459,7 +479,7 @@
     "description": "Message for exceeding the maximum character length by UTF-16 encoding in excluded topics."
   },
 
-  "extractNewsNewsSelectionNotSavedAnyMore": {
+  "extractNewsSelectionNotSavedAnyMore": {
     "message": "News selection is not saved any more.",
     "description": "Message for saving over the maximum count of news selections."
   },
@@ -474,9 +494,9 @@
     "description": "Message for saving over the maximum count of filtering targets."
   },
 
-  "extractNewsNewsSettingNotInitialized": {
-    "message": "News setting has not been initialized yet. Reload this tab, please.",
-    "description": "Message for not initializing the news setting."
+  "extractNewsTabSettingNotEnabled": {
+    "message": "Setting has not been enabled yet. Reload this tab, please.",
+    "description": "Message for enabling the setting on a tab."
   },
 
   "regularExpressionControlEscapeNotFollowedByAlphabet": {
@@ -649,9 +669,9 @@
     "description": "Description of an unknown filtering target name on a import line."
   },
 
-  "fileImportLineUnknownFilteringWordMatching": {
-    "message": "Unknown filtering word matching '$1'",
-    "description": "Description of an unknown filtering word matching on a import line."
+  "fileImportLineUnknownFilteringWordOption": {
+    "message": "Unknown filtering word option '$1'",
+    "description": "Description of an unknown filtering word option on a import line."
   },
 
   "fileImportLineSettingNameNotEnclosedByDoubleQuotes": {
@@ -804,11 +824,6 @@
     "description": "Edit label for the setting name of a news selection."
   },
 
-  "editInputTitle": {
-    "message": "Input a title.",
-    "description": "Message to input the setting name of a news selection."
-  },
-
   "editSelectedTopic": {
     "message": "Selected Topic",
     "description": "Edit label for the selected topic of a news selection."
@@ -820,7 +835,7 @@
   },
 
   "editInputRegularExpression": {
-    "message": "Input a regular expression.\nLine feeds and indent spaces are deleted.",
+    "message": "Input a regular expression in which line feeds and indent spaces are deleted.",
     "description": "Message to input the regular expression of a selected topic or sender."
   },
 
@@ -870,8 +885,8 @@
   },
 
   "optionDisableFiltering": {
-    "message": "Disable the setting of word filterings",
-    "description": "Option label to disable the setting of word filterings."
+    "message": "Disable the setting of filterings",
+    "description": "Option label to disable the setting of filterings."
   },
 
   "optionDebugExtension": {
@@ -924,9 +939,9 @@
     "description": "Option label of filtering category's topics."
   },
 
-  "optionInputFilteringCategoryTopics": {
-    "message": "Input topics separated by commas.",
-    "description": "Message to input topics of a filtering category."
+  "optionSeparateFilteringCategoryTopicsByCommas": {
+    "message": "Separate topics by commas.",
+    "description": "Message to separate topics by commas for a filtering category."
   },
 
   "optionFilteringCategoryAlways": {
@@ -950,28 +965,28 @@
   },
 
   "optionTargetTerminateBlock": {
-    "message": "Terminate block",
+    "message": "End of Block",
     "description": "Option label to terminate a filtering block."
   },
 
-  "optionInputTargetWords": {
-    "message": "Input words separated by commas.",
-    "description": "Message to input words of a filtering target."
+  "optionSeparateTargetWordsByCommas": {
+    "message": "Separate target words by commas.",
+    "description": "Message to separate words by commas for a filtering target."
   },
 
   "optionTargetMatchWordBeginning": {
-    "message": "Match word beginning",
+    "message": "Match Beginning",
     "description": "Option label to match word beginning for a filtering target."
   },
 
   "optionTargetMatchWordEnd": {
-    "message": "Match word end",
+    "message": "Match End",
     "description": "Option label to match word end for a filtering target."
   },
 
-  "optionTargetWordNegative": {
-    "message": "Word negative",
-    "description": "Option title to match word negative for a filtering target."
+  "optionTargetExcludeWords": {
+    "message": "Exclude Words",
+    "description": "Option title to exclude words for a filtering target."
   },
 
   "optionTargetAnyWordMatched": {
@@ -991,7 +1006,7 @@
 
   "optionLocalize": {
     "message": "Localize",
-    "description": "Option button to localize a filtering target or news selection."
+    "description": "Option button to localize a filtering target."
   },
 
   "optionUp": {
@@ -1012,41 +1027,6 @@
   "optionRemove": {
     "message": "Remove",
     "description": "Option button to remove a filtering target or news selection."
-  },
-
-  "optionNewsSelection": {
-    "message": "News selection",
-    "description": "Option label for a news selection."
-  },
-
-  "optionSettingName": {
-    "message": "Setting Name",
-    "description": "Option label for the setting name of a news selection."
-  },
-
-  "optionInputTitle": {
-    "message": "Input a title.",
-    "description": "Message to input the setting name of a news selection."
-  },
-
-  "optionSelectedTopic": {
-    "message": "Selected Topic",
-    "description": "Option label for the selected topic of a news selection."
-  },
-
-  "optionSelectedSender": {
-    "message": "Selected Sender",
-    "description": "Option label for the selected sender of a news selection."
-  },
-
-  "optionInputRegularExpression": {
-    "message": "Input a regular expression.\nLine feeds and indent spaces are deleted.",
-    "description": "Message to input the regular expression of a selected topic or sender."
-  },
-
-  "optionOpenedUrl": {
-    "message": "Opened URL",
-    "description": "Option label for the URL of a page opened by a news selection."
   },
 
   "optionApply": {

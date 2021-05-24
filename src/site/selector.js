@@ -24,7 +24,7 @@ function _newRegexp(regexpString) {
     if ((typeof regexpString) != "string") {
       throw newIllegalArgumentException("regexpString");
     } else if (regexpString != "") {
-      return new RegExp(regexpString, "i");
+      return new RegExp(regexpString);
     }
   }
   return undefined;
@@ -65,7 +65,7 @@ class NewsSelector {
         this.newsFilteringTargets.push(newsFilteringTarget);
         if (Debug.isLoggingOn()) {
           Debug.dump("\t", newsFilteringTarget.name,
-            (newsFilteringTarget.isWordNegative() ? "! " : "  ")
+            (newsFilteringTarget.isWordsExcluded() ? "! " : "  ")
             + newsFilteringTarget.words.join(","));
         }
       });
@@ -79,7 +79,7 @@ class NewsSelector {
   }
 
   _testTargetWords(target, topicString) {
-    var targetResult = ! target.isWordNegative();
+    var targetMatched = ! target.isWordsExcluded();
     if (target.words.length > 0) {
       let i = 0;
       do {
@@ -87,7 +87,7 @@ class NewsSelector {
         var wordSearchIndex = topicString.indexOf(targetWord);
         if (wordSearchIndex >= 0) {
           do {
-            var wordMatching = true;
+            var wordMatched = true;
             if (target.isWordBeginningMatched() && wordSearchIndex >= 1) {
               // Check whether the character just before the target word is
               // a separator like spaces or symbols, and particles by which
@@ -100,13 +100,13 @@ class NewsSelector {
                 wordPrecedingCodePoint =
                   topicString.codePointAt(wordSearchIndex - 2);
               }
-              wordMatching = this.wordSeparatorSet.has(wordPrecedingCodePoint);
+              wordMatched = this.wordSeparatorSet.has(wordPrecedingCodePoint);
             }
             wordSearchIndex += targetWord.length;
-            if (wordMatching) {
+            if (wordMatched) {
               if (! target.isWordEndMatched()) {
                 Debug.printProperty("Match filtering word", targetWord);
-                return targetResult;
+                return targetMatched;
               }
               for (const wordSuffix of this.wordSuffixes) {
                 // Skip "-shi" or "-san" just after the target word.
@@ -119,7 +119,7 @@ class NewsSelector {
                 || this.wordSeparatorSet.has(
                   topicString.codePointAt(wordSearchIndex))) {
                 Debug.printProperty("Match filtering word", targetWord);
-                return targetResult;
+                return targetMatched;
               }
             }
             wordSearchIndex = topicString.indexOf(targetWord, wordSearchIndex);
@@ -127,9 +127,9 @@ class NewsSelector {
         }
         i++;
       } while (i < target.words.length);
-      targetResult = ! targetResult;
+      return ! targetMatched;
     }
-    return targetResult;
+    return targetMatched;
   }
 
   drop(topicString) {

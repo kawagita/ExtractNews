@@ -87,25 +87,22 @@ browser.runtime.onMessage.addListener((message) => {
 const DIALOG_OPENER_TAB_ID =
   _Popup.getQueryMap(document.URL).get(_Popup.QUERY_OPENER_TAB_ID);
 
-const ON_DIALOG_TAB = " on Dialog Tab" + DIALOG_OPENER_TAB_ID;
+function _sendDialogMessage(command) {
+  ExtractNews.sendRuntimeMessage({
+      command: command,
+      tabId: DIALOG_OPENER_TAB_ID
+    }, " on Dialog Tab " + DIALOG_OPENER_TAB_ID).catch((error) => {
+      Debug.printStackTrace(error);
+    });
+}
 
-ExtractNews.sendRuntimeMessage({
-    command: ExtractNews.COMMAND_DIALOG_STANDBY,
-    tabId: DIALOG_OPENER_TAB_ID
-  }, ON_DIALOG_TAB).catch((error) => {
-    Debug.printStackTrace(error);
-  });
+_sendDialogMessage(ExtractNews.COMMAND_DIALOG_STANDBY);
 
 dialogButtonOK.addEventListener(_Event.CLICK, (event) => {
     (new Promise((resolve) => {
         setTimeout(() => { resolve(); }, 100);
       }));
-    ExtractNews.sendRuntimeMessage({
-        command: ExtractNews.COMMAND_DIALOG_CLOSE,
-        tabId: DIALOG_OPENER_TAB_ID
-      }, ON_DIALOG_TAB).catch((error) => {
-        Debug.printStackTrace(error);
-      });
+    _sendDialogMessage(ExtractNews.COMMAND_DIALOG_CLOSE);
   });
 
 document.addEventListener("contextmenu", (event) => {

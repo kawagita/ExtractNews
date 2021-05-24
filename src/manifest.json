@@ -1,11 +1,13 @@
 {
-  "manifest_version": 2,
   "name": "__MSG_extensionName__",
-  "default_locale": "en",
-  "version": "1.0 Beta 5",
-
   "description": "__MSG_extensionDescription__",
+  "author": "Yoshinori Kawagita",
+  "version": "1.0 RC 1",
   "homepage_url": "https://github.com/kawagita/ExtractNews/",
+
+  "manifest_version": 2,
+  "default_locale": "en",
+
   "icons": {
       "16": "icons/tulku-16.png",
       "32": "icons/tulku-32.png",
@@ -26,6 +28,7 @@
       "https://www.itmedia.co.jp/news/*",
       "https://*.srad.jp/*",
       "https://srad.jp/*",
+      "alarms",
       "contextMenus",
       "storage",
       "tabs"

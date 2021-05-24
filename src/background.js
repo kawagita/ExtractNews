@@ -37,6 +37,7 @@ ExtractNews.Daemon = (() => {
 
     function _createTabNewsSetting(newsSelection) {
       return {
+          domainId: undefined,
           siteId: undefined,
           filteringIds: new Array(),
           filteringPolicyTarget:
@@ -60,28 +61,22 @@ ExtractNews.Daemon = (() => {
         };
     }
 
-    /*
-     * Calls the specified function with the tab and site ID, and flags
-     * for each tab.
-     */
-    function _tabFlagsForEach(callback) {
-      _tabFlagsMap.forEach((tabFlags, tabId) => {
-          var tabSiteId = undefined;
-          var tabNewsSetting = _tabNewsSettingMap.get(tabId);
-          if (tabNewsSetting != undefined) {
-            tabSiteId = tabNewsSetting.siteId;
-          }
-          callback(tabId, tabSiteId, tabFlags);
-        });
-    }
+   // Period of modifiying site data
+    const NEWS_SITE_DATA_MODIFIED_PERIOD = 3600000 * 24;
 
-    const SITE_FAVICON_STATUS_LOADING = "loading";
-    const SITE_FAVICON_STATUS_CHACHED = "chached";
+    // Last modified time of site data
+    var _newsSiteDataLastModifiedTime;
 
-    // Map of statuses whether the favicon is cached by each news site
-    var _newsSiteFaviconStatusMap = new Map();
+    // Ratio to converge for the access count to the average of a week.
+    const NEWS_SITE_ACCESS_WEEK_RATIO = 6 / 7;
 
-    // Map of flags whether the comment is hidden by each news site
+    // Milliseconds to wait for news site to read the favicon
+    const NEWS_SITE_FAVICON_WAIT_MILLISECONDS = 2000;
+
+    // Map of site data for each news site
+    var _newsSiteDataMap = new Map();
+
+    // Map of flags whether the comment is hidden for each news site's domain
     var _newsSiteCommentHiddenMap = new Map();
 
     // Map of message dialogs which has opened by each tab
@@ -94,13 +89,12 @@ ExtractNews.Daemon = (() => {
       return callAsynchronousAPI(
         browser.tabs.sendMessage, tabId, message).then(() => {
           if (browser.runtime.lastError != undefined) {
-            Debug.printMessage(
-              "Send Message Error: " + browser.runtime.lastError.message);
+            Debug.printProperty(
+              "SendMessage Error", browser.runtime.lastError.message);
           }
           Debug.printMessage(
             "Send the command " + message.command.toUpperCase()
             + " to Tab " + String(tabId) + ".");
-          return Promise.resolve();
         });
     }
 
@@ -146,11 +140,11 @@ ExtractNews.Daemon = (() => {
      * Loads filterings of news topics and returns the promise.
      */
     function loadNewsFilterings() {
-      return _Storage.readNewsFilteringIds().then((filteringIds) => {
+      return _Storage.readFilteringIds().then((filteringIds) => {
           _newsFilteringIds = filteringIds;
           Debug.printMessage(
             "Load the news filtering of " + filteringIds.join(", ") + ".");
-          return _Storage.readNewsFilterings(filteringIds);
+          return _Storage.readFilterings(filteringIds);
         }).then((newsFilteringMap) => {
           _newsFilteringDataMap = new Map();
           _newsFilteringIds.forEach((filteringId) => {
@@ -175,18 +169,18 @@ ExtractNews.Daemon = (() => {
                     return;
                   }
                   if (Debug.isLoggingOn()) {
-                    var wordMatchings = new Array();
+                    var wordOptions = new Array();
                     if (filteringTarget.isWordBeginningMatched()) {
-                      wordMatchings.push(ExtractNews.TARGET_WORD_BEGINNING);
+                      wordOptions.push(ExtractNews.TARGET_WORD_BEGINNING);
                     }
                     if (filteringTarget.isWordEndMatched()) {
-                      wordMatchings.push(ExtractNews.TARGET_WORD_END);
+                      wordOptions.push(ExtractNews.TARGET_WORD_END);
                     }
-                    if (filteringTarget.isWordNegative()) {
-                      wordMatchings.push(ExtractNews.TARGET_WORD_NEGATIVE);
+                    if (filteringTarget.isWordsExcluded()) {
+                      wordOptions.push(ExtractNews.TARGET_WORDS_EXCLUDED);
                     }
                     Debug.dump("\t", filteringTarget.name,
-                      filteringTargetWords.join(","), wordMatchings.join(","));
+                      filteringTargetWords.join(","), wordOptions.join(","));
                   }
                   filteringTargetObjects.push(filteringTarget.toObject());
                 });
@@ -198,7 +192,6 @@ ExtractNews.Daemon = (() => {
                   filteringTargetObjects, filtering.policyTarget);
               _newsFilteringDataMap.set(filteringId, filteringData);
             });
-          return Promise.resolve();
         });
     }
 
@@ -257,12 +250,14 @@ ExtractNews.Daemon = (() => {
       if (newsDisplayOptions.newsFilteringDisabled != undefined) {
         _newsFilteringDisabled = newsDisplayOptions.newsFilteringDisabled;
       }
-      _tabFlagsForEach((tabId, tabSiteId, tabFlags) => {
+      _tabFlagsMap.forEach((tabFlags, tabId) => {
           if (tabFlags.requestRecieved && ! tabFlags.applyingSuspended) {
             applyingPromises.push(
               _sendTabMessage(tabId, {
                   command: ExtractNews.COMMAND_SETTING_SWITCH,
-                  newsCommentHidden: _newsSiteCommentHiddenMap.get(tabSiteId),
+                  newsCommentHidden:
+                    _newsSiteCommentHiddenMap.get(
+                      _tabNewsSettingMap.get(tabId).siteId),
                   newsFilteringDisabled: _newsFilteringDisabled,
                   newsSelectionDisabled: tabFlags.newsSelectionDisabled
                 }));
@@ -335,12 +330,15 @@ ExtractNews.Daemon = (() => {
               tabId: dialogTabId,
               warning: warning
             });
-          if (dialogTabId != tabMessageDialogTabId) {
-            return Promise.resolve();
+          if (dialogTabId == tabMessageDialogTabId) {
+            // Send the message to the present dialog if not closed previously.
+            sendTabWarningMessage(tabId);
           }
-          // Send the message to the present dialog if not closed previously.
-          return sendTabWarningMessage(tabId);
         });
+    }
+
+    function _setTabMessageDialog(tabId, messageId) {
+      return setTabMessageDialog(tabId, _Alert.getWarning(messageId));
     }
 
     /*
@@ -353,9 +351,8 @@ ExtractNews.Daemon = (() => {
         return _Popup.searchTab(tabMessageDialog.tabId).then((tab) => {
             if (tab != undefined) {
               _tabMessageDialogMap.delete(tab.id);
-              return callAsynchronousAPI(browser.tabs.remove, tab.id);
+              callAsynchronousAPI(browser.tabs.remove, tab.id);
             }
-            return Promise.resolve();
           });
       }
       return Promise.resolve();
@@ -380,7 +377,7 @@ ExtractNews.Daemon = (() => {
           _Popup.getTab(tabId).then((tab) => {
               var newsSite = ExtractNews.getNewsSite(tab.url);
               if (newsSite != undefined
-                && ExtractNews.isNewsSiteEnabled(newsSite.id)) {
+                && ExtractNews.isDomainEnabled(newsSite.domainId)) {
                 tabFlags = _createTabFlags();
                 _tabFlagsMap.set(tabId, tabFlags);
               }
@@ -426,16 +423,13 @@ ExtractNews.Daemon = (() => {
       var tabFlags = _tabFlagsMap.get(tabId);
       if (tabFlags != undefined) {
         if (tabFlags.requestRecieved) {
-          var tabNewsSetting = _tabNewsSettingMap.get(tabId);
-          var faviconId =
-            ExtractNews.getNewsSiteFaviconId(
-              tabNewsSetting.siteId, tabNewsSetting.selection.openedUrl);
-          var faviconStatus = _newsSiteFaviconStatusMap.get(faviconId);
-          if (faviconStatus == SITE_FAVICON_STATUS_LOADING) {
+          var siteId = _tabNewsSettingMap.get(tabId).siteId;
+          var siteData = _newsSiteDataMap.get(siteId);
+          if (siteData != undefined && siteData.accessCount == 0) {
             // Remove zombie "loading" of a favicon for the specified ID when
             // the promise is rejected or tab is closed before completing. Even
-            // if loading by the other tab, "cached" is overwritten.
-            _newsSiteFaviconStatusMap.delete(faviconId);
+            // if loading by the other tab, the access count is overwritten.
+            _newsSiteDataMap.delete(siteId);
           }
           _tabNewsSettingMap.delete(tabId);
           Debug.printMessage(
@@ -483,17 +477,16 @@ ExtractNews.Daemon = (() => {
           return _Popup.getWindowActiveTab();
         }).then((tab) => {
           if (tab != undefined && tab.id == tabId) {
-            return activateTabSetting(tabId);
+            activateTabSetting(tabId).then((tabSetting) => {
+                if (tabSetting != undefined) {
+                  if (tabUpdated) {
+                    _Menus.updateContextMenus(tabSetting);
+                  } else {
+                    _Menus.updateTabNewsSettingContextMenus(tabSetting);
+                  }
+                }
+              });
           }
-          return Promise.resolve();
-        }).then((tabSetting) => {
-          if (tabSetting != undefined) {
-            if (tabUpdated) {
-              return Menus.updateContextMenus(tabSetting);
-            }
-            return _Menus.updateTabNewsSettingContextMenus(tabSetting);
-          }
-          return Promise.resolve();
         });
     }
 
@@ -511,11 +504,11 @@ ExtractNews.Daemon = (() => {
       var tabNewsSetting = _tabNewsSettingMap.get(tab.id);
       var newsSite = ExtractNews.getNewsSite(tab.url);
       if (newsSite == undefined
-        || ! ExtractNews.isNewsSiteEnabled(newsSite.id)) {
+        || ! ExtractNews.isDomainEnabled(newsSite.domainId)) {
         if (tabNewsSetting != undefined) {
           if (tabNewsSetting.suspendedCount >= TAB_SETTING_RETAINED_COUNT) {
             // Remove the setting suspended on the specified tab
-            applyingPromises.push(removeTabSetting(tab.id));
+            removeTabSetting(tab.id);
           } else {
             tabNewsSetting.suspendedCount++;
           }
@@ -527,6 +520,7 @@ ExtractNews.Daemon = (() => {
             }));
         return Promise.all(applyingPromises);
       }
+      var newsSiteId = newsSite.id;
       var newsSelection;
 
       if (tabNewsSetting != undefined) {
@@ -565,12 +559,14 @@ ExtractNews.Daemon = (() => {
         // Set the opened URL to the URL sent from the content script except
         // for pages which do not contain selected news list, like articles.
         newsSelection.openedUrl = openedUrl;
-        tabNewsSetting.siteId = newsSite.id;
+        tabNewsSetting.domainId = newsSite.domainId;
+        tabNewsSetting.siteId = newsSiteId;
       } else if (newsSelection.openedUrl == ""
-        || newsSite.id != tabNewsSetting.siteId) {
+        || newsSiteId != tabNewsSetting.siteId) {
         // Set the opened URL to the URL of a top page on each news site.
         newsSelection.openedUrl = newsSite.url;
-        tabNewsSetting.siteId = newsSite.id;
+        tabNewsSetting.domainId = newsSite.domainId;
+        tabNewsSetting.siteId = newsSiteId;
       }
       tabNewsSetting.topicWordsString = topicWordsString;
       tabNewsSetting.suspendedCount = 0;
@@ -594,11 +590,21 @@ ExtractNews.Daemon = (() => {
 
       applyingPromises.push(_applyTabNewsSetting(tab.id, true));
 
-      // Load the favicon string of a sender tab after waiting few seconds
-      // because the current status is "loading" probably.
-      var faviconId = ExtractNews.getNewsSiteFaviconId(newsSite.id, tab.url);
-      if (! _newsSiteFaviconStatusMap.has(faviconId)) {
-        _newsSiteFaviconStatusMap.set(faviconId, SITE_FAVICON_STATUS_LOADING);
+      var newsSiteData = _newsSiteDataMap.get(newsSiteId);
+      if (newsSiteData == undefined) {
+        newsSiteData = {
+            hostDomain: newsSite.hostDomain,
+            accessCount: 0
+          };
+        if (newsSite.hostServer != "") {
+          newsSiteData.hostServer = newsSite.hostServer;
+        }
+        if (newsSite.path != "") {
+          newsSiteData.path = newsSite.path;
+        }
+        _newsSiteDataMap.set(newsSiteId, newsSiteData);
+        // Load the favicon string of a sender tab after waiting few seconds
+        // because the current status is "loading" probably.
         applyingPromises.push(
           new Promise((resolve, reject) => {
               setTimeout(() => {
@@ -607,19 +613,25 @@ ExtractNews.Daemon = (() => {
                         && loadedTab.url == tab.url
                         && loadedTab.favIconUrl != undefined
                         && loadedTab.favIconUrl != "") {
-                        return _Storage.writeFavicon(
-                          faviconId, loadedTab.favIconUrl).then(() => {
-                              _newsSiteFaviconStatusMap.set(
-                                faviconId, SITE_FAVICON_STATUS_CHACHED);
+                        _Storage.writeSiteFavicon(
+                          newsSiteId, loadedTab.favIconUrl).then(() => {
+                              // Increment the access count by this promise
+                              // firstly after the favicon is saved.
+                              newsSiteData.accessCount++;
+                              _newsSiteDataMap.set(newsSiteId, newsSiteData);
+                              Debug.printMessage(
+                                "Save the favicon of " + newsSiteId + ".");
                               resolve();
                             }, reject);
-                      } else if (_newsSiteFaviconStatusMap.has(faviconId)) {
-                        _newsSiteFaviconStatusMap.delete(faviconId);
+                      } else if (_newsSiteDataMap.has(newsSiteId)) {
+                        _newsSiteDataMap.delete(newsSiteId);
                       }
                       resolve();
                     }, reject);
-                }, 1500);
+                }, NEWS_SITE_FAVICON_WAIT_MILLISECONDS);
             }));
+      } else if (newsSiteData.accessCount > 0) {
+        newsSiteData.accessCount++;
       }
 
       return Promise.all(applyingPromises);
@@ -632,25 +644,32 @@ ExtractNews.Daemon = (() => {
      * a tab of the specified ID to the specified tab and returns the promise.
      */
     function informTabNewsSetting(tab, tabId) {
-      var tabFlags = _tabFlagsMap.get(tabId);
-      if (tabFlags == undefined || ! tabFlags.requestRecieved) {
-        return Promise.resolve();
-      }
-      var tabNewsSetting = _tabNewsSettingMap.get(tabId);
-      return _sendTabMessage(tab.id, {
+      var message = {
           command: ExtractNews.COMMAND_SETTING_INFORM,
-          newsSiteEnabled:
-            ExtractNews.isNewsSiteEnabled(tabNewsSetting.siteId),
-          newsSelectionSettingName: tabNewsSetting.selection.settingName,
-          newsSelectedTopicRegularExpression:
-            tabNewsSetting.selection.topicRegularExpression,
-          newsSelectedSenderRegularExpression:
-            tabNewsSetting.selection.senderRegularExpression,
-          newsExcludedRegularExpression:
-            tabNewsSetting.excludedRegularExpression,
-          newsOpenedUrl: tabNewsSetting.selection.openedUrl,
-          newsTopicWords: tabNewsSetting.topicWordsString.split(",")
-        });
+          newsSiteEnabled: false,
+          newsSiteAccessCount: 0,
+        };
+      var tabFlags = _tabFlagsMap.get(tabId);
+      if (tabFlags != undefined && tabFlags.requestRecieved) {
+        var tabNewsSetting = _tabNewsSettingMap.get(tabId);
+        var siteData = _newsSiteDataMap.get(tabNewsSetting.siteId);
+        if (siteData != undefined) {
+          message.newsSiteAccessCount = siteData.accessCount;
+        }
+        message.newsSiteEnabled =
+          ExtractNews.isDomainEnabled(tabNewsSetting.domainId);
+        message.newsSelectionSettingName =
+          tabNewsSetting.selection.settingName;
+        message.newsSelectedTopicRegularExpression =
+          tabNewsSetting.selection.topicRegularExpression;
+        message.newsSelectedSenderRegularExpression =
+          tabNewsSetting.selection.senderRegularExpression;
+        message.newsExcludedRegularExpression =
+          tabNewsSetting.excludedRegularExpression;
+        message.newsOpenedUrl = tabNewsSetting.selection.openedUrl;
+        message.newsTopicWords = tabNewsSetting.topicWordsString.split(",");
+      }
+      return _sendTabMessage(tab.id, message);
     }
 
     _Daemon.informTabNewsSetting = informTabNewsSetting;
@@ -666,8 +685,7 @@ ExtractNews.Daemon = (() => {
       }) {
       var tabFlags = _tabFlagsMap.get(tabId);
       if (tabFlags == undefined || ! tabFlags.requestRecieved) {
-        return setTabMessageDialog(tabId,
-          _Alert.WARNING_NEWS_SETTING_NOT_INITIALIZED);
+        return _setTabMessageDialog(tabId, _Alert.TAB_SETTING_NOT_ENABLED);
       }
       var tabNewsSetting = _tabNewsSettingMap.get(tabId);
       var newsSelection = tabNewsSetting.selection;
@@ -697,8 +715,8 @@ ExtractNews.Daemon = (() => {
               newsSelection.topicRegularExpression, regexpString);
           if (newsSelection.topicRegularExpression.length
             > _Alert.REGEXP_MAX_UTF16_CHARACTERS) {
-            return setTabMessageDialog(tabId,
-              _Alert.WARNING_SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED);
+            return _setTabMessageDialog(
+              tabId, _Alert.SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED);
           }
         } else if (settingProperty.senderSelected) {
           if (! settingProperty.regexpAdded) {
@@ -709,8 +727,8 @@ ExtractNews.Daemon = (() => {
               newsSelection.senderRegularExpression, regexpString);
           if (newsSelection.senderRegularExpression.length
             > _Alert.REGEXP_MAX_UTF16_CHARACTERS) {
-            return setTabMessageDialog(tabId,
-              _Alert.WARNING_SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED);
+            return _setTabMessageDialog(
+              tabId, _Alert.SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED);
           }
         }
         if (settingProperty.regexpAdded && newsSelection.settingName != "") {
@@ -773,8 +791,7 @@ ExtractNews.Daemon = (() => {
     function excludeTabNews(tabId, regexpString, regexpAdded = false) {
       var tabFlags = _tabFlagsMap.get(tabId);
       if (tabFlags == undefined || ! tabFlags.requestRecieved) {
-        return setTabMessageDialog(tabId,
-          _Alert.WARNING_NEWS_SETTING_NOT_INITIALIZED);
+        return _setTabMessageDialog(tabId, _Alert.TAB_SETTING_NOT_ENABLED);
       }
       var tabNewsSetting = _tabNewsSettingMap.get(tabId);
 
@@ -797,8 +814,8 @@ ExtractNews.Daemon = (() => {
               tabNewsSetting.excludedRegularExpression, regexpString);
         }
         if (regexpString.length > _Alert.REGEXP_MAX_UTF16_CHARACTERS) {
-          return setTabMessageDialog(tabId,
-            _Alert.WARNING_EXCLUDED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED);
+          return setTabMessageDialog(
+            tabId, _Alert.EXCLUDED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED);
         }
         Debug.printMessage(
           "Set the news setting on Tab " + String(tabId) + ".");
@@ -835,15 +852,15 @@ ExtractNews.Daemon = (() => {
           _Regexp.getAlternative(
             topicRegexpString, newsSelection.topicRegularExpression);
         if (topicRegexpString.length > _Alert.REGEXP_MAX_UTF16_CHARACTERS) {
-          return setTabMessageDialog(tabId,
-            _Alert.WARNING_SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED);
+          return _setTabMessageDialog(
+            tabId, _Alert.SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED);
         }
         senderRegexpString =
           _Regexp.getAlternative(
             senderRegexpString, newsSelection.senderRegularExpression);
         if (senderRegexpString.length > _Alert.REGEXP_MAX_UTF16_CHARACTERS) {
-          return setTabMessageDialog(tabId,
-            _Alert.WARNING_SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED);
+          return _setTabMessageDialog(
+            tabId, _Alert.SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED);
         }
         if (openedUrl == undefined) {
           openedUrl = newsSelection.openedUrl;
@@ -861,7 +878,7 @@ ExtractNews.Daemon = (() => {
         if (tabUpdated) {
           var newsSite = ExtractNews.getNewsSite(openedUrl);
           if (newsSite == undefined
-            || ! ExtractNews.isNewsSiteEnabled(newsSite.id)) {
+            || ! ExtractNews.isDomainEnabled(newsSite.domainId)) {
             // Never prepare any news setting if the disabled or no news site
             // is loaded on new tab.
             return Promise.resolve();
@@ -880,8 +897,7 @@ ExtractNews.Daemon = (() => {
       var applyingPromise;
       if (! tabUpdated) {
         if (! tabFlags.requestRecieved) {
-          return setTabMessageDialog(tabId,
-            _Alert.WARNING_NEWS_SETTING_NOT_INITIALIZED);
+          return _setTabMessageDialog(tabId, _Alert.TAB_SETTING_NOT_ENABLED);
         }
         // Apply above news selections to the active tab of the specified ID.
         newsSelection.settingName = settingName;
@@ -921,24 +937,23 @@ ExtractNews.Daemon = (() => {
         throw newUnsupportedOperationException();
       }
       var newsSelection = tabNewsSetting.selection;
-      return _Storage.readNewsSelectionCount().then((newsSelectionCount) => {
+      return _Storage.readSelectionCount().then((newsSelectionCount) => {
           if (newsSelectionCount + 1 >= ExtractNews.SELECTION_MAX_COUNT) {
             // No longer save the news selection over the maximum size.
-            return setTabMessageDialog(tabId,
-              _Alert.WARNING_NEWS_SELECTION_NOT_SAVED_ANY_MORE);
+            _setTabMessageDialog(tabId, _Alert.SELECTION_NOT_SAVED_ANY_MORE);
+          } else {
+            _Storage.writeSelection(
+              newsSelectionCount, newsSelection).then(() => {
+                Debug.printMessage(
+                  "Save the news setting on Tab " + String(tabId) + ".");
+                Debug.printProperty("Setting Name", newsSelection.settingName);
+                Debug.printProperty(
+                  "Selected Topic", newsSelection.topicRegularExpression);
+                Debug.printProperty(
+                  "Selected Sender", newsSelection.senderRegularExpression);
+                Debug.printProperty("Opened URL", newsSelection.openedUrl);
+              });
           }
-          return _Storage.writeNewsSelection(
-            newsSelectionCount, newsSelection).then(() => {
-              Debug.printMessage(
-                "Save the news setting on Tab " + String(tabId) + ".");
-              Debug.printProperty("Setting Name", newsSelection.settingName);
-              Debug.printProperty(
-                "Selected Topic", newsSelection.topicRegularExpression);
-              Debug.printProperty(
-                "Selected Sender", newsSelection.senderRegularExpression);
-              Debug.printProperty("Opened URL", newsSelection.openedUrl);
-              return Promise.resolve();
-            });
         });
     }
 
@@ -961,11 +976,10 @@ ExtractNews.Daemon = (() => {
           changeCSS = browser.tabs.insertCSS;
         }
         if (changeCSS != undefined) {
-          return  callAsynchronousAPI(changeCSS, tabId, {
+          return callAsynchronousAPI(changeCSS, tabId, {
               code: "a { pointer-events: none; }"
             }).then(() => {
               tabFlags.linkDisabled = tabLinkDisabled;
-              return Promise.resolve();
             });
         }
       }
@@ -983,8 +997,9 @@ ExtractNews.Daemon = (() => {
       _newsSiteCommentHiddenMap.set(siteId, tabCommentHidden);
       return _Storage.writeCommentMode(siteId, ! tabCommentHidden).then(() => {
           const applyingPromises = new Array();
-          _tabFlagsForEach((tabId, tabSiteId, tabFlags) => {
-              if (siteId == tabSiteId && tabFlags.requestRecieved) {
+          _tabFlagsMap.forEach((tabFlags, tabId) => {
+              if (tabFlags.requestRecieved
+                && siteId == _tabNewsSettingMap.get(tabId).siteId) {
                 applyingPromises.push(
                   _sendTabMessage(tabId, {
                       command: ExtractNews.COMMAND_SETTING_SWITCH,
@@ -994,71 +1009,183 @@ ExtractNews.Daemon = (() => {
                     }));
               }
             });
-          return Promise.all(applyingPromises);
+          Promise.all(applyingPromises);
         });
     }
 
     _Daemon.setTabCommentHidden = setTabCommentHidden;
 
     /*
-     * Enabling news sites on this extension and returns the promise.
+     * Enables news domains on this extension and returns the promise.
      */
-    function enablingNewsSites() {
-      return _Storage.readEnabledNewsSiteIds().then((enabledSiteIds) => {
-          ExtractNews.setEnabledNewsSites(enabledSiteIds);
+    function enableNewsDomains() {
+      return _Storage.readEnabledDomainIds().then((enabledDomainIds) => {
+          enabledDomainIds.forEach((enabledDomainId) => {
+              ExtractNews.setDomainEnabled(enabledDomainId, true);
+            });
           Debug.printMessage(
-            "Enabling the news site of " + enabledSiteIds.join(", ") + ".");
-          return _Menus.createContextMenus();
+            "Enabling the news site of " + enabledDomainIds.join(", ") + ".");
+          _Menus.createContextMenus();
         });
     }
 
     /*
-     * Updates enabling or disabling the news site of the specified ID
+     * Updates enabling or disabling the news domain of the specified ID
      * and return the promise.
      */
-    function updateNewsSiteEnabled(siteId, siteEnabled) {
+    function updateNewsDomainEnabled(domainId, enabled) {
       const updatingPromises = new Array();
-      ExtractNews.setNewsSiteEnabled(siteId, siteEnabled);
-      if (siteEnabled) {
-        Debug.printMessage("Enabling the news site of " + siteId + ".");
+      ExtractNews.setDomainEnabled(domainId, enabled);
+      if (enabled) {
+        Debug.printMessage("Enabling the news site of " + domainId + ".");
       } else {
-        _tabFlagsForEach((tabId, tabSiteId, tabFlags) => {
-            if (siteId == tabSiteId) {
-              // Dispose the resource to arrange news items for disabled sites
-              // on the tab from which the request is received.
-              if (tabFlags.requestRecieved && ! tabFlags.applyingSuspended) {
-                updatingPromises.push(
-                  _sendTabMessage(tabId, {
-                      command: ExtractNews.COMMAND_SETTING_DISPOSE
-                    }));
-              }
+        _tabFlagsMap.forEach((tabFlags, tabId) => {
+            // Dispose the resource to arrange news items for disabled domains
+            // on the tab from which the request is received.
+            if (tabFlags.requestRecieved && ! tabFlags.applyingSuspended
+              && domainId == _tabNewsSettingMap.get(tabId).domainId) {
+              updatingPromises.push(
+                _sendTabMessage(tabId, {
+                    command: ExtractNews.COMMAND_SETTING_DISPOSE
+                  }));
               removeTabSetting(tabId);
             }
           });
-        Debug.printMessage("Disabling the news site of " + siteId + ".");
+        Debug.printMessage("Disabling the news site of " + domainId + ".");
       }
       updatingPromises.push(_Menus.createContextMenus());
       return Promise.all(updatingPromises);
     }
 
-    _Daemon.enablingNewsSites = enablingNewsSites;
-    _Daemon.updateNewsSiteEnabled = updateNewsSiteEnabled;
+    _Daemon.enableNewsDomains = enableNewsDomains;
+    _Daemon.updateNewsDomainEnabled = updateNewsDomainEnabled;
+
+    /*
+     * Saves the site data of all news sites and return the promise.
+     */
+    function saveNewsSiteData() {
+      if (_newsSiteDataMap.size > 0) {
+        var siteDataArray = new Array();
+        _newsSiteDataMap.forEach((siteData) => {
+            siteDataArray.push(siteData);
+          });
+        return _Storage.writeSiteData(siteDataArray).then(() => {
+            Debug.printMessage("Save the site data of "
+              + Array.from(_newsSiteDataMap.keys()).join(", ") + ".");
+            _Storage.writeSiteDataLastModifiedTime(
+              _newsSiteDataLastModifiedTime);
+          });
+      }
+      return Promise.resolve();
+    }
+
+    _Daemon.saveNewsSiteData = saveNewsSiteData;
+
+    // Multiplies the access count for each news site by the common ratio
+    // every NEWS_SITE_DATA_MODIFIED_PERIOD and saves its value.
+
+    function _modifyNewsSiteAccessCount(passedCount = 1) {
+      if (_newsSiteDataMap.size > 0) {
+        var deleteSiteIdArray = new Array();
+        var commonRatio = Math.pow(NEWS_SITE_ACCESS_WEEK_RATIO, passedCount);
+        Debug.printMessage(
+          "Multiply the access count by " + commonRatio + " at "
+          + (new Date(_newsSiteDataLastModifiedTime).toString()) + ".");
+        _newsSiteDataMap.forEach((siteData, siteId) => {
+            var accessCount = Math.floor(siteData.accessCount * commonRatio);
+            if (accessCount > 0) {
+              siteData.accessCount = accessCount;
+              if (Debug.isLoggingOn()) {
+                Debug.dump(
+                  "\t", accessCount, new ExtractNews.NewsSite(siteData).url);
+              }
+            } else { // No access in a week
+              _newsSiteDataMap.delete(siteId);
+              deleteSiteIdArray.push(siteId);
+            }
+          });
+        if (deleteSiteIdArray.length > 0) {
+          Debug.printMessage(
+            "Delete the site data of " + deleteSiteIdArray.join(", ") + ".");
+        }
+      }
+    }
+
+    browser.alarms.onAlarm.addListener(() => {
+        _modifyNewsSiteAccessCount();
+        _newsSiteDataLastModifiedTime += NEWS_SITE_DATA_MODIFIED_PERIOD;
+        saveNewsSiteData().catch((error) => {
+            Debug.printStackTrace(error);
+          });
+      });
 
     {
       // Read the flag to disable the word filterings and hide comments.
       const readingPromises = new Array();
       readingPromises.push(
-        _Storage.readNewsFilteringDisabled().then((filteringDisabled) => {
+        _Storage.readFilteringDisabled().then((filteringDisabled) => {
             _newsFilteringDisabled = filteringDisabled;
-            return Promise.resolve();
           }));
-      ExtractNews.getNewsSites().forEach((newsSite) => {
+      ExtractNews.forEachNewsSite((siteId) => {
           readingPromises.push(
-            _Storage.readCommentMode(newsSite.id).then((commentOn) => {
-                _newsSiteCommentHiddenMap.set(newsSite.id, ! commentOn);
-                return Promise.resolve();
+            _Storage.readCommentMode(siteId).then((commentOn) => {
+                _newsSiteCommentHiddenMap.set(siteId, ! commentOn);
               }));
         });
+      readingPromises.push(
+        _Storage.readSiteData().then((siteDataArray) => {
+            if (siteDataArray.length > 0) {
+              siteDataArray.forEach((siteData) => {
+                  _newsSiteDataMap.set(
+                    (new ExtractNews.NewsSite(siteData)).id, siteData);
+                });
+              Debug.printMessage("Read the site data of "
+                + Array.from(_newsSiteDataMap.keys()).join(", ") + ".");
+            }
+            return _Storage.readSiteDataLastModifiedTime();
+          }).then((siteDataModifiedTime) => {
+            var savingPromise = Promise.resolve();
+            if (siteDataModifiedTime >= 0) {
+              _newsSiteDataLastModifiedTime = siteDataModifiedTime;
+              // Multiply the access count for each news site by the ratio
+              // in the modified period (passedCount > 0) and move the last
+              // modified time by that.
+              //
+              //   siteData
+              //   ModifiedTime ---------------------->        now
+              //
+              //      | NEWS_SITE_DATA_MODIFIED_PERIOD |        |
+              //      | * passedCount                  |        |
+              if (siteDataModifiedTime >= 0) {
+                var passedCount =
+                  Math.floor((Date.now() - _newsSiteDataLastModifiedTime)
+                    / NEWS_SITE_DATA_MODIFIED_PERIOD);
+                if (passedCount > 0) {
+                  Debug.printMessage(
+                    passedCount + " day" + (passedCount > 1 ? "s" : "")
+                    + " passed from the last modified time.");
+                  _modifyNewsSiteAccessCount(passedCount);
+                  _newsSiteDataLastModifiedTime +=
+                    NEWS_SITE_DATA_MODIFIED_PERIOD * passedCount;
+                  savingPromise = saveNewsSiteData();
+                }
+              }
+            } else {
+              _newsSiteDataLastModifiedTime = Date.now();
+              savingPromise =
+                _Storage.writeSiteDataLastModifiedTime(
+                _newsSiteDataLastModifiedTime);
+            }
+            return savingPromise;
+          }).then(() => {
+            browser.alarms.create({
+                when: _newsSiteDataLastModifiedTime,
+                periodInMinutes: NEWS_SITE_DATA_MODIFIED_PERIOD / 60000
+              });
+            Debug.printMessage(
+              "Start the alarm in " + NEWS_SITE_DATA_MODIFIED_PERIOD + " from "
+              + (new Date(_newsSiteDataLastModifiedTime).toString()) + ".");
+          }));
       Promise.all(readingPromises).catch((error) => {
           Debug.printStackTrace(error);
         });
@@ -1070,8 +1197,8 @@ ExtractNews.Daemon = (() => {
 const Daemon = ExtractNews.Daemon;
 const Menus = ExtractNews.Menus;
 
-// Dispatch the process by the message received from the content script, popup
-// list, edit window, message dialog, and option page.
+// Dispatches the process by the message received from the content script,
+// popup list, edit window, message dialog, and option page.
 
 ExtractNews.getDebugMode().then(() => {
     browser.runtime.onMessage.addListener((message, sender) => {
@@ -1107,8 +1234,8 @@ ExtractNews.getDebugMode().then(() => {
           if (message.siteId != undefined) {
             // Receive enabling or disabling a news site from the option page.
             settingPromise =
-              Daemon.updateNewsSiteEnabled(
-                message.siteId, message.siteEnabled);
+              Daemon.updateNewsDomainEnabled(
+                message.domainId, message.enabled);
           } else if (message.filteringDisabled != undefined) {
             // Receive the flag to disable the filtering from the option page.
             settingPromise =
@@ -1144,15 +1271,13 @@ ExtractNews.getDebugMode().then(() => {
         }
       });
 
-    return Promise.all(Array.of(
-        Daemon.enablingNewsSites(),
-        Daemon.loadNewsFilterings()
-      ));
+    Promise.all(
+      Array.of(Daemon.enableNewsDomains(), Daemon.loadNewsFilterings()));
   }).catch((error) => {
     Debug.printStackTrace(error);
   });
 
-// Registers functions to a listener and call when the context menu is clicked.
+// Registers functions called when the context menu is clicked to the listener.
 
 browser.contextMenus.onClicked.addListener((info, tab) => {
     var applyingPromise = undefined;
@@ -1217,24 +1342,31 @@ browser.contextMenus.onClicked.addListener((info, tab) => {
     }
   });
 
-// Registers functions to a listener and call when a tab is activated.
+// Registers functions called when a tab is activated or removed to
+// the listener.
 
 browser.tabs.onActivated.addListener((activeInfo) => {
     Daemon.activateTabSetting(activeInfo.tabId).then((tabSetting) => {
         if (tabSetting != undefined && ! tabSetting.applyingSuspended) {
-          return Menus.updateContextMenus(tabSetting);
+          Menus.updateContextMenus(tabSetting);
         }
-        return Promise.resolve();
       }).catch((error) => {
         Debug.printStackTrace(error);
       });
   });
 
-// Removes the news exclusion and selection form the map for a closed tab.
-
 browser.tabs.onRemoved.addListener((tabId, removeInfo) => {
+    const removingPromises = Array.of(Daemon.removeTabMessageDialog(tabId));
     Daemon.removeTabSetting(tabId);
-    Daemon.removeTabMessageDialog(tabId).catch((error) => {
+    if (removeInfo.isWindowClosing) {
+      removingPromises.push(
+        ExtractNews.Popup.getWindowCount().then((windowCount) => {
+            if (windowCount <= 0) {
+              Daemon.saveNewsSiteData();
+            }
+          }));
+    }
+    Promise.all(removingPromises).catch((error) => {
         Debug.printStackTrace(error);
       });
   });

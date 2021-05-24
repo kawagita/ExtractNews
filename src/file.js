@@ -44,8 +44,8 @@ ExtractNews.File = (() => {
       ExtractNews.TARGET_WORD_BEGINNING.toLowerCase();
     const FILTERING_TARGET_WORD_END_TO_LOWER_CASE =
       ExtractNews.TARGET_WORD_END.toLowerCase();
-    const FILTERING_TARGET_WORD_NEGATIVE_TO_LOWER_CASE =
-      ExtractNews.TARGET_WORD_NEGATIVE.toLowerCase();
+    const FILTERING_TARGET_WORDS_EXCLUDED_TO_LOWER_CASE =
+      ExtractNews.TARGET_WORDS_EXCLUDED.toLowerCase();
 
     const SELECTION_NAME_QUOTE = "\"";
     const SELECTION_SETTING_NAME_LINE = 1;
@@ -53,33 +53,9 @@ ExtractNews.File = (() => {
     const SELECTION_SELECTED_SENDER_LINE = 3;
     const SELECTION_OPENED_URL_LINE = 4;
 
-    const TEXT_LINE_FEED = "\n";
-
-    // Map of messages definded by "alert.js" which are used instead of
-    // messages for the line error on a file.
-    const IMPORT_MESSAGE_MAP = new Map();
-
-    IMPORT_MESSAGE_MAP.set(
-      _Alert.SETTING_NAME_MAX_WITDH_EXCEEDED,
-      _Alert.WARNING_SETTING_NAME_MAX_WITDH_EXCEEDED.message);
-    IMPORT_MESSAGE_MAP.set(
-      _Alert.SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED,
-      _Alert.WARNING_SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED.message);
-    IMPORT_MESSAGE_MAP.set(
-      _Alert.SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED,
-      _Alert.WARNING_SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED.message);
-    IMPORT_MESSAGE_MAP.set(
-      _Alert.NEWS_SELECTION_NOT_SAVED_ANY_MORE,
-      _Alert.WARNING_NEWS_SELECTION_NOT_SAVED_ANY_MORE.message);
-    IMPORT_MESSAGE_MAP.set(
-      _Alert.FILETERING_WORDS_MAX_UTF16_CHARACTERS_EXCEEDED,
-      _Alert.WARNING_FILETERING_WORDS_MAX_UTF16_CHARACTERS_EXCEEDED.message);
-    IMPORT_MESSAGE_MAP.set(
-      _Alert.FILTERING_NOT_SAVED_ANY_MORE,
-      _Alert.WARNING_FILTERING_NOT_SAVED_ANY_MORE.message);
-
-    const IMPORT_LINE_FEED_REGEXP = new RegExp(/\r?\n/);
-    const IMPORT_LINE_COMMENT_REGEXP = new RegExp(/^#/);
+    const LINE_FEED = "\n";
+    const LINE_FEED_REGEXP = new RegExp(/\r?\n/);
+    const LINE_COMMENT_REGEXP = new RegExp(/^#/);
 
     /*
      * Sends the specified warning message of this import to the background.
@@ -89,6 +65,7 @@ ExtractNews.File = (() => {
       var description = undefined;
       var emphasisRegexpString = undefined;
       if (errorLineIndex != undefined) {
+        var warning = _Alert.getWarning(messageId);
         var substitutions = new Array();
         if (errorData != undefined) {
           emphasisRegexpString = "(" + _Regexp.escape(errorData) + ").$";
@@ -96,8 +73,8 @@ ExtractNews.File = (() => {
         }
         message = getFileMessage("ImportLineError");
         description = getFileMessage("ImportLine", String(errorLineIndex + 1));
-        if (IMPORT_MESSAGE_MAP.has(messageId)) {
-          description += IMPORT_MESSAGE_MAP.get(messageId);
+        if (warning != undefined) {
+          description += warning.message;
         } else {
           description +=
             getFileMessage("ImportLine" + messageId, substitutions);
@@ -106,13 +83,13 @@ ExtractNews.File = (() => {
         message = getFileMessage(messageId);
       }
       callAsynchronousAPI(browser.tabs.getCurrent).then((tab) => {
-          return ExtractNews.sendRuntimeMessage({
+          ExtractNews.sendRuntimeMessage({
               command: ExtractNews.COMMAND_DIALOG_OPEN,
               tabId: tab.id,
               warning:
                 (new _Alert.Warning(
                   message, description, emphasisRegexpString)).toObject()
-            }, "Import File (" + tab.id + ")");
+            }, " by Import on Option Page " + tab.id);
         }).catch((error) => {
           Debug.printStackTrace(error);
         });
@@ -173,13 +150,13 @@ ExtractNews.File = (() => {
             filteringTargetTotal++;
           }
           var importLineErrorOccurred = false;
-          var importLines = event.target.result.split(IMPORT_LINE_FEED_REGEXP);
+          var importLines = event.target.result.split(LINE_FEED_REGEXP);
           for (let i = 0; i < importLines.length; i++) {
             var importMessageId = undefined;
             var importData = undefined;
             var importLineText = _Text.trimText(importLines[i]);
             if (importLineText == ""
-              || IMPORT_LINE_COMMENT_REGEXP.test(importLineText)) {
+              || LINE_COMMENT_REGEXP.test(importLineText)) {
               continue;
             } else if (importLineText.startsWith(FILTERING_ID_LEFT_BRACKET)
               && importLineText.endsWith(FILTERING_ID_RIGHT_BRACKET)) {
@@ -245,7 +222,7 @@ ExtractNews.File = (() => {
                 // Set the filtering target name to 1st data on each line.
                 var filteringTargetName = importData;
                 if (importLineData.length >= 2) {
-                  // Set words and matchings for its separated by ","
+                  // Set words and/or options for its separated by ","
                   // of a filtering target to the 2nd and/or 3rd data.
                   var wordsString = importLineData[1];
                   if (wordsString.length
@@ -253,7 +230,7 @@ ExtractNews.File = (() => {
                     var wordSet = new Set();
                     var wordBeginningMatched = false;
                     var wordEndMatched = false;
-                    var wordNegative = false;
+                    var wordsExcluded = false;
                     wordsString.split(",").forEach((wordString) => {
                         var word = wordString.trim();
                         if (word != "") {
@@ -261,9 +238,9 @@ ExtractNews.File = (() => {
                         }
                       });
                     if (importLineData.length >= 3) {
-                      var wordMatchings = importLineData[2].split(",");
-                      for (let j = 0; j < wordMatchings.length; j++) {
-                        importData = wordMatchings[j].trim();
+                      var wordOptions = importLineData[2].split(",");
+                      for (let j = 0; j < wordOptions.length; j++) {
+                        importData = wordOptions[j].trim();
                         if (importData != "") {
                           switch (importData.toLowerCase()) {
                           case FILTERING_TARGET_WORD_BEGINNING_TO_LOWER_CASE:
@@ -272,11 +249,11 @@ ExtractNews.File = (() => {
                           case FILTERING_TARGET_WORD_END_TO_LOWER_CASE:
                             wordEndMatched = true;
                             continue;
-                          case FILTERING_TARGET_WORD_NEGATIVE_TO_LOWER_CASE:
-                            wordNegative = true;
+                          case FILTERING_TARGET_WORDS_EXCLUDED_TO_LOWER_CASE:
+                            wordsExcluded = true;
                             continue;
                           }
-                          importMessageId = "UnknownFilteringWordMatching";
+                          importMessageId = "UnknownFilteringWordOption";
                           break;
                         }
                       }
@@ -284,8 +261,8 @@ ExtractNews.File = (() => {
                     if (importMessageId == undefined) {
                       filteringTargets.push(
                         ExtractNews.newFilteringTarget(
-                          filteringTargetName, Array.from(wordSet),
-                          wordBeginningMatched, wordEndMatched, wordNegative));
+                          filteringTargetName, wordSet, wordBeginningMatched,
+                          wordEndMatched, wordsExcluded));
                       filteringTargetTotal++;
                       continue;
                     }
@@ -351,19 +328,19 @@ ExtractNews.File = (() => {
           var selectionDataLine = SELECTION_SETTING_NAME_LINE;
           var regexpStrings = new Array();
           var importLineErrorOccurred = false;
-          var importLines = event.target.result.split(IMPORT_LINE_FEED_REGEXP);
+          var importLines = event.target.result.split(LINE_FEED_REGEXP);
           for (let i = 0; i < importLines.length; i++) {
             var importMessageId = undefined;
             var importLineText = _Text.trimText(importLines[i]);
             if (selectionDataLine <= SELECTION_SETTING_NAME_LINE) {
               if (importLineText == ""
-                || IMPORT_LINE_COMMENT_REGEXP.test(importLineText)) {
+                || LINE_COMMENT_REGEXP.test(importLineText)) {
                 continue;
               } else if (importLineText.startsWith(SELECTION_NAME_QUOTE)
                 && importLineText.endsWith(SELECTION_NAME_QUOTE)) {
                 if (selectionTotal >= ExtractNews.SELECTION_MAX_COUNT) {
                   sendImportWarningMessage(
-                    _Alert.NEWS_SELECTION_NOT_SAVED_ANY_MORE, i);
+                    _Alert.SELECTION_NOT_SAVED_ANY_MORE, i);
                   importLineErrorOccurred = true;
                   break;
                 }
@@ -492,33 +469,32 @@ ExtractNews.File = (() => {
         }
         filteringsExportString +=
           FILTERING_ID_LEFT_BRACKET + filteringId + FILTERING_ID_RIGHT_BRACKET
-          + TEXT_LINE_FEED
+          + LINE_FEED
           + filtering.categoryName + FILTERING_DATA_SEPARATOR
-          + filteringCategoryTopicsString + TEXT_LINE_FEED;
+          + filteringCategoryTopicsString + LINE_FEED;
         filtering.targets.forEach((filteringTarget) => {
             var filteringTargetData = new Array();
             filteringTargetData.push(filteringTarget.name);
             if (! filteringTarget.terminatesBlock()) {
-              var wordMatchings = new Array();
+              var wordOptions = new Array();
               if (filteringTarget.isWordBeginningMatched()) {
-                wordMatchings.push(ExtractNews.TARGET_WORD_BEGINNING);
+                wordOptions.push(ExtractNews.TARGET_WORD_BEGINNING);
               }
               if (filteringTarget.isWordEndMatched()) {
-                wordMatchings.push(ExtractNews.TARGET_WORD_END);
+                wordOptions.push(ExtractNews.TARGET_WORD_END);
               }
-              if (filteringTarget.isWordNegative()) {
-                wordMatchings.push(ExtractNews.TARGET_WORD_NEGATIVE);
+              if (filteringTarget.isWordsExcluded()) {
+                wordOptions.push(ExtractNews.TARGET_WORDS_EXCLUDED);
               }
               filteringTargetData.push(filteringTarget.words.join(","));
-              filteringTargetData.push(wordMatchings.join(","));
+              filteringTargetData.push(wordOptions.join(","));
             }
             filteringsExportString +=
-              filteringTargetData.join(FILTERING_DATA_SEPARATOR)
-              + TEXT_LINE_FEED;
+              filteringTargetData.join(FILTERING_DATA_SEPARATOR) + LINE_FEED;
           });
-        filteringsExportString += filtering.policyTarget.name + TEXT_LINE_FEED;
+        filteringsExportString += filtering.policyTarget.name + LINE_FEED;
         if (i < newsFilteringIds.length - 1) {
-          filteringsExportString += TEXT_LINE_FEED;
+          filteringsExportString += LINE_FEED;
         }
       }
       _exportText(filteringsExportString, {
@@ -539,12 +515,12 @@ ExtractNews.File = (() => {
         var newsSelection = newsSelections[i];
         newsSelectionsExportString +=
           SELECTION_NAME_QUOTE + newsSelection.settingName
-          + SELECTION_NAME_QUOTE + TEXT_LINE_FEED
-          + newsSelection.topicRegularExpression + TEXT_LINE_FEED
-          + newsSelection.senderRegularExpression + TEXT_LINE_FEED
-          + newsSelection.openedUrl + TEXT_LINE_FEED;
+          + SELECTION_NAME_QUOTE + LINE_FEED
+          + newsSelection.topicRegularExpression + LINE_FEED
+          + newsSelection.senderRegularExpression + LINE_FEED
+          + newsSelection.openedUrl + LINE_FEED;
         if (i < newsSelections.length - 1) {
-          newsSelectionsExportString += TEXT_LINE_FEED;
+          newsSelectionsExportString += LINE_FEED;
         }
       }
       _exportText(newsSelectionsExportString, {
