@@ -52,6 +52,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
     const TOPIC_TITLE = "title";
     const TOPIC_PROPERTIES = Array.of({ selectors: "." + TOPIC_TITLE });
 
+    const ADVERTISING = "ad";
     const NATIVE_TIE_UP = "native-tie-up";
 
     /*
@@ -102,7 +103,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
       }
 
       getNewsTopicElement(newsItem) {
-        if (! newsItem.classList.contains("ad")
+        if (! newsItem.classList.contains(ADVERTISING)
           && ! newsItem.classList.contains(NATIVE_TIE_UP)) {
           return newsItem.querySelector("." + TOPIC_TITLE);
         }
@@ -508,29 +509,31 @@ s    }
     // Display news designs arranged by a selector which selects and excludes
     // topics or senders, waiting the settings from the background script.
 
-    const DOCUMENTS_REGEXP = getImpressWatchRegExp("Documents");
-    const KODOMO_IT_PATH = getImpressWatchString("KodomoItPath");
-    const BACK_NUMBER_PATH = getImpressWatchString("BackNumberPath");
-    const ACCESS_RANKING_PATH = getImpressWatchString("AccessRankingPath");
-    const LIFE_AT_HOME_PATH = getImpressWatchString("LifeAtHomePath");
-    const HEADLINE_PATH = getImpressWatchString("HeadlinePath");
-    const TRENDING_PATH = getImpressWatchString("TrendingPath");
-    const CATEGORY_PATH = getImpressWatchString("CategoryPath");
-
-    var newsSiteUrlData = getNewsSiteUrlData(newsSite, document.URL);
-    var newsSiteUrlParser = new NewsSiteUrlParser(newsSiteUrlData);
-
     const SITE_HOST_SERVERS = splitImpressWatchString("SiteHostServers");
 
-    var siteIndex = SITE_HOST_SERVERS.indexOf(newsSiteUrlData.hostServer);
-    if (siteIndex >= 0) { // INTERNET Watch, PC Watch, ..., and Watch Video
+    var newsSiteUrlData = getNewsSiteUrlData(newsSite, document.URL);
+    var newsSiteIndex = SITE_HOST_SERVERS.indexOf(newsSiteUrlData.hostServer);
+    if (newsSiteIndex >= 0) { // INTERNET Watch, PC Watch, ..., and Watch Video
       Site.addNewsTopicWords(
-        splitImpressWatchString("SiteTopicWords")[siteIndex].split(" "));
+        splitImpressWatchString("SiteTopicWords")[newsSiteIndex].split(" "));
     } else { // Impress Watch
       Site.addNewsTopicWords(splitImpressWatchString("TopicWords"));
     }
 
-    if (newsSiteUrlParser.match(DOCUMENTS_REGEXP) != null) { // Articles
+    class ImpressWatchUrlParser extends NewsSiteUrlParser {
+      constructor() {
+        super(newsSiteUrlData);
+      }
+      getPathString(pathId) {
+        return getImpressWatchString(pathId);
+      }
+      getPathRegExp(pathId) {
+        return getImpressWatchRegExp(pathId);
+      }
+    }
+
+    var newsSiteUrlParser = new ImpressWatchUrlParser();
+    if (newsSiteUrlParser.parseByRegExp("Documents")) { // Articles
       Site.setNewsDesigns(
         // Links to the previous or next article
         new Design.NewsDesign({
@@ -556,65 +559,67 @@ s    }
           }),
         // TRENDING
         new ImpressWatchLateMainTopics("#chartbeat_recommend", 3, false));
-    } else if (newsSiteUrlParser.parseDirectory()) { // Impress site's top
-      if (siteIndex >= 0) { // INTERNET Watch, PC Watch, ..., and Watch Video
-        Site.setNewsDesigns(
-          new ImpressWatchTopNewsPanels("top-news"),
-          new ImpressWatchDailyBlocks(),
-          // HOT TOPICS, Rensai, and Market Johou
-          new ImpressWatchMainTopics("li.type-1"));
-      } else { // Impress Watch
-        Site.setNewsDesigns(
-          new ImpressWatchTopNewsPanels("top-news2"),
-          new ImpressWatchNewsLists());
-      }
-    } else if (newsSiteUrlParser.parse(KODOMO_IT_PATH)) { // Kodomo IT
-      Site.setNewsDesign(new ImpressWatchKodomoItLists());
-      Site.addNewsTopicWords(splitImpressWatchString("KodomoItTopicWords"));
-    } else if (newsSiteUrlParser.parse(BACK_NUMBER_PATH)) { // Back number
-      if (newsSiteUrlParser.parse(
-        getImpressWatchString("BackNumberTopPath"))) {
-        if (siteIndex >= 0) {
-          Site.setNewsDesign(new ImpressWatchNewsBlocks());
-        } else { // "Kongetsu No Kiji" linked from the bottom of Impress Watch
+    } else { // News topics listed in the main pane
+      if (newsSiteUrlParser.parseDirectory()) { // Impress site's top
+        if (newsSiteIndex >= 0) {
+          Site.setNewsDesigns(
+            new ImpressWatchTopNewsPanels("top-news"),
+            new ImpressWatchDailyBlocks(),
+            // HOT TOPICS, Rensai, and Market Johou
+            new ImpressWatchMainTopics("li.type-1"));
+        } else {
+          Site.setNewsDesigns(
+            new ImpressWatchTopNewsPanels("top-news2"),
+            new ImpressWatchNewsLists());
+        }
+      } else if (newsSiteUrlParser.parse("KodomoItPath")) { // Kodomo IT
+        Site.setNewsDesign(new ImpressWatchKodomoItLists());
+        Site.addNewsTopicWords(splitImpressWatchString("KodomoItTopicWords"));
+      } else if (newsSiteUrlParser.parse("BackNumberPath")) { // Back numbers
+        if (newsSiteUrlParser.parse("BackNumberTopPath")) {
+          if (newsSiteIndex >= 0) {
+            Site.setNewsDesign(new ImpressWatchNewsBlocks());
+          } else { // "Kongetsu No Kiji" linked from Impress Watch top
+            Site.setNewsDesign(new ImpressWatchNewsLists());
+          }
+        } else { // Chuko PC Hotline!
           Site.setNewsDesign(new ImpressWatchNewsLists());
+          newsSiteUrlParser.parseDirectoryHierarchy();
         }
-      } else { // Chuko PC Hotline!
-        Site.setNewsDesign(new ImpressWatchNewsLists());
-        newsSiteUrlParser.parseDirectoryHierarchy();
-      }
-    } else if (newsSiteUrlParser.parse(ACCESS_RANKING_PATH)) { // Ranking
-      newsSiteUrlParser.parseDirectory();
-      Site.setNewsDesign(new ImpressWatchRanking("ranking-list"));
-    } else if (newsSiteUrlParser.parse(HEADLINE_PATH)) { // News Headline
-      Site.setNewsDesigns(
-        new ImpressWatchLateMainTopics("article", 80),
-        // TRENDING
-        new ImpressWatchLateMainTopics("#chartbeat_recommend", 3, false));
-    } else if (newsSiteUrlParser.parse(TRENDING_PATH)) { // Trending
-      Site.setNewsDesign(new ImpressWatchTrending());
-    } else if (newsSiteUrlParser.parse(LIFE_AT_HOME_PATH)) { // Zaitaku Work
-      Site.setNewsDesign(new ImpressWatchLifeAtHome());
-    } else if (newsSiteUrlParser.parse(CATEGORY_PATH)) { // Each category
-      if (newsSiteUrlParser.parse(
-        getImpressWatchString("CategoryListHtml"))) { // Category Links
-        Site.setNewsDesign(new ImpressWatchCategoryLinks());
-      } else { // Impress site's news lists categorized by a topic
-        if (siteIndex >= 0) {
-          Site.setNewsDesign(
-            new Design.NewsDesign({
-                parentProperties: Array.of({
-                    selectors: ".category-selector" // Shiborikomu
-                  }),
-                topicProperties: Design.ONESELF_QUERY_PROPERTIES
-              }));
+      } else if (newsSiteUrlParser.parse("AccessRankingPath")) { // Ranking
+        newsSiteUrlParser.parseDirectory();
+        Site.setNewsDesign(new ImpressWatchRanking("ranking-list"));
+      } else if (newsSiteUrlParser.parse("HeadlinePath")) { // News Headline
+        Site.setNewsDesigns(
+          new ImpressWatchLateMainTopics("article", 80),
+          // TRENDING
+          new ImpressWatchLateMainTopics("#chartbeat_recommend", 3, false));
+      } else if (newsSiteUrlParser.parse("TrendingPath")) { // Trending
+        Site.setNewsDesign(new ImpressWatchTrending());
+      } else if (newsSiteUrlParser.parse("LifeAtHomePath")) { // Zaitaku Work
+        Site.setNewsDesign(new ImpressWatchLifeAtHome());
+      } else if (newsSiteUrlParser.parse("CategoryPath")) {
+        if (newsSiteUrlParser.parse("CategoryListHtml")) { // Category links
+          Site.setNewsDesign(new ImpressWatchCategoryLinks());
+        } else { // Impress site's news lists categorized by a topic
+          if (newsSiteIndex >= 0) {
+            Site.setNewsDesign(
+              // Shiborikomu displayed in the list header
+              new Design.NewsDesign({
+                  parentProperties: Array.of({
+                      selectors: ".category-selector"
+                    }),
+                  topicProperties: Design.ONESELF_QUERY_PROPERTIES
+                }));
+          }
+          Site.setNewsDesign(new ImpressWatchNewsLists());
+          newsSiteUrlParser.parseDirectoryHierarchy();
         }
-        Site.setNewsDesign(new ImpressWatchNewsLists());
-        newsSiteUrlParser.parseDirectoryHierarchy();
+      } else { // Impress site's news lists which is not categorized by a topic
+        Site.setNewsDesign(new ImpressWatchNewsBlocks());
+        newsSiteUrlParser.parseAll();
       }
-    } else { // Impress site's news lists which is not categorized by a topic
-      Site.setNewsDesign(new ImpressWatchNewsBlocks());
-      newsSiteUrlParser.parseAll();
+      Site.setNewsOpenedUrl(newsSiteUrlParser.toString());
     }
     Site.setNewsDesigns(
       // Osusume Kiji
@@ -629,10 +634,9 @@ s    }
       new ImpressWatchRanking("ranking"),
       new ImpressWatchRanking("all-ranking"));
 
-    var newsSelector =
-      new NewsSelector(ExtractNews.getDomainLanguage(newsSite.domainId));
-
-    Site.displayNewsDesigns(newsSiteUrlParser.toString(), newsSelector);
+    Site.setNewsSelector(
+      new NewsSelector(ExtractNews.getDomainLanguage(newsSite.domainId)));
+    Site.displayNewsDesigns(new Set([ "interactive" , "complete" ]));
   }).catch((error) => {
     Debug.printStackTrace(error);
   });

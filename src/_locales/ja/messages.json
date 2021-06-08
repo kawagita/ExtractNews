@@ -180,7 +180,7 @@
   },
 
   "extractNewsImpressWatchDocumentsRegularExpression": {
-    "message": "/[0-9]+\\.html$$",
+    "message": "^(?:/.+)?/[0-9]+\\.html$$",
     "description": "Impress Watchの記事の正規表現。"
   },
 
@@ -190,7 +190,7 @@
   },
 
   "extractNewsImpressWatchSiteTopicWords": {
-    "message": "テクノロジー IT 通信 インターネット セキュリティ,テクノロジー IT ハードウェア PC モバイル ソフトウェア OS,デジカメ,IT ハードウェア PC モバイル ソフトウェア OS ゲーム ライフ,テレビ オーディオ 映画 アニメ 音楽,家電 ライフ,マネー IT 通信 モバイル,ビジネス クラウド,ソフトウェア 開発 オープンソース,テクノロジー 自動車 バイク モータースポーツ,ライフ 旅行 ホテル,ライフ コンビニ ファーストフード,ハードウェア モバイル アニメ ゲーム,ホビー,モバイル デジカメ 家電",
+    "message": "テクノロジー IT 通信 インターネット セキュリティ,テクノロジー IT ハードウェア PC モバイル ソフトウェア OS,デジカメ,IT ハードウェア PC モバイル ソフトウェア OS ゲーム ライフ,テレビ オーディオ 映画 アニメ 音楽,家電 ライフ,マネー IT 通信 モバイル,ビジネス クラウド,IT ソフトウェア 開発 オープンソース,テクノロジー 自動車 バイク モータースポーツ,ライフ 旅行 ホテル,ライフ 食事,ハードウェア モバイル アニメ ゲーム,ホビー,モバイル デジカメ 家電",
     "description": "Impress Watchサイトのカテゴリのトピックワード。"
   },
 
@@ -285,7 +285,7 @@
   },
 
   "extractNewsITmediaNewsArticlesRegularExpression": {
-    "message": "news[0-9]+\\.html$$",
+    "message": "^(?:/.+)?/news[0-9]+(?:_[0-9]+)?\\.html$$",
     "description": "ITmedia NEWSの記事の正規表現。"
   },
 
@@ -444,9 +444,14 @@
     "description": "スラドでユーザーがコメントするサイトのパス。"
   },
 
+  "extractNewsSradStoryPathRegularExpression": {
+    "message": "^/story(?:/[0-9]{2}){3}/[0-9]{6,7}/$$",
+    "description": "スラドの各ストーリーのパスの正規表現。"
+  },
+
   "extractNewsSradStoriesPathRegularExpression": {
     "message": "^/(?:index2.pl|story/(?:[0-9]{2}/){0,3})?$$",
-    "description": "スラドのストーリーのパスの正規表現。"
+    "description": "スラドのストーリーリストのパスの正規表現。"
   },
 
   "extractNewsSradStoryArchivePath": {
@@ -660,7 +665,7 @@
   },
 
   "extractNewsJapaneseWordSeparators": {
-    "message": " ×—‘ ’“ ”…　、。「」『』【】かがでとにのはへもやよらりを・！＂＃＄％＆＇（），－．／：；＜＝＞？＠［］｜～￠￡",
+    "message": " .×—‘ ’“ ”…　、。「」『』【】かがでとにのはへもやよらりを・！＂＃＄％＆＇（），－．／：；＜＝＞？＠［］｜～￠￡",
     "description": "日本語で単語の前後における分離文字（格助詞と並立助詞を含む）。"
   },
 
@@ -864,6 +869,11 @@
     "description": "インポートファイルで行のメッセージの前置き。"
   },
 
+  "fileImportLineInvalidValueSpecified": {
+    "message": "無効な値が指定されています。",
+    "description": "インポート行で無効な値が指定されていることの説明。"
+  },
+
   "fileImportLineFilteringIdNotSpecified": {
     "message": "フィルタリングIDが指定されていません。",
     "description": "インポート行でフィルタリングIDが指定されていないことの説明。"
@@ -880,8 +890,8 @@
   },
 
   "fileImportLineFilteringCategoryNotTerminatedByEndOfBlock": {
-    "message": "フィルタリングカテゴリのブロック終端がありません。",
-    "description": "インポート行でフィルタリングカテゴリのブロック終端がないことの説明。"
+    "message": "フィルタリングカテゴリの最後にブロックの終端がありません。",
+    "description": "インポート行でフィルタリングカテゴリにブロックの終端がないことの説明。"
   },
 
   "fileImportLineFilteringCategoryNameNotSpecified": {
@@ -890,23 +900,28 @@
   },
 
   "fileImportLineFilteringTargetNameNotSpecified": {
-    "message": "フィルタリングのターゲットが指定されていません。",
-    "description": "インポート行でフィルタリングのターゲットが指定されていないことの説明。"
+    "message": "フィルタリングターゲットを指定して下さい。",
+    "description": "インポート行でフィルタリングターゲットが指定されていないことの説明。"
   },
 
   "fileImportLineUnknownFilteringTargetName": {
-    "message": "不明なフィルタリングのターゲット 「$1」",
-    "description": "インポート行で不明なフィルタリングのターゲットの説明。"
+    "message": "不明なフィルタリングターゲット 「$1」",
+    "description": "インポート行で不明なフィルタリングターゲットの説明。"
   },
 
   "fileImportLineUnknownFilteringWordOption": {
-    "message": "不明なフィルタリングの単語オプション 「$1」",
-    "description": "インポート行で不明なフィルタリングの単語オプションの説明。"
+    "message": "不明なフィルタリングワードオプション 「$1」",
+    "description": "インポート行で不明なフィルタリングワードオプションの説明。"
   },
 
   "fileImportLineSettingNameNotEnclosedByDoubleQuotes": {
     "message": "設定名称をダブルクォートで囲って下さい。",
     "description": "インポート行で設定名称が引用符で囲まれていないことの説明。"
+  },
+
+  "fileImportLineRegularExpressionNotEnclosedBySlashes": {
+    "message": "正規表現をスラッシュで囲って下さい。",
+    "description": "インポート行で正規表現がスラッシュで囲まれていないことの説明。"
   },
 
   "fileImportLineIncorrectRegularExpression": {
@@ -919,16 +934,6 @@
     "description": "インポート行でページを開くURLが指定されていないことの説明。"
   },
 
-  "fileImportLineTooMuchNewsSelectionDataLines": {
-    "message": "ニュース選択に対してデータ行が多過ぎます。",
-    "description": "インポート行でニュース選択に対して多過ぎるデータ行の説明。"
-  },
-
-  "fileImportDataNotIncluded": {
-    "message": "インポートファイルにデータがありません。",
-    "description": "インポートファイルにデータが含まれていないことに対するメッセージ。"
-  },
-
   "contextMenuExtractNewsSettings": {
     "message": "ExtractNews 設定",
     "description": "拡張機能で設定を変更するコンテキストメニュー。"
@@ -936,32 +941,17 @@
 
   "contextMenuSelectNewsTopic": {
     "message": "「%s」を話題として選択",
-    "description": "選択テキストの話題を選択するコンテキストメニュー。"
-  },
-
-  "contextMenuSelectNewsTopicAdditionally": {
-    "message": "「%s」を選択する話題に追加",
-    "description": "選択テキストの話題を追加で選択するコンテキストメニュー。"
+    "description": "選択されたテキストの話題を選択するコンテキストメニュー。"
   },
 
   "contextMenuSelectNewsSender": {
     "message": "「%s」を発信元として選択",
-    "description": "選択テキストの発信者を選択するコンテキストメニュー。"
-  },
-
-  "contextMenuSelectNewsSenderAdditionally": {
-    "message": "「%s」を選択する発信元に追加",
-    "description": "選択テキストの発信者を追加で選択するコンテキストメニュー。"
+    "description": "選択されたテキストの発信者を選択するコンテキストメニュー。"
   },
 
   "contextMenuExcludeNewsTopic": {
-    "message": "「%s」の話題を除外",
-    "description": "選択テキストの話題を除外するコンテキストメニュー。"
-  },
-
-  "contextMenuExcludeNewsTopicAdditionally": {
-    "message": "「%s」を除外する話題に追加",
-    "description": "選択テキストの話題を追加で除外するコンテキストメニュー。"
+    "message": "「%s」を話題から除外",
+    "description": "選択されたテキストの話題を除外するコンテキストメニュー。"
   },
 
   "contextMenuDisableTabLink": {
@@ -1124,39 +1114,24 @@
     "description": "拡張機能をデバッグするオプションラベル。"
   },
 
-  "optionDataFiltering": {
-    "message": "フィルタリングの設定",
-    "description": "フィルタリングの設定に対するオプションラベル。"
-  },
-
-  "optionDataSelection": {
-    "message": "ニュース選択の設定",
-    "description": "ニュース選択の設定に対するオプションラベル。"
-  },
-
-  "optionDataDescription": {
-    "message": "は画面下部で編集したり、ファイルを使ってインポートやエクスポートしたりできます。ただし、変更・追加されたデータは「保存」ボタンを押すまでは更新されません。",
-    "description": "設定を更新するオプションの説明。"
-  },
-
-  "optionDataReplacement": {
-    "message": "ファイルのデータで置き換え",
-    "description": "フィルタリングやニュース選択の設定をファイルのデータで置き換えるオプションラベル。"
+  "optionUpdateDescription": {
+    "message": "変更した設定は「適用」ボタンを押すまでは更新されません。",
+    "description": "オプション設定を更新する説明。"
   },
 
   "optionImport": {
     "message": "インポート",
-    "description": "フィルタリングデータをファイルからインポートするオプションボタン。"
+    "description": "オプション設定をファイルからインポートするオプションボタン。"
   },
 
   "optionExport": {
     "message": "エクスポート",
-    "description": "フィルタリングデータをファイルへエクスポートするオプションボタン。"
+    "description": "オプション設定をファイルへエクスポートするオプションボタン。"
   },
 
-  "optionSave": {
-    "message": "保存",
-    "description": "フィルタリングデータを保存するオプションボタン。"
+  "optionApply": {
+    "message": "適用",
+    "description": "オプション設定を適用するオプションボタン。"
   },
 
   "optionFilteringCategoryName": {
@@ -1170,7 +1145,7 @@
   },
 
   "optionSeparateFilteringCategoryTopicsByCommas": {
-    "message": "トピックをコンマ区切って下さい",
+    "message": "トピックをコンマで区切って下さい",
     "description": "フィルタリングのカテゴリに対してトピックをコンマで区切るメッセージ。"
   },
 
@@ -1189,9 +1164,9 @@
     "description": "フィルタリングターゲットにより、ニュースの話題を拒否するオプションラベル。"
   },
 
-  "optionTargetReturn": {
+  "optionTargetBreak": {
     "message": "ブロック外へ",
-    "description": "フィルタリングターゲットにより、ブロックをスキップするオプションラベル。"
+    "description": "フィルタリングターゲットにより、ブロックを出るオプションラベル。"
   },
 
   "optionTargetTerminateBlock": {
@@ -1200,7 +1175,7 @@
   },
 
   "optionSeparateTargetWordsByCommas": {
-    "message": "対象とする単語をコンマ区切って下さい",
+    "message": "対象とする単語をコンマで区切って下さい",
     "description": "フィルタリングターゲットに対して単語をコンマで区切るメッセージ。"
   },
 
@@ -1234,6 +1209,11 @@
     "description": "ニュース選択を追加するオプションボタン。"
   },
 
+  "optionOK": {
+    "message": "OK",
+    "description": "ニュース選択を変更するオプションボタン。"
+  },
+
   "optionLocalize": {
     "message": "全半角",
     "description": "フィルタリングターゲットの全半角を変換するオプションボタン。"
@@ -1249,19 +1229,9 @@
     "description": "フィルタリングターゲットやニュース選択を下へ移動するオプションボタン。"
   },
 
-  "optionEdit": {
-    "message": "編集",
-    "description": "ニュース選択を編集するオプションボタン。"
-  },
-
   "optionRemove": {
     "message": "削除",
     "description": "フィルタリングターゲットやニュース選択を削除するオプションボタン。"
-  },
-
-  "optionApply": {
-    "message": "適用",
-    "description": "ニュース選択を適用するオプションボタン。"
   },
 
   "optionDelete": {

@@ -61,13 +61,16 @@ ExtractNews.Daemon = (() => {
         };
     }
 
+    // Tab ID of the option page on which the domain data is updated
+    var _newsDomainUpdatedTabId = browser.tabs.TAB_ID_NONE;
+
    // Period of modifiying site data
     const NEWS_SITE_DATA_MODIFIED_PERIOD = 3600000 * 24;
 
     // Last modified time of site data
     var _newsSiteDataLastModifiedTime;
 
-    // Ratio to converge for the access count to the average of a week.
+    // Ratio to converge for the access count to the average of a week
     const NEWS_SITE_ACCESS_WEEK_RATIO = 6 / 7;
 
     // Milliseconds to wait for news site to read the favicon
@@ -76,7 +79,7 @@ ExtractNews.Daemon = (() => {
     // Map of site data for each news site
     var _newsSiteDataMap = new Map();
 
-    // Map of flags whether the comment is hidden for each news site's domain
+    // Map of flags whether the comment is hidden for each news site
     var _newsSiteCommentHiddenMap = new Map();
 
     // Map of message dialogs which has opened by each tab
@@ -90,7 +93,7 @@ ExtractNews.Daemon = (() => {
         browser.tabs.sendMessage, tabId, message).then(() => {
           if (browser.runtime.lastError != undefined) {
             Debug.printProperty(
-              "SendMessage Error", browser.runtime.lastError.message);
+              "tabs.sendMessage()", browser.runtime.lastError.message);
           }
           Debug.printMessage(
             "Send the command " + message.command.toUpperCase()
@@ -145,10 +148,10 @@ ExtractNews.Daemon = (() => {
           Debug.printMessage(
             "Load the news filtering of " + filteringIds.join(", ") + ".");
           return _Storage.readFilterings(filteringIds);
-        }).then((newsFilteringMap) => {
+        }).then((filteringMap) => {
           _newsFilteringDataMap = new Map();
           _newsFilteringIds.forEach((filteringId) => {
-              var filtering = newsFilteringMap.get(filteringId);
+              var filtering = filteringMap.get(filteringId);
               var filteringTargetObjects = new Array();
               if (Debug.isLoggingOn()) {
                 var categoryTopicsString = "";
@@ -207,7 +210,7 @@ ExtractNews.Daemon = (() => {
           // Set the last target of filterings to the policy target which
           // is accepted or dropped for any word.
           var filteringPolicyTarget = filteringData.policyTarget;
-          if (filteringPolicyTarget.name != ExtractNews.TARGET_RETURN) {
+          if (filteringPolicyTarget.name != ExtractNews.TARGET_BREAK) {
             tabNewsSetting.filteringPolicyTarget = filteringPolicyTarget;
             break;
           }
@@ -238,7 +241,6 @@ ExtractNews.Daemon = (() => {
         });
     }
 
-    _Daemon.loadNewsFilterings = loadNewsFilterings;
     _Daemon.updateNewsFilterings = updateNewsFilterings;
 
     /*
@@ -362,62 +364,66 @@ ExtractNews.Daemon = (() => {
     _Daemon.setTabMessageDialog = setTabMessageDialog;
     _Daemon.removeTabMessageDialog = removeTabMessageDialog;
 
-    /*
+    function _getTabSetting(tabId) {
+      var tabSetting = undefined;
+      var tabFlags = _tabFlagsMap.get(tabId);
+      if (tabFlags != undefined) {
+        tabSetting = {
+            newsSelectionSettingName: "",
+            newsSelectedTopicRegularExpression: "",
+            newsSelectedSenderRegularExpression: "",
+            newsSelectionDisabled: tabFlags.newsSelectionDisabled,
+            newsExcludedRegularExpression: "",
+            newsFilteringDisabled: _newsFilteringDisabled,
+            newsCommentHidden: false,
+            linkDisabled: tabFlags.linkDisabled,
+            applyingSuspended: tabFlags.applyingSuspended
+          };
+        if (tabFlags.requestRecieved) {
+          var tabNewsSetting = _tabNewsSettingMap.get(tabId);
+          tabSetting.newsSelectionSettingName =
+            tabNewsSetting.selection.settingName;
+          tabSetting.newsSelectedTopicRegularExpression =
+            tabNewsSetting.selection.topicRegularExpression;
+          tabSetting.newsSelectedSenderRegularExpression =
+            tabNewsSetting.selection.senderRegularExpression;
+          tabSetting.newsExcludedRegularExpression =
+            tabNewsSetting.excludedRegularExpression;
+          tabSetting.newsCommentHidden =
+            _newsSiteCommentHiddenMap.get(tabNewsSetting.siteId);
+        }
+      }
+      return tabSetting;
+    }
+
+   /*
      * Returns the promise fulfilled with the setting to select and exclude
      * news topics and/or senders and flags on the tab of the specified ID
      * if its news site is enabled, otherwise, undefined.
      */
     function activateTabSetting(tabId) {
-      var activatingPromise;
-      var tabFlags = _tabFlagsMap.get(tabId);
-      if (tabFlags != undefined) {
-        activatingPromise = Promise.resolve(tabFlags);
-      } else {
+      var activatingPromise = Promise.resolve();
+      if (! _tabFlagsMap.has(tabId)) {
         activatingPromise =
           _Popup.getTab(tabId).then((tab) => {
-              var newsSite = ExtractNews.getNewsSite(tab.url);
-              if (newsSite != undefined
-                && ExtractNews.isDomainEnabled(newsSite.domainId)) {
-                tabFlags = _createTabFlags();
-                _tabFlagsMap.set(tabId, tabFlags);
+              if (tab != undefined) {
+                var newsSite = ExtractNews.getNewsSite(tab.url);
+                if (newsSite != undefined
+                  && ExtractNews.isDomainEnabled(newsSite.domainId)) {
+                  var tabFlags = _createTabFlags();
+                  _tabFlagsMap.set(tabId, tabFlags);
+                }
               }
-              return Promise.resolve(tabFlags);
             });
       }
-      return activatingPromise.then((activatedTabFlags) => {
-          var tabSetting = undefined;
-          if (activatedTabFlags != undefined) {
-            tabSetting = {
-                newsExcludedRegularExpression: "",
-                newsSelectionSettingName: "",
-                newsSelectedTopicRegularExpression: "",
-                newsSelectedSenderRegularExpression: "",
-                newsSelectionDisabled: activatedTabFlags.newsSelectionDisabled,
-                newsCommentHidden: false,
-                linkDisabled: activatedTabFlags.linkDisabled,
-                applyingSuspended: activatedTabFlags.applyingSuspended
-              };
-            if (activatedTabFlags.requestRecieved) {
-              var tabNewsSetting = _tabNewsSettingMap.get(tabId);
-              tabSetting.newsSelectionSettingName =
-                tabNewsSetting.selection.settingName;
-              tabSetting.newsSelectedTopicRegularExpression =
-                tabNewsSetting.selection.topicRegularExpression;
-              tabSetting.newsSelectedSenderRegularExpression =
-                tabNewsSetting.selection.senderRegularExpression;
-              tabSetting.newsExcludedRegularExpression =
-                tabNewsSetting.excludedRegularExpression;
-              tabSetting.newsCommentHidden =
-                _newsSiteCommentHiddenMap.get(tabNewsSetting.siteId);
-            }
-          }
-          return Promise.resolve(tabSetting);
+      return activatingPromise.then(() => {
+          return Promise.resolve(_getTabSetting(tabId));
         });
     }
 
     /*
      * Removes the setting to select and exclude news topics and/or senders
-     * and flags on a tab of the specified ID.
+     * and flags on a tab of the specified ID and return the promise.
      */
     function removeTabSetting(tabId) {
       var tabFlags = _tabFlagsMap.get(tabId);
@@ -436,7 +442,28 @@ ExtractNews.Daemon = (() => {
             "Remove the news setting on Tab " + String(tabId) + ".");
         }
         _tabFlagsMap.delete(tabId);
+      } else if (tabId == _newsDomainUpdatedTabId) {
+        // Save the domain data updated by closing the option page.
+        var domainDataArray = new Array();
+        ExtractNews.forEachDomain(
+          (domainId, name, language, hostServerPatterns, hostDomain) => {
+            domainDataArray.push({
+                id: domainId,
+                name: name,
+                language: language,
+                hostServerPatterns: hostServerPatterns,
+                hostDomain: hostDomain,
+                enabled: ExtractNews.isDomainEnabled(domainId)
+              });
+          });
+        _newsDomainUpdatedTabId = browser.tabs.TAB_ID_NONE;
+        return _Storage.writeDomainData(domainDataArray).then(() => {
+            Debug.printMessage(
+              "Save the domain data updated on Option Page Tab "
+              + String(tabId) + ".");
+          });
       }
+      return Promise.resolve();
     }
 
     _Daemon.activateTabSetting = activateTabSetting;
@@ -446,23 +473,15 @@ ExtractNews.Daemon = (() => {
     // senders applied to a tab of the specified ID and returns the promise.
 
     function _applyTabNewsSetting(tabId, tabUpdated = false) {
-      var tabNewsSetting = _tabNewsSettingMap.get(tabId);
-      if (tabNewsSetting == undefined) {
+      var tabSetting = _getTabSetting(tabId);
+      if (tabSetting == undefined) {
         return Promise.resolve();
       }
-      var message = {
-          command: ExtractNews.COMMAND_SETTING_APPLY,
-          newsSelectedTopicRegularExpression:
-            tabNewsSetting.selection.topicRegularExpression,
-          newsSelectedSenderRegularExpression:
-            tabNewsSetting.selection.senderRegularExpression,
-          newsExcludedRegularExpression:
-            tabNewsSetting.excludedRegularExpression
-        };
+      var message = Object.assign({
+          command: ExtractNews.COMMAND_SETTING_APPLY
+        }, tabSetting);
       if (tabUpdated) {
-        message.newsCommentHidden =
-          _newsSiteCommentHiddenMap.get(tabNewsSetting.siteId);
-        message.newsFilteringDisabled = _newsFilteringDisabled;
+        var tabNewsSetting = _tabNewsSettingMap.get(tabId);
         message.newsFilteringTargetObjects = new Array();
         tabNewsSetting.filteringIds.forEach((filteringId) => {
             var filteringData = _newsFilteringDataMap.get(filteringId);
@@ -473,19 +492,17 @@ ExtractNews.Daemon = (() => {
         message.newsFilteringTargetObjects.push(
           tabNewsSetting.filteringPolicyTarget.toObject());
       }
+      delete message.linkDisabled;
+      delete message.applyingSuspended;
       return _sendTabMessage(tabId, message).then(() => {
           return _Popup.getWindowActiveTab();
         }).then((tab) => {
           if (tab != undefined && tab.id == tabId) {
-            activateTabSetting(tabId).then((tabSetting) => {
-                if (tabSetting != undefined) {
-                  if (tabUpdated) {
-                    _Menus.updateContextMenus(tabSetting);
-                  } else {
-                    _Menus.updateTabNewsSettingContextMenus(tabSetting);
-                  }
-                }
-              });
+            if (tabUpdated) {
+              _Menus.updateContextMenus(tabSetting);
+            } else {
+              _Menus.updateTabNewsSettingContextMenus(tabSetting);
+            }
           }
         });
     }
@@ -508,7 +525,7 @@ ExtractNews.Daemon = (() => {
         if (tabNewsSetting != undefined) {
           if (tabNewsSetting.suspendedCount >= TAB_SETTING_RETAINED_COUNT) {
             // Remove the setting suspended on the specified tab
-            removeTabSetting(tab.id);
+            applyingPromises.push(removeTabSetting(tab.id));
           } else {
             tabNewsSetting.suspendedCount++;
           }
@@ -647,27 +664,24 @@ ExtractNews.Daemon = (() => {
       var message = {
           command: ExtractNews.COMMAND_SETTING_INFORM,
           newsSiteEnabled: false,
-          newsSiteAccessCount: 0,
+          newsSiteAccessCount: 0
         };
-      var tabFlags = _tabFlagsMap.get(tabId);
-      if (tabFlags != undefined && tabFlags.requestRecieved) {
+      var tabSetting = _getTabSetting(tabId);
+      if (tabSetting != undefined) {
         var tabNewsSetting = _tabNewsSettingMap.get(tabId);
-        var siteData = _newsSiteDataMap.get(tabNewsSetting.siteId);
-        if (siteData != undefined) {
-          message.newsSiteAccessCount = siteData.accessCount;
+        if (tabNewsSetting != undefined) {
+          var siteData = _newsSiteDataMap.get(tabNewsSetting.siteId);
+          if (siteData != undefined) {
+            message.newsSiteAccessCount = siteData.accessCount;
+          }
+          message.newsSiteEnabled =
+            ExtractNews.isDomainEnabled(tabNewsSetting.domainId);
+          message.newsOpenedUrl = tabNewsSetting.selection.openedUrl;
+          message.newsTopicWords = tabNewsSetting.topicWordsString.split(",");
         }
-        message.newsSiteEnabled =
-          ExtractNews.isDomainEnabled(tabNewsSetting.domainId);
-        message.newsSelectionSettingName =
-          tabNewsSetting.selection.settingName;
-        message.newsSelectedTopicRegularExpression =
-          tabNewsSetting.selection.topicRegularExpression;
-        message.newsSelectedSenderRegularExpression =
-          tabNewsSetting.selection.senderRegularExpression;
-        message.newsExcludedRegularExpression =
-          tabNewsSetting.excludedRegularExpression;
-        message.newsOpenedUrl = tabNewsSetting.selection.openedUrl;
-        message.newsTopicWords = tabNewsSetting.topicWordsString.split(",");
+        message = Object.assign(message, tabSetting);
+        delete message.linkDisabled;
+        delete message.applyingSuspended;
       }
       return _sendTabMessage(tab.id, message);
     }
@@ -1015,53 +1029,72 @@ ExtractNews.Daemon = (() => {
 
     _Daemon.setTabCommentHidden = setTabCommentHidden;
 
-    /*
-     * Enables news domains on this extension and returns the promise.
-     */
-    function enableNewsDomains() {
-      return _Storage.readEnabledDomainIds().then((enabledDomainIds) => {
-          enabledDomainIds.forEach((enabledDomainId) => {
-              ExtractNews.setDomainEnabled(enabledDomainId, true);
-            });
-          Debug.printMessage(
-            "Enabling the news site of " + enabledDomainIds.join(", ") + ".");
-          _Menus.createContextMenus();
+    // Sets the domain data read from the storage or updated on the option page
+    // into the background context.
+
+    function _setNewsDomainData(domainDataArray, disablingDomainIds) {
+      const savingPromises = new Array();
+      Debug.printMessage("Enabling ...");
+      domainDataArray.forEach((domainData) => {
+          if (disablingDomainIds != undefined) {
+            if (! domainData.enabled
+              && ExtractNews.isDomainEnabled(domainData.id)) {
+            // Add the ID of news domains disabled from the enabled state
+            // to the specified array.
+              disablingDomainIds.push(domainData.id);
+            }
+          } else { // No previous state
+            var domainEnabledKey = domainData.id + ExtractNews.ENABLED_KEY;
+            savingPromises.push(
+              ExtractNews.writeStorage({
+                  [domainEnabledKey]: domainData.enabled
+                }));
+          }
+          if (Debug.isLoggingOn() && domainData.enabled) {
+            Debug.dump(
+              "\t", domainData.language,
+              domainData.hostServerPatterns.join(","),
+              domainData.hostDomain);
+          }
+          ExtractNews.setDomain(domainData);
         });
+      return Promise.all(savingPromises);
     }
 
     /*
-     * Updates enabling or disabling the news domain of the specified ID
+     * Updates enabling or disabling the news domain by the specified data
      * and return the promise.
      */
-    function updateNewsDomainEnabled(domainId, enabled) {
-      const updatingPromises = new Array();
-      ExtractNews.setDomainEnabled(domainId, enabled);
-      if (enabled) {
-        Debug.printMessage("Enabling the news site of " + domainId + ".");
-      } else {
+    function updateNewsDomainData(domainUpdatedTabId, domainDataArray) {
+      var disablingDomainIds = new Array();
+      _newsDomainUpdatedTabId = domainUpdatedTabId;
+      _setNewsDomainData(domainDataArray, disablingDomainIds);
+      if (disablingDomainIds.length > 0) {
+        var disposedDomainIdSet = new Set(disablingDomainIds);
+        const updatingPromises = new Array();
         _tabFlagsMap.forEach((tabFlags, tabId) => {
             // Dispose the resource to arrange news items for disabled domains
             // on the tab from which the request is received.
             if (tabFlags.requestRecieved && ! tabFlags.applyingSuspended
-              && domainId == _tabNewsSettingMap.get(tabId).domainId) {
+              && disposedDomainIdSet.has(
+                _tabNewsSettingMap.get(tabId).domainId)) {
               updatingPromises.push(
                 _sendTabMessage(tabId, {
                     command: ExtractNews.COMMAND_SETTING_DISPOSE
-                  }));
-              removeTabSetting(tabId);
+                  }),
+              removeTabSetting(tabId));
             }
           });
-        Debug.printMessage("Disabling the news site of " + domainId + ".");
+        Debug.printMessage(
+          "Disabling the news site of " + disablingDomainIds.join(", ") + ".");
+        updatingPromises.push(_Menus.createContextMenus());
+        return Promise.all(updatingPromises);
       }
-      updatingPromises.push(_Menus.createContextMenus());
-      return Promise.all(updatingPromises);
+      return Promise.resolve();
     }
 
-    _Daemon.enableNewsDomains = enableNewsDomains;
-    _Daemon.updateNewsDomainEnabled = updateNewsDomainEnabled;
-
     /*
-     * Saves the site data of all news sites and return the promise.
+     * Saves the site data of news sites and return the promise.
      */
     function saveNewsSiteData() {
       if (_newsSiteDataMap.size > 0) {
@@ -1079,6 +1112,7 @@ ExtractNews.Daemon = (() => {
       return Promise.resolve();
     }
 
+    _Daemon.updateNewsDomainData = updateNewsDomainData;
     _Daemon.saveNewsSiteData = saveNewsSiteData;
 
     // Multiplies the access count for each news site by the common ratio
@@ -1120,19 +1154,18 @@ ExtractNews.Daemon = (() => {
       });
 
     {
-      // Read the flag to disable the word filterings and hide comments.
       const readingPromises = new Array();
+
       readingPromises.push(
-        _Storage.readFilteringDisabled().then((filteringDisabled) => {
-            _newsFilteringDisabled = filteringDisabled;
-          }));
-      ExtractNews.forEachNewsSite((siteId) => {
-          readingPromises.push(
-            _Storage.readCommentMode(siteId).then((commentOn) => {
-                _newsSiteCommentHiddenMap.set(siteId, ! commentOn);
-              }));
-        });
-      readingPromises.push(
+        ExtractNews.getDebugMode(),
+        // Read the domain data enabled or disabled as the news site.
+        _Storage.readDomainData().then((domainDataArray) => {
+            return _setNewsDomainData(domainDataArray);
+          }).then(() => {
+            _Menus.createContextMenus();
+          }),
+        // Read the site data accessed previously and whose favicon is saved
+        // to the storage.
         _Storage.readSiteData().then((siteDataArray) => {
             if (siteDataArray.length > 0) {
               siteDataArray.forEach((siteData) => {
@@ -1171,6 +1204,7 @@ ExtractNews.Daemon = (() => {
                 }
               }
             } else {
+              // Save the current time as the last modified time of site data.
               _newsSiteDataLastModifiedTime = Date.now();
               savingPromise =
                 _Storage.writeSiteDataLastModifiedTime(
@@ -1178,6 +1212,7 @@ ExtractNews.Daemon = (() => {
             }
             return savingPromise;
           }).then(() => {
+            // Set the alarm started from the last modified time of site data.
             browser.alarms.create({
                 when: _newsSiteDataLastModifiedTime,
                 periodInMinutes: NEWS_SITE_DATA_MODIFIED_PERIOD / 60000
@@ -1185,7 +1220,20 @@ ExtractNews.Daemon = (() => {
             Debug.printMessage(
               "Start the alarm in " + NEWS_SITE_DATA_MODIFIED_PERIOD + " from "
               + (new Date(_newsSiteDataLastModifiedTime).toString()) + ".");
-          }));
+          }),
+        // Read the flag whether the filtering is disabled on the news site.
+        _Storage.readFilteringDisabled().then((filteringDisabled) => {
+            _newsFilteringDisabled = filteringDisabled;
+          }),
+        loadNewsFilterings());
+      ExtractNews.forEachNewsSite((siteId) => {
+          readingPromises.push(
+            // Read the flag whether comments are displayed for each site.
+            _Storage.readCommentMode(siteId).then((commentOn) => {
+                _newsSiteCommentHiddenMap.set(siteId, ! commentOn);
+              }));
+        });
+
       Promise.all(readingPromises).catch((error) => {
           Debug.printStackTrace(error);
         });
@@ -1200,109 +1248,86 @@ const Menus = ExtractNews.Menus;
 // Dispatches the process by the message received from the content script,
 // popup list, edit window, message dialog, and option page.
 
-ExtractNews.getDebugMode().then(() => {
-    browser.runtime.onMessage.addListener((message, sender) => {
-        var settingPromise = undefined;
-        Debug.printMessage(
-          "Receive the command " + message.command.toUpperCase() + ".");
-        switch (message.command) {
-        case ExtractNews.COMMAND_SETTING_REQUEST:
-          if (message.openedUrl != undefined) {
-            // Receive the request of sending the setting to select and exclude
-            // news topics and/or senders on a tab from the content script.
-            settingPromise =
-              Daemon.requestTabNewsSetting(
-                sender.tab, message.openedUrl, message.topicWordsString);
-          } else {
-            // Receive the request of the setting information for a tab from
-            // the edit window.
-            settingPromise =
-              Daemon.informTabNewsSetting(sender.tab, message.tabId);
-          }
-          break;
-        case ExtractNews.COMMAND_SETTING_SELECT:
-          if (message.newsSelectionObjects.length > 0) {
-            // Receive settings to select news topics and/or senders from
-            // the popup list, which applied to a tab.
-            settingPromise =
-              Daemon.applyTabNewsSelections(
-                message.tabId, message.tabOpen, message.tabUpdated,
-                message.newsSelectionObjects);
-          }
-          break;
-        case ExtractNews.COMMAND_SETTING_UPDATE:
-          if (message.siteId != undefined) {
-            // Receive enabling or disabling a news site from the option page.
-            settingPromise =
-              Daemon.updateNewsDomainEnabled(
-                message.domainId, message.enabled);
-          } else if (message.filteringDisabled != undefined) {
-            // Receive the flag to disable the filtering from the option page.
-            settingPromise =
-              Daemon.switchNewsDisplayOptions({
-                  newsFilteringDisabled: message.filteringDisabled
-                });
-          } else if (message.debugOn != undefined) {
-            // Receive the debug mode from the option page.
-            settingPromise = ExtractNews.setDebugMode(message.debugOn);
-          } else {
-            // Receive updating of category filterings from the option page.
-            settingPromise = Daemon.updateNewsFilterings();
-          }
-          break;
-        case ExtractNews.COMMAND_DIALOG_OPEN:
-          // Receive the warning message from tab or window and open a dialog.
-          settingPromise =
-            Daemon.setTabMessageDialog(message.tabId, message.warning);
-          break;
-        case ExtractNews.COMMAND_DIALOG_STANDBY:
-          // Receive the standby to send the warning message from a dialog.
-          settingPromise = Daemon.sendTabWarningMessage(message.tabId);
-          break;
-        case ExtractNews.COMMAND_DIALOG_CLOSE:
-          // Receive closing of the message dialog from itself.
-          settingPromise = Daemon.removeTabMessageDialog(message.tabId);
-          break;
+browser.runtime.onMessage.addListener((message, sender) => {
+    const settingPromises = new Array();
+    Debug.printMessage(
+      "Receive the command " + message.command.toUpperCase() + ".");
+    switch (message.command) {
+    case ExtractNews.COMMAND_SETTING_REQUEST:
+      if (message.openedUrl != undefined) {
+        // Receive the request of sending the setting to select and exclude
+        // news topics and/or senders on a tab from the content script.
+        settingPromises.push(
+          Daemon.requestTabNewsSetting(
+            sender.tab, message.openedUrl, message.topicWordsString));
+      } else { // Request of tab's information
+        settingPromises.push(
+          Daemon.informTabNewsSetting(sender.tab, message.tabId));
+      }
+      break;
+    case ExtractNews.COMMAND_SETTING_SELECT:
+      if (message.newsSelectionObjects.length > 0) {
+        // Receive settings to select news topics and/or senders from the list
+        // of news selections, which applied to the tab of the specified ID.
+        settingPromises.push(
+          Daemon.applyTabNewsSelections(
+            message.tabId, message.tabOpen, message.tabUpdated,
+            message.newsSelectionObjects));
+      }
+      break;
+    case ExtractNews.COMMAND_SETTING_UPDATE:
+      if (message.filteringUpdated) {
+        settingPromises.push(Daemon.updateNewsFilterings());
+      } else { // Updating of general settings on the option page
+        if (message.domainDataArray != undefined) {
+          settingPromises.push(
+            Daemon.updateNewsDomainData(
+              message.tabId, message.domainDataArray));
         }
-        if (settingPromise != undefined) {
-          settingPromise.catch((error) => {
-              Debug.printStackTrace(error);
-            });
+        if (message.filteringDisabled != undefined) {
+          settingPromises.push(
+            Daemon.switchNewsDisplayOptions({
+                newsFilteringDisabled: message.filteringDisabled
+              }));
         }
+        if (message.debugOn != undefined) {
+          settingPromises.push(ExtractNews.setDebugMode(message.debugOn));
+        }
+      }
+      break;
+    case ExtractNews.COMMAND_DIALOG_OPEN:
+      settingPromises.push(
+        Daemon.setTabMessageDialog(message.tabId, message.warning));
+      break;
+    case ExtractNews.COMMAND_DIALOG_STANDBY:
+      settingPromises.push(Daemon.sendTabWarningMessage(message.tabId));
+      break;s
+    case ExtractNews.COMMAND_DIALOG_CLOSE:
+      settingPromises.push(Daemon.removeTabMessageDialog(message.tabId));
+      break;
+    }
+    Promise.all(settingPromises).catch((error) => {
+        Debug.printStackTrace(error);
       });
-
-    Promise.all(
-      Array.of(Daemon.enableNewsDomains(), Daemon.loadNewsFilterings()));
-  }).catch((error) => {
-    Debug.printStackTrace(error);
   });
 
 // Registers functions called when the context menu is clicked to the listener.
 
 browser.contextMenus.onClicked.addListener((info, tab) => {
     var applyingPromise = undefined;
-    var regexpAdded = true;
-
     switch (info.menuItemId) {
     case Menus.ID_SELECT_NEWS_TOPIC:
     case Menus.ID_SELECT_NEWS_SENDER:
-      regexpAdded = false;
-    case Menus.ID_SELECT_NEWS_TOPIC_ADDITIONALLY:
-    case Menus.ID_SELECT_NEWS_SENDER_ADDITIONALLY:
       applyingPromise =
         Daemon.selectTabNews(tab.id, info.selectionText, {
-            topicSelected: info.menuItemId == Menus.ID_SELECT_NEWS_TOPIC
-              || info.menuItemId == Menus.ID_SELECT_NEWS_TOPIC_ADDITIONALLY,
-            senderSelected: info.menuItemId == Menus.ID_SELECT_NEWS_SENDER
-              || info.menuItemId == Menus.ID_SELECT_NEWS_SENDER_ADDITIONALLY,
-            regexpAdded: regexpAdded
+            topicSelected: info.menuItemId == Menus.ID_SELECT_NEWS_TOPIC,
+            senderSelected: info.menuItemId == Menus.ID_SELECT_NEWS_SENDER,
+            regexpAdded: true
           });
       break;
     case Menus.ID_EXCLUDE_NEWS_TOPIC:
-      regexpAdded = false;
-    case Menus.ID_EXCLUDE_NEWS_TOPIC_ADDITIONALLY:
       applyingPromise =
-        Daemon.excludeTabNews(tab.id, info.selectionText, regexpAdded);
+        Daemon.excludeTabNews(tab.id, info.selectionText, true);
       break;
     case Menus.ID_DISABLE_TAB_LINK:
       applyingPromise = Daemon.setTabLinkDisabled(tab.id, info.checked);
@@ -1334,7 +1359,6 @@ browser.contextMenus.onClicked.addListener((info, tab) => {
       applyingPromise = Daemon.setTabCommentHidden(tab.url, info.checked);
       break;
     }
-
     if (applyingPromise != undefined) {
       applyingPromise.catch((error) => {
           Debug.printStackTrace(error);
@@ -1356,8 +1380,10 @@ browser.tabs.onActivated.addListener((activeInfo) => {
   });
 
 browser.tabs.onRemoved.addListener((tabId, removeInfo) => {
-    const removingPromises = Array.of(Daemon.removeTabMessageDialog(tabId));
-    Daemon.removeTabSetting(tabId);
+    const removingPromises =
+      Array.of(
+        Daemon.removeTabMessageDialog(tabId),
+        Daemon.removeTabSetting(tabId));
     if (removeInfo.isWindowClosing) {
       removingPromises.push(
         ExtractNews.Popup.getWindowCount().then((windowCount) => {

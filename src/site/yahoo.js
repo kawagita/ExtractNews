@@ -657,14 +657,26 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
 
     var newsSiteCategory = "";
     var newsSiteUrlData = getNewsSiteUrlData(newsSite, document.URL);
-    var newsSiteUrlParser = new NewsSiteUrlParser(newsSiteUrlData);
 
-    if (newsSiteUrlParser.matchHtmlDocument() != null) { // Articles
+    class YahooUrlParser extends NewsSiteUrlParser {
+      constructor() {
+        super(newsSiteUrlData);
+      }
+      getPathString(pathId) {
+        return getYahooString(pathId);
+      }
+      getPathRegExp(pathId) {
+        return getYahooRegExp(pathId);
+      }
+    }
+
+    var newsSiteUrlParser = new YahooUrlParser();
+    if (newsSiteUrlParser.parseByRegExp("Article")) { // Articles
       Site.setNewsDesigns(new YahooSimpleList());
     } else {
       if (newsSiteUrlParser.parseDirectory()
         || newsSiteUrlData.hostServer != URL_DEFAULT_HOST_SERVER
-        || ! newsSiteUrlParser.parse(getYahooString("LifePath"))) {
+        || ! newsSiteUrlParser.parse("LifePath")) {
         Site.setNewsDesigns(
           new YahooTopPanels(),
           new YahooStream("YDC-Stream"),
@@ -681,7 +693,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
           // The list of panels like Yahoo! Life categories
           new YahooSimpleList());
         if (newsSiteUrlData.hostServer != URL_DEFAULT_HOST_SERVER
-          || ! newsSiteUrlParser.parse(getYahooString("EntertainmentPath"))) {
+          || ! newsSiteUrlParser.parse("EntertainmentPath")) {
           switch(newsSiteUrlData.hostServer) {
           case NEWS_HOST_SERVER: // Yahoo! News
             Site.setNewsDesigns(
@@ -772,7 +784,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
                       topicFollowing: true
                     }
                 }));
-            if (newsSiteUrlParser.parse(getYahooString("FinanceAuthorPath"))) {
+            if (newsSiteUrlParser.parse("FinanceAuthorPath")) {
               newsSiteCategory = "Finance";
             }
             break;
@@ -794,21 +806,23 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
         newsSiteCategory = "Life";
       }
       newsSiteUrlParser.parseAll();
+      Site.setNewsOpenedUrl(newsSiteUrlParser.toString());
     }
 
     const SITE_CATEGORIES = splitYahooString("SiteCategories");
     const SITE_CATEGORY_TOPIC_WORDS =
       splitYahooString("SiteCategoryTopicWords");
 
-    SITE_CATEGORY_TOPIC_WORDS.forEach((categoryTopicWords, index) => {
-        if (newsSiteCategory == SITE_CATEGORIES[index]) {
-          Site.addNewsTopicWords(categoryTopicWords.split(" "));
-        }
-      });
+    for (let i = 0; i < SITE_CATEGORY_TOPIC_WORDS.length; i++) {
+      if (newsSiteCategory == SITE_CATEGORIES[i]) {
+        Site.addNewsTopicWords(SITE_CATEGORY_TOPIC_WORDS[i].split(" "));
+        break;
+      }
+    }
 
-    Site.displayNewsDesigns(
-      newsSiteUrlParser.toString(),
+    Site.setNewsSelector(
       new NewsSelector(ExtractNews.getDomainLanguage(newsSite.domainId)));
+    Site.displayNewsDesigns(new Set([ "complete" ]));
   }).catch((error) => {
     Debug.printStackTrace(error);
   });

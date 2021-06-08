@@ -76,7 +76,7 @@ const ExtractNews = (() => {
         // Names and word options of filtering target
         TARGET_ACCEPT: "ACCEPT",
         TARGET_DROP: "DROP",
-        TARGET_RETURN: "RETURN",
+        TARGET_BREAK: "BREAK",
         TARGET_WORD_BEGINNING: "Beginning",
         TARGET_WORD_END: "End",
         TARGET_WORDS_EXCLUDED: "Excluded",
@@ -219,7 +219,8 @@ const ExtractNews = (() => {
             hostServerPatterns: hostServerPatterns,
             hostDomain: hostDomain
           };
-        if (sitePaths.length > 0 && sitePaths[0] != "") {
+        if (sitePaths != undefined
+          && sitePaths.length > 0 && sitePaths[0] != "") {
           if (hostServerPatterns.length > 1
             || hostServerPatterns[0] == URL_PATTERN_NON_EXISTENCE
             || hostServerPatterns[0] == URL_PATTERN_ANY_MATCH) {
@@ -230,7 +231,8 @@ const ExtractNews = (() => {
         if (commentHostServerPatterns != undefined) {
           this.domain.commentHostServerPatterns = commentHostServerPatterns;
         }
-        if (commentSitePaths.length > 0 && commentSitePaths[0] != "") {
+        if (commentSitePaths != undefined
+          && commentSitePaths.length > 0 && commentSitePaths[0] != "") {
           this.domain.commentSitePaths = commentSitePaths;
         }
         var sites = new Array();
@@ -306,6 +308,14 @@ const ExtractNews = (() => {
 
       get language() {
         return this.domain.language;
+      }
+
+      get hostServerPatterns() {
+        return this.domain.hostServerPatterns;
+      }
+
+      get hostDomain() {
+        return this.domain.hostDomain;
       }
 
       isAlwaysHostServerSpecified() {
@@ -529,7 +539,7 @@ const ExtractNews = (() => {
 
     /*
      * Sets the specified news site into the array of news sites set
-     * in this contens if not exist.
+     * in the current context if not exist.
      */
     function setNewsSite(newsSite) {
       if (newsSite == undefined) {
@@ -552,9 +562,9 @@ const ExtractNews = (() => {
     function readEnabledNewsSite(url) {
       var newsSite = getNewsSite(url);
       if (newsSite != undefined) {
-        var enabledKey = newsSite.domainId + _ExtractNews.ENABLED_KEY;
-        return ExtractNews.readStorage(enabledKey).then((items) => {
-            var enabled = items[enabledKey];
+        var domainEnabledKey = newsSite.domainId + _ExtractNews.ENABLED_KEY;
+        return ExtractNews.readStorage(domainEnabledKey).then((items) => {
+            var enabled = items[domainEnabledKey];
             if (enabled | enabled == undefined) {
               return Promise.resolve(newsSite);
             }
@@ -570,20 +580,14 @@ const ExtractNews = (() => {
     _ExtractNews.readEnabledNewsSite = readEnabledNewsSite;
 
     /*
-     * Calls the specified function with the ID, name, and language for each
-     * domain set in the current context.
+     * Calls the specified function with the ID, name, language, and host
+     * server patterns or domain for each domain set in the current context.
      */
     function forEachDomain(callback) {
       for (const newsDomain of newsDomainMap.values()) {
-        callback(newsDomain.id, newsDomain.name, newsDomain.language);
-      }
-    }
-
-    function _checkDomainId(domainId) {
-      if (domainId == undefined) {
-        throw newNullPointerException("domainId");
-      } else if ((typeof domainId) != "string") {
-        throw newIllegalArgumentException("domainId");
+        callback(
+          newsDomain.id, newsDomain.name, newsDomain.language,
+          newsDomain.hostServerPatterns, newsDomain.hostDomain);
       }
     }
 
@@ -595,21 +599,10 @@ const ExtractNews = (() => {
      * in the current context.
      */
     function isDomainEnabled(domainId) {
-      _checkDomainId(domainId);
-      return enabledDomainIdSet.has(domainId);
-    }
-
-    /*
-     * Enables the domain of the specified ID in the current context
-     * if the specified flag is true, otherwise, disables it.
-     */
-    function setDomainEnabled(domainId, enabled) {
-      _checkDomainId(domainId);
-      if (enabled) {
-        enabledDomainIdSet.add(domainId);
-      } else if (enabledDomainIdSet.has(domainId)) {
-        enabledDomainIdSet.delete(domainId);
+      if (domainId != undefined) {
+        return enabledDomainIdSet.has(domainId);
       }
+      return false;
     }
 
     /*
@@ -617,19 +610,52 @@ const ExtractNews = (() => {
      * in the current context is localized.
      */
     function getDomainLanguage(domainId) {
-      _checkDomainId(domainId);
-      for (const newsDomain of newsDomainMap.values()) {
-        if (domainId == newsDomain.id) {
-          return newsDomain.language;
+      if (domainId != undefined) {
+        for (const newsDomain of newsDomainMap.values()) {
+          if (domainId == newsDomain.id) {
+            return newsDomain.language;
+          }
         }
       }
       return _ExtractNews.SITE_ENGLISH;
     }
 
+    /*
+     * Sets the domain of the specified data to the current context.
+     */
+    function setDomain(domainData) {
+      if (domainData == undefined) {
+        throw newNullPointerException("domainData");
+      }
+      var domainId = domainData.id;
+      if (domainId == undefined) {
+        newsDomainMap.set(
+          _createNewsDomainId(hostDomain),
+          new NewsDomain(
+            domainData.name, domainData.language,
+            domainData.hostServerPatterns, domainData.hostDomain));
+      }
+      if (domainData.enabled) {
+        enabledDomainIdSet.add(domainId);
+      } else if (enabledDomainIdSet.has(domainId)) {
+        enabledDomainIdSet.delete(domainId);
+      }
+    }
+
+    /*
+     * Removes the domain of the specified ID from the current context.
+     */
+    function removeDomain(domainId) {
+      if (domainId != undefined && newsDomainMap.has(domainId)) {
+        newsDomainMap.delete(domainId);
+      }
+    }
+
     _ExtractNews.forEachDomain = forEachDomain;
     _ExtractNews.isDomainEnabled = isDomainEnabled;
-    _ExtractNews.setDomainEnabled = setDomainEnabled;
     _ExtractNews.getDomainLanguage = getDomainLanguage;
+    _ExtractNews.setDomain = setDomain;
+    _ExtractNews.removeDomain = removeDomain;
 
     /*
      * Returns the array of URL patterns whose news sites are contained
@@ -670,7 +696,7 @@ const ExtractNews = (() => {
     const TARGET_NAME_SET = new Set([
         _ExtractNews.TARGET_ACCEPT,
         _ExtractNews.TARGET_DROP,
-        _ExtractNews.TARGET_RETURN
+        _ExtractNews.TARGET_BREAK
       ]);
 
     _ExtractNews.TARGET_NAME_SET = TARGET_NAME_SET;
@@ -757,8 +783,8 @@ const ExtractNews = (() => {
         name: _ExtractNews.TARGET_DROP,
         terminatesBlock: true
       });
-    const FILTERING_RETURN = new FilteringTarget({
-        name: _ExtractNews.TARGET_RETURN,
+    const FILTERING_BREAK = new FilteringTarget({
+        name: _ExtractNews.TARGET_BREAK,
         terminatesBlock: true
       });
 
@@ -774,8 +800,8 @@ const ExtractNews = (() => {
           return FILTERING_ACCEPT;
         case ExtractNews.TARGET_DROP:
           return FILTERING_DROP;
-        case ExtractNews.TARGET_RETURN:
-          return FILTERING_RETURN;
+        case ExtractNews.TARGET_BREAK:
+          return FILTERING_BREAK;
         }
       }
       return new FilteringTarget({
@@ -884,7 +910,7 @@ const ExtractNews = (() => {
       return new Filtering({
           categoryName: "",
           categoryTopics: undefined,
-          policyTargetName: _ExtractNews.TARGET_RETURN
+          policyTargetName: _ExtractNews.TARGET_BREAK
         });
     }
 
@@ -1044,7 +1070,7 @@ const ExtractNews = (() => {
         browser.runtime.sendMessage, message).then(() => {
           if (browser.runtime.lastError != undefined) {
             Debug.printProperty(
-              "SendMessage Error", browser.runtime.lastError.message);
+              "runtime.sendMessage()", browser.runtime.lastError.message);
           }
           Debug.printMessage(
             "Send the command " + message.command.toUpperCase()

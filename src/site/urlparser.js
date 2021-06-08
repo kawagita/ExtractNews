@@ -60,7 +60,6 @@ function getNewsSiteUrlData(site, url) {
 }
 
 const PATH_DIRECTORY_REGEXP = new RegExp(/^\/(?:index.html?)?$/);
-const PATH_HTML_DOCUMENT_REGEXP = new RegExp(/[^/]+\.html?$/);
 
 /*
  * The object to parse the URL into the path and query sequentially.
@@ -87,6 +86,39 @@ class NewsSiteUrlParser {
     this.path = "";
   }
 
+  /*
+   * Returns true if this parser is completed for the url data.
+   */
+  isCompleted() {
+    return this.relativePath == "";
+  }
+
+  /*
+   * Returns the path string for the specified ID.
+   */
+  getPathString(pathId) {
+    throw newUnsupportedOperationException();
+  }
+
+  /*
+   * Returns the path regular expression for the specified ID.
+   */
+  getPathRegExp(pathId) {
+    throw newUnsupportedOperationException();
+  }
+
+  /*
+   * Returns true if the parsed path ends with the path for the specified ID.
+   */
+  endsWith(pathId) {
+    if (pathId == undefined) {
+      throw newNullPointerException("pathId");
+    } else if ((typeof pathId) != "string") {
+      throw newIllegalArgumentException("pathId");
+    }
+    return this.path.endsWith(this.getPathString(pathId));
+  }
+
   _parsePath(path) {
     var relativePath = this.relativePath.substring(path.length);
     if (relativePath == "" || relativePath.startsWith(URL_PATH_SEPARATOR)) {
@@ -100,7 +132,7 @@ class NewsSiteUrlParser {
   /*
    * Parses the specified path in the current position of URL.
    */
-  parse(path) {
+  parsePath(path) {
     if (path == undefined) {
       throw newNullPointerException("path");
     } else if ((typeof path) != "string") {
@@ -119,16 +151,42 @@ class NewsSiteUrlParser {
   }
 
   /*
-   * Parses a path from the specified array in the current position of URL.
+   * Parses the path(s) for the specified ID in the current position of URL.
    */
-  parseFrom(paths) {
-    if (! Array.isArray(paths)) {
-      throw newIllegalArgumentException("paths");
+  parse(pathId) {
+    if (pathId == undefined) {
+      throw newNullPointerException("pathId");
+    } else if ((typeof pathId) != "string") {
+      throw newIllegalArgumentException("pathId");
     }
-    for (let i = 0; i < paths.length; i++) {
-      if (this.parse(paths[i])) {
-        return true;
+    if (pathId.endsWith("Paths")) {
+      for (let path of this.getPathString(pathId).split(",")) {
+        if (this.parsePath(path)) {
+          return true;
+        }
       }
+      return false;
+    }
+    return this.parsePath(this.getPathString(pathId));
+  }
+
+  /*
+   * Parses the path by the regular expression for the specified ID
+   * in the current position of URL.
+   */
+  parseByRegExp(pathId) {
+    if (pathId == undefined) {
+      throw newNullPointerException("pathId");
+    } else if ((typeof pathId) != "string") {
+      throw newIllegalArgumentException("pathId");
+    }
+    var pathMatch = this.relativePath.match(this.getPathRegExp(pathId));
+    if (pathMatch != null) {
+      var path = pathMatch[0];
+      if (path.endsWith(URL_PATH_SEPARATOR)) {
+        path = path.substring(0, path.length - 1);
+      }
+      return this._parsePath(path);
     }
     return false;
   }
@@ -163,27 +221,6 @@ class NewsSiteUrlParser {
   }
 
   /*
-   * Returns the array into which String.match() stores the result
-   * of matching the path in the current position of URL against
-   * the specified regular expression.
-   */
-  match(pathRegexp) {
-    if (pathRegexp == undefined) {
-      throw newNullPointerException("pathRegexp");
-    }
-    return this.relativePath.match(pathRegexp);
-  }
-
-  /*
-   * Returns the array into which String.match() stores the result
-   * of matching the path in the current position of URL against
-   * /[^/]+\.html?$/.
-   */
-  matchHtmlDocument() {
-    return this.match(PATH_HTML_DOCUMENT_REGEXP);
-  }
-
-  /*
    * Parses the key and value of query parameters in the URL.
    */
   parseQuery() {
@@ -200,6 +237,9 @@ class NewsSiteUrlParser {
     return false;
   }
 
+  /*
+   * Returns the query value parsed for the specified key.
+   */
   getQueryValue(queryKey) {
     if (queryKey != undefined && this.queryMap != undefined) {
       return this.queryMap.get(queryKey);
@@ -207,27 +247,16 @@ class NewsSiteUrlParser {
     return undefined;
   }
 
-  isCompleted() {
-    return this.relativePath == "";
-  }
-
-  endsWith(path) {
-    if (path == undefined) {
-      throw newNullPointerException("path");
-    }
-    return this.path.endsWith(path);
-  }
-
   /*
    * Returns the string parsed to the current position of URL.
    */
-  toString(queryKeys) {
+  toString(...queryKeys) {
+    var url = URL_HTTPS_SCHEME;
+    if (this.urlData.hostServer != "") {
+      url += this.urlData.hostServer + URL_DOMAIN_LABEL_SEPARATOR;
+    }
+    url += this.urlData.hostDomain;
     if (this.path != "") {
-      var url = URL_HTTPS_SCHEME;
-      if (this.urlData.hostServer != "") {
-        url += this.urlData.hostServer + URL_DOMAIN_LABEL_SEPARATOR;
-      }
-      url += this.urlData.hostDomain;
       if (this.path != URL_PATH_SEPARATOR) {
         url += this.path;
         if (! this.path.endsWith(URL_PATH_SEPARATOR)
@@ -257,8 +286,7 @@ class NewsSiteUrlParser {
           });
         url += query;
       }
-      return url;
     }
-    return undefined;
+    return url;
   }
 }

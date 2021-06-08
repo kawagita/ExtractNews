@@ -24,7 +24,6 @@ const _Text = ExtractNews.Text;
 const _Regexp = ExtractNews.Regexp;
 const _Alert = ExtractNews.Alert;
 const _Event = ExtractNews.Event;
-const _File = ExtractNews.File;
 const _Popup = ExtractNews.Popup;
 
 const OPTION_PAGE_WIDTH =
@@ -34,6 +33,9 @@ if (OPTION_PAGE_WIDTH < 560) {
 } else if (OPTION_PAGE_WIDTH < 800) {
   document.body.className = "compact";
 }
+
+// Class name of the element grayed out on this option page
+const OPTION_GRAYED_OUT = "grayed_out";
 
 /*
  * Returns the message on the option page.
@@ -67,28 +69,212 @@ function getOptionButton(id) {
   return button;
 }
 
+// Tab ID send from this option page
+
+var OPTION_PAGE_TAB_ID = browser.tabs.TAB_ID_NONE;
+
+callAsynchronousAPI(browser.tabs.getCurrent).then((tab) => {
+    OPTION_PAGE_TAB_ID = tab.id;
+  }).catch((error) => {
+    Debug.printStackTrace(error);
+  });
+
 /*
  * Sends the specified warning message on this option page to the background.
  */
 function sendOpitonWarningMessage(warning) {
-  callAsynchronousAPI(browser.tabs.getCurrent).then((tab) => {
-      ExtractNews.sendRuntimeMessage({
-          command: ExtractNews.COMMAND_DIALOG_OPEN,
-          tabId: tab.id,
-          warning: warning.toObject()
-        }, " on Option Page Tab " + tab.id);
-    }).catch((error) => {
+  return ExtractNews.sendRuntimeMessage({
+      command: ExtractNews.COMMAND_DIALOG_OPEN,
+      tabId: OPTION_PAGE_TAB_ID,
+      warning: warning.toObject()
+    }, " on Option Page Tab " + OPTION_PAGE_TAB_ID).catch((error) => {
       Debug.printStackTrace(error);
     });
 }
 
 /*
- * Sends data of the specified object with "Update" command to the background.
+ * Sends the specified object data with "Update" command to the background.
  */
-function sendOpitonUpdateMessage(updateObject = { }) {
-  ExtractNews.sendRuntimeMessage(Object.assign({
-      command: ExtractNews.COMMAND_SETTING_UPDATE
-    }, updateObject), " on Option Page Tab");
+function sendOpitonUpdateMessage(updatedObject = { }) {
+  return ExtractNews.sendRuntimeMessage(Object.assign({
+      command: ExtractNews.COMMAND_SETTING_UPDATE,
+      tabId: OPTION_PAGE_TAB_ID,
+      filteringUpdated: false
+    }, updatedObject), " on Option Page Tab " + OPTION_PAGE_TAB_ID);
+}
+
+// The option to change a value for the node.
+
+class OptionData {
+  constructor(optionNode, read, write, updatedPropertyName) {
+    if (optionNode == undefined) {
+      throw newNullPointerException("optionData");
+    } else if (read == undefined) {
+      throw newNullPointerException("read");
+    } else if (write == undefined) {
+      throw newNullPointerException("write");
+    } else if (updatedPropertyName == undefined) {
+      throw newNullPointerException("updatedPropertyName");
+    } else if ((typeof updatedPropertyName) != "string") {
+      throw newIllegalArgumentException("updatedPropertyName");
+    }
+    this.optionNode = optionNode;
+    this.optionChecked = false;
+    if (optionNode.tagName == "INPUT") {
+      switch (optionNode.type) {
+      case "checkbox":
+        this.optionChecked = true;
+        break;
+      }
+    }
+    this.read = read;
+    this.write = write;
+    this.updatedPropertyName = updatedPropertyName;
+  }
+
+  get id() {
+    return this.optionNode.id;
+  }
+
+  isChecked() {
+    return this.optionChecked;
+  }
+
+  readValue() {
+    this.read().then((value) => {
+        if (this.optionChecked) {
+          this.optionNode.checked = value;
+          this.optionNode.addEventListener("input", (event) => {
+              this.write(event.target.checked).then(() => {
+                  sendOpitonUpdateMessage(this.getUpdatedObject());
+                }).catch((error) => {
+                  Debug.printStackTrace(error);
+                });
+            });
+        }
+      });
+  }
+
+  setValue(valueString) {
+    if (valueString == undefined) {
+      throw newNullPointerException("valueString");
+    } else if ((typeof valueString) != "string") {
+      throw newIllegalArgumentException("valueString");
+    }
+    if (this.optionChecked) {
+      this.optionNode.checked = Boolean(valueString);
+    }
+  }
+
+  getUpdatedPropertyData() {
+    return undefined;
+  }
+
+  getUpdatedObject(updatedObject = { }) {
+    var updatedData = this.getUpdatedPropertyData();
+    if (updatedData != undefined) {
+      if (updatedObject[this.updatedPropertyName] == undefined) {
+        updatedObject[this.updatedPropertyName] = new Array();
+      }
+      updatedObject[this.updatedPropertyName].push(updatedData);
+    } else if (this.optionChecked) {
+      updatedObject[this.updatedPropertyName] = this.optionNode.checked;
+    }
+    return updatedObject;
+  }
+
+  toString() {
+    if (this.optionChecked) {
+      return String(this.optionNode.checked);
+    }
+    return "";
+  }
+}
+
+function _createCheckedOptionDiv(optionId, optionText) {
+  var checkedOptionDiv = document.createElement("div");
+  var checkedOptionInput = document.createElement("input");
+  var checkedOptionLabel = document.createElement("label");
+  checkedOptionDiv.className = "checked_option";
+  checkedOptionInput.type = "checkbox";
+  checkedOptionInput.id = optionId;
+  checkedOptionLabel.textContent = optionText;
+  checkedOptionDiv.appendChild(checkedOptionInput);
+  checkedOptionDiv.appendChild(checkedOptionLabel);
+  return checkedOptionDiv;
+}
+
+class _EnablingSiteData extends OptionData {
+  constructor(domainCheckbox, domainData) {
+    super(domainCheckbox, () => {
+        return Promise.resolve(ExtractNews.isDomainEnabled(domainData.id));
+      }, (enabled) => {
+        ExtractNews.setDomain(domainData);
+        return Promise.resolve();
+      }, "domainDataArray");
+    this.domainData = domainData;
+  }
+
+  getUpdatedPropertyData() {
+    this.domainData.enabled = ExtractNews.isDomainEnabled(this.domainData.id);
+    return this.domainData;
+  }
+}
+
+const OPTION_DISABLE_FILTERING = "DisableFiltering";
+const OPTION_DEBUG_EXTENSIONS  = "DebugExtension";
+
+/*
+ * The pane of genral settings on this option page.
+ */
+class GeneralPane {
+  constructor() {
+    var enablingSiteNode = getOptionElement("EnablingSite", "div");
+    var advancedOptionsNode = getOptionElement("Advanced", "div");
+    var disableFilteringOptionDiv =
+      _createCheckedOptionDiv(
+        OPTION_DISABLE_FILTERING, getOptionMessage(OPTION_DISABLE_FILTERING));
+    var debugExtensionOptionDiv =
+      _createCheckedOptionDiv(
+        OPTION_DEBUG_EXTENSIONS, getOptionMessage(OPTION_DEBUG_EXTENSIONS));
+    this.pane = {
+        optionDataArray: new Array(),
+        optionNodeGroup: new _Event.PointedGroup()
+      };
+    ExtractNews.forEachDomain(
+      (domainId, name, language, hostServerPatterns, hostDomain) => {
+        var domainCheckedOptionDiv = _createCheckedOptionDiv(domainId, name);
+        enablingSiteNode.appendChild(domainCheckedOptionDiv);
+        this.pane.optionDataArray.push(
+          new _EnablingSiteData(
+            domainCheckedOptionDiv.querySelector("input"), {
+              id: domainId,
+              name: name,
+              language: language,
+              hostServerPatterns: hostServerPatterns,
+              hostDomain: hostDomain,
+              enabled: false
+            }));
+      });
+    advancedOptionsNode.appendChild(disableFilteringOptionDiv);
+    advancedOptionsNode.appendChild(debugExtensionOptionDiv);
+    this.pane.optionDataArray.push(
+      new OptionData(
+        disableFilteringOptionDiv.querySelector("input"),
+        _Storage.readFilteringDisabled, _Storage.writeFilteringDisabled,
+        "filteringDisabled"),
+      new OptionData(
+        debugExtensionOptionDiv.querySelector("input"),
+        ExtractNews.getDebugMode, ExtractNews.setDebugMode, "debugOn"));
+  }
+
+  forEachOptionData(callback) {
+    this.pane.optionDataArray.forEach(callback);
+  }
+
+  setEventRelation(eventGroup) {
+    eventGroup.setEventRelation(this.pane.optionNodeGroup);
+  }
 }
 
 // Variables and functions to operate a filtering target or news selection.
@@ -154,21 +340,19 @@ function _setButtonEnabled(node, enabledOperation, enabled) {
 }
 
 /*
- * The pane of filterings or news selections on this option page.
+ * The pane of elements focused on this option page.
  */
-class OptionPane {
-  constructor(name, focusedNodeGroup) {
+class FocusedOptionPane {
+  constructor(focusedNodeGroup) {
+    if (focusedNodeGroup == undefined) {
+      throw newNullPointerException("focusedNodeGroup");
+    }
     this.pane = {
-        element: document.getElementById(name + "Pane"),
         nodes: new Array(),
         insertButtonGroup: new _Event.PointedGroup(),
         focusedNodeGroup: focusedNodeGroup
       };
     this.pane.insertButtonGroup.setEventRelation(focusedNodeGroup);
-  }
-
-  get element() {
-    return this.pane.element;
   }
 
   get nodeSize() {
@@ -277,12 +461,6 @@ class OptionPane {
       movedDownIndex, 0, this.pane.nodes.splice(movedUpIndex, 1)[0]);
   }
 
-  _scrollToNodeTop(node) {
-    window.scroll(
-      0, node.getBoundingClientRect().top
-        - this.pane.nodes[0].getBoundingClientRect().top);
-  }
-
   focusNode(nodeIndex, focusedOperation) {
     var node = this.getNode(nodeIndex);
     var focusedElement = null;
@@ -293,7 +471,9 @@ class OptionPane {
     }
     if (focusedElement != null) {
       focusedElement.focus();
-      this._scrollToNodeTop(node);
+      window.scroll(
+        0, node.getBoundingClientRect().top
+          - this.pane.nodes[0].getBoundingClientRect().top);
       return true;
     }
     return false;

@@ -26,13 +26,15 @@ ExtractNews.Site = (() => {
     const _Site = { };
 
     var newsSelector = undefined;
+    var newsOpenedUrl = "";
+    var newsTopicWordSet = new Set();
+    var newsDesigns = new Array();
     var newsDisplayOptions = {
         newsCommentHidden: false,
         newsFilteringDisabled: false,
         newsSelectionDisabled: false
       };
-    var newsDesigns = new Array();
-    var newsTopicWordSet = new Set();
+    var newsReadyStateSet = undefined;
 
     /*
      * Returns the selector which settle to show or hide news topics and/or
@@ -42,7 +44,31 @@ ExtractNews.Site = (() => {
       return newsSelector;
     }
 
+    /*
+     * Sets the specified selector which settle to show or hide news topics
+     * and/or senders into this site.
+     */
+    function setNewsSelector(selector) {
+      if (selector == undefined) {
+        throw newNullPointerException("selector");
+      }
+      newsSelector = selector;
+    }
+
     _Site.getNewsSelector = getNewsSelector;
+    _Site.setNewsSelector = setNewsSelector;
+
+    /*
+     * Sets the specified opened URL of news selections on this site.
+     */
+    function setNewsOpenedUrl(openedUrl) {
+      if (openedUrl == undefined) {
+        throw newNullPointerException("openedUrl");
+      }
+      newsOpenedUrl = openedUrl;
+    }
+
+    _Site.setNewsOpenedUrl = setNewsOpenedUrl;
 
     /*
      * Returns the object of options to display news items on this site.
@@ -185,59 +211,84 @@ ExtractNews.Site = (() => {
           newsDisplayOptions.newsCommentHidden = false;
           newsDisplayOptions.newsFilteringDisabled = false;
           newsDisplayOptions.newsSelectionDisabled = false;
-          newsDisplayOptions.newsDisposed = true;
           Debug.printMessage("Disabling this site.");
         }
         break;
       }
       _arrangeNewsDesigns().then(() => {
           if (message.command == ExtractNews.COMMAND_SETTING_DISPOSE) {
+            browser.runtime.onMessage.removeListener(_changeNewsDisplaying);
             newsSelector = undefined;
             newsDesigns.forEach((newsDesign) => {
                 newsDesign.clear();
               });
-            browser.runtime.onMessage.removeListener(_changeNewsDisplaying);
+            newsDesigns = undefined;
+            newsTopicWordSet = undefined;
           }
         }).catch((error) => {
           Debug.printStackTrace(error);
         });
     }
 
+    browser.runtime.onMessage.addListener(_changeNewsDisplaying);
+
+    function _setNewsDisplaying(event) {
+      if (newsReadyStateSet == undefined
+        || newsReadyStateSet.has(event.target.readyState)) {
+        if (newsReadyStateSet != undefined) {
+          document.removeEventListener("readystatechange", _setNewsDisplaying);
+          newsReadyStateSet = undefined;
+          Debug.printMessage(
+            "Display news designs by the event "
+            + document.readyState.toUpperCase() + ".");
+        } else {
+          Debug.printMessage("Display news designs immediately.");
+        }
+        const displayingPromises = new Array();
+        newsDesigns.forEach((newsDesign) => {
+            displayingPromises.push(newsDesign.display());
+          });
+        Promise.all(displayingPromises).then(() => {
+            var newsTopicWordsString = Array.from(newsTopicWordSet).join(",");
+            Debug.printProperty("Opened URL", newsOpenedUrl);
+            Debug.printProperty("Topic Words", newsTopicWordsString);
+            ExtractNews.sendRuntimeMessage({
+                command: ExtractNews.COMMAND_SETTING_REQUEST,
+                openedUrl: newsOpenedUrl,
+                topicWordsString: newsTopicWordsString
+              });
+          }).catch((error) => {
+            Debug.printStackTrace(error);
+          });
+      }
+    }
+
     /*
      * Displays news designs arranged by the selector on this site.
      */
-    function displayNewsDesigns(openedUrl = "", selector) {
-      newsSelector = selector;
-
-      browser.runtime.onMessage.addListener(_changeNewsDisplaying);
-
-      window.addEventListener("beforeunload", (event) => {
-          newsDesigns.forEach((newsDesign) => {
-            newsDesign.clear();
-          });
-        });
-
-      ExtractNews.getDebugMode().then(() => {
-          const displayingPromises = new Array();
-          newsDesigns.forEach((newsDesign) => {
-              displayingPromises.push(newsDesign.display());
-            });
-          return Promise.all(displayingPromises);
-        }).then(() => {
-          var newsTopicWordsString = Array.from(newsTopicWordSet).join(",");
-          Debug.printProperty("Opened URL", openedUrl);
-          Debug.printProperty("Topic Words", newsTopicWordsString);
-          ExtractNews.sendRuntimeMessage({
-              command: ExtractNews.COMMAND_SETTING_REQUEST,
-              openedUrl: openedUrl,
-              topicWordsString: newsTopicWordsString
-            });
-        }).catch((error) => {
-          Debug.printStackTrace(error);
-        });
+    function displayNewsDesigns(readyStateSet) {
+      if (readyStateSet == undefined) {
+        throw newNullPointerException("readyStateSet");
+      } else if (newsSelector == undefined) {
+        throw newUnsupportedOperationException();
+      }
+      if (! readyStateSet.has(document.readyState)) {
+        newsReadyStateSet = readyStateSet;
+        document.addEventListener("readystatechange", _setNewsDisplaying);
+      } else { // "interactive" or "complete"
+        _setNewsDisplaying();
+      }
     }
 
     _Site.displayNewsDesigns = displayNewsDesigns;
+
+    ExtractNews.getDebugMode();
+
+    window.addEventListener("beforeunload", (event) => {
+        newsDesigns.forEach((newsDesign) => {
+          newsDesign.clear();
+        });
+      });
 
     return _Site;
   })();

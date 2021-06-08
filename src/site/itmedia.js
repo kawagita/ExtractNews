@@ -366,135 +366,147 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
     const CATEGORY_PATHS = splitITmediaNewsString("CategoryPaths");
     const CATEGORY_IDS = splitITmediaNewsString("CategoryIds");
 
-    // Returns the ID of a category parsed from the pankuzu list.
-
-    function _getPankuzuCategoryId() {
-      for (const pankuzu of document.querySelectorAll("#localPankuzu a")) {
-        var pankuzuUrlData = getNewsSiteUrlData(newsSite, pankuzu.href);
-        if (pankuzuUrlData != undefined) {
-          var pankuzuUrlParser = new NewsSiteUrlParser(pankuzuUrlData);
-          if (pankuzuUrlParser.parse(newsSite.path)
-            && pankuzuUrlParser.parse(CATEGORY_ROOT_PATH)) {
-            for (let i = 0; i < CATEGORY_PATHS.length; i++) {
-              if (pankuzuUrlParser.parse(CATEGORY_PATHS[i])) {
-                return CATEGORY_IDS[i];
-              }
-            }
-          }
+    function _addCategoryTopicWords(categoryId = "") {
+      var categoryTopicWordsString = "";
+      if (categoryId != "") {
+        categoryTopicWordsString =
+          getITmediaNewsString(categoryId + "CategoryTopicWords");
+      }
+      Site.addNewsTopicWords(splitITmediaNewsString("CommonTopicWords"));
+      if (categoryTopicWordsString != "") {
+        Site.addNewsTopicWords(categoryTopicWordsString.split(","));
+      } else {
+        // Add topics for all categories on the top page, burst, or archive.
+        for (let i = 0; i < CATEGORY_IDS.length; i++) {
+          Site.addNewsTopicWords(
+            splitITmediaNewsString(CATEGORY_IDS[i] + "CategoryTopicWords"));
         }
       }
-      return "";
     }
 
     // Display news designs arranged by a selector which selects and excludes
     // topics or senders, waiting the settings from the background script.
 
-    const ARTICLES_REGEXP = getITmediaNewsRegExp("Articles");
-    const BURSTS_CATEGORY_PATH = getITmediaNewsString("BurstsCategoryPath");
-    const INDUSTRY_CATEGORY_PATH =
-      getITmediaNewsString("IndustryCategoryPath");
-    const STUDIO_CATEGORY_PATH = getITmediaNewsString("StudioCategoryPath");
-    const LIFESTYLE_CATEGORY_PATH =
-      getITmediaNewsString("LifestyleCategoryPath");
-    const ARCHIVE_CATEGORY_PATH = getITmediaNewsString("ArchiveCategoryPath");
-    const AIPLUS_CATEGORY_PATH = getITmediaNewsString("AiplusCategoryPath");
-    const CLOUDUSER_CATEGORY_PATH =
-      getITmediaNewsString("ClouduserCategoryPath");
-    const QUANTUM_CATEGORY_PATH = getITmediaNewsString("QuantumCategoryPath");
+    class ITMediaUrlParser extends NewsSiteUrlParser {
+      constructor() {
+        super(getNewsSiteUrlData(newsSite, document.URL));
+        this.parsePath(newsSite.path);
+      }
+      getPathString(pathId) {
+        return getITmediaNewsString(pathId);
+      }
+      getPathRegExp(pathId) {
+        return getITmediaNewsRegExp(pathId);
+      }
+    }
 
-    var newsCategoryId = "";
-    var newsSiteUrlData = getNewsSiteUrlData(newsSite, document.URL);
-    var newsSiteUrlParser = new NewsSiteUrlParser(newsSiteUrlData);
-    newsSiteUrlParser.parse(newsSite.path);
-
-    if (newsSiteUrlParser.match(ARTICLES_REGEXP) != null) { // Articles
-      newsCategoryId = _getPankuzuCategoryId();
+    var newsSiteUrlParser = new ITMediaUrlParser();
+    if (newsSiteUrlParser.parseByRegExp("Articles")) { // Articles
       Site.setNewsDesigns(
+        // News design to get topics for the category displayed on the pankuzu
+        // list of an article, which never include news topics
+        new Design.NewsDesign({
+            parentProperties: Array.of({
+                selectors: "#localPankuzu",
+                setNewsElement: (element, newsParents) => {
+                    newsParents.push(element);
+                    for (const pankuzu of element.querySelectorAll("a")) {
+                      var urlData = getNewsSiteUrlData(newsSite, pankuzu.href);
+                      if (urlData != undefined) {
+                        var urlParser = new NewsSiteUrlParser(urlData);
+                        if (urlParser.parsePath(newsSite.path)
+                          && urlParser.parsePath(CATEGORY_ROOT_PATH)) {
+                          for (let i = 0; i < CATEGORY_PATHS.length; i++) {
+                            if (urlParser.parsePath(CATEGORY_PATHS[i])) {
+                              _addCategoryTopicWords(CATEGORY_IDS[i]);
+                              return;
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+              })
+          }),
+        // Kanren kiji
         new ITmediaNewsRelatedLink("#art"),
+        // Kanren link
         new ITmediaNewsRelatedLink("#lnk"));
-    } else if (newsSiteUrlParser.parseDirectory()) { // ITmedia NEWS top
-      Site.setNewsDesigns(
-        new ITmediaNewsTopPanels(),
-        new ITmediaNewsList(".colBoxNewArt"),
-        new ITmediaNewsList(".colBoxHotTopic"),
-        new ITmediaNewsListMoreLink(".colBoxLifestyle"),
-        new ITmediaNewsList(".colBoxAttention"));
-    } else if (newsSiteUrlParser.parse(CATEGORY_ROOT_PATH)) {
-      if (newsSiteUrlParser.parse(BURSTS_CATEGORY_PATH)) { // Bursts
-        Site.setNewsDesign(new ITmediaNewsBursts());
-      } else if (newsSiteUrlParser.parse(STUDIO_CATEGORY_PATH)) { // STUDIO
-        newsCategoryId = "Studio";
+    } else {
+      var newsCategoryId = undefined;
+      if (newsSiteUrlParser.parseDirectory()) { // ITmedia NEWS top
         Site.setNewsDesigns(
           new ITmediaNewsTopPanels(),
-          new ITmediaNewsPanels(".colBoxTopArticle", true),
-          new ITmediaNewsList(".colBoxSpecialFuture"),
-          new ITmediaNewsFeed(),
-          new ITmediaNewsRanking(".colBoxRanking"));
-      } else if (newsSiteUrlParser.parse(LIFESTYLE_CATEGORY_PATH)) { // Life
-        newsCategoryId = "Lifestyle";
-        Site.setNewsDesigns(
-          new ITmediaNewsFeed(),
-          new ITmediaNewsTopics(".colBoxRcCategory"));
-      } else if (newsSiteUrlParser.parse(ARCHIVE_CATEGORY_PATH)) { // Archive
-        Site.setNewsDesign(new ITmediaNewsBackNumber());
-      } else if (newsSiteUrlParser.parse(AIPLUS_CATEGORY_PATH)) { // AI+
-        newsCategoryId = "Aiplus";
-        Site.setNewsDesigns(
-          new ITmediaNewsTopPanels(),
-          new ITmediaNewsVeticalPanels(".colBoxIndustry", true),
-          new ITmediaNewsFeed(),
-          new ITmediaNewsTopics(".colBoxReco"),
-          new ITmediaNewsRanking(".colBoxaiplusRanking"));
-      } else if (newsSiteUrlParser.parse(CLOUDUSER_CATEGORY_PATH)) { // Cloud
-        newsCategoryId = "Clouduser";
-        Site.setNewsDesigns(
-          new ITmediaNewsTopPanels(),
-          new ITmediaNewsList(".colBoxAlist"),
-          new ITmediaNewsTopics(".colBoxRcCategory"));
-      } else if (newsSiteUrlParser.parse(QUANTUM_CATEGORY_PATH)) { // Quantum
-        newsCategoryId = "Quantum";
-        Site.setNewsDesigns(
-          new ITmediaNewsPickUp(".colBoxFeaturesIndex240UrllistRelated"),
-          new ITmediaNewsTopics(".colBoxFeatures2index120Urllist"),
-          new ITmediaNewsList(".colBoxFeaturesIndex120Urllist"),
-          new ITmediaNewsList(".colBoxFeaturesIndex240Urllist"));
-      } else { // Other categories
-        for (let i = 0; i < CATEGORY_PATHS.length; i++) {
-          if (newsSiteUrlParser.parse(CATEGORY_PATHS[i])) {
-            newsCategoryId = CATEGORY_IDS[i];
-            Site.setNewsDesigns(
-              new ITmediaNewsList(".colBox" + newsCategoryId + "New"),
-              new ITmediaNewsList(".colBox" + newsCategoryId + "Newtopic"));
-            break;
+          new ITmediaNewsList(".colBoxNewArt"),
+          new ITmediaNewsList(".colBoxHotTopic"),
+          new ITmediaNewsListMoreLink(".colBoxLifestyle"),
+          new ITmediaNewsList(".colBoxAttention"));
+      } else if (newsSiteUrlParser.parsePath(CATEGORY_ROOT_PATH)) {
+        if (newsSiteUrlParser.parse("BurstsCategoryPath")) { // Bursts
+          Site.setNewsDesign(new ITmediaNewsBursts());
+        } else if (newsSiteUrlParser.parse("StudioCategoryPath")) { // STUDIO
+          newsCategoryId = "Studio";
+          Site.setNewsDesigns(
+            new ITmediaNewsTopPanels(),
+            new ITmediaNewsPanels(".colBoxTopArticle", true),
+            new ITmediaNewsList(".colBoxSpecialFuture"),
+            // Shinchaku Kiji listed in the bottom of STUDIO
+            new ITmediaNewsFeed(),
+            new ITmediaNewsRanking(".colBoxRanking"));
+        } else if (newsSiteUrlParser.parse("LifestyleCategoryPath")) { // Life
+          newsCategoryId = "Lifestyle";
+          Site.setNewsDesigns(
+            new ITmediaNewsFeed(),
+            new ITmediaNewsTopics(".colBoxRcCategory"));
+        } else if (newsSiteUrlParser.parse("ArchiveCategoryPath")) { // Archive
+          Site.setNewsDesign(new ITmediaNewsBackNumber());
+        } else if (newsSiteUrlParser.parse("AiplusCategoryPath")) { // AI+
+          newsCategoryId = "Aiplus";
+          Site.setNewsDesigns(
+            new ITmediaNewsTopPanels(),
+            new ITmediaNewsVeticalPanels(".colBoxIndustry", true),
+            // Shinchaku Kiji listed in the middle of AI+
+            new ITmediaNewsFeed(),
+            new ITmediaNewsTopics(".colBoxReco"),
+            new ITmediaNewsRanking(".colBoxaiplusRanking"));
+        } else if (newsSiteUrlParser.parse("ClouduserCategoryPath")) { // Cloud
+          newsCategoryId = "Clouduser";
+          Site.setNewsDesigns(
+            new ITmediaNewsTopPanels(),
+            new ITmediaNewsList(".colBoxAlist"),
+            new ITmediaNewsTopics(".colBoxRcCategory"));
+        } else if (newsSiteUrlParser.parse("QuantumCategoryPath")) { // Quantum
+          newsCategoryId = "Quantum";
+          Site.setNewsDesigns(
+            new ITmediaNewsPickUp(".colBoxFeaturesIndex240UrllistRelated"),
+            new ITmediaNewsTopics(".colBoxFeatures2index120Urllist"),
+            new ITmediaNewsList(".colBoxFeaturesIndex120Urllist"),
+            new ITmediaNewsList(".colBoxFeaturesIndex240Urllist"));
+        } else { // Other categories
+          for (let i = 0; i < CATEGORY_PATHS.length; i++) {
+            if (newsSiteUrlParser.parsePath(CATEGORY_PATHS[i])) {
+              newsCategoryId = CATEGORY_IDS[i];
+              Site.setNewsDesigns(
+                // Few news topics listed in the top of each category
+                new ITmediaNewsList(".colBox" + newsCategoryId + "New"),
+                // The rest of news topics listed in each category
+                new ITmediaNewsList(".colBox" + newsCategoryId + "Newtopic"));
+              break;
+            }
+          }
+          if (newsSiteUrlParser.endsWith("IndustryCategoryPath")) {
+            Site.setNewsDesign(new ITmediaNewsList(".colBoxProductsNewtopic"));
           }
         }
-        if (newsSiteUrlParser.endsWith(INDUSTRY_CATEGORY_PATH)) {
-          Site.setNewsDesign(new ITmediaNewsList(".colBoxProductsNewtopic"));
-        }
       }
+      _addCategoryTopicWords(newsCategoryId);
+      Site.setNewsOpenedUrl(newsSiteUrlParser.toString());
     }
     Site.setNewsDesign(new ITmediaNewsTopics(".colBoxTopRanking"));
 
-    var newsCategoryTopicWordsString = "";
-    if (newsCategoryId != "") {
-      newsCategoryTopicWordsString =
-        getITmediaNewsString(newsCategoryId + "CategoryTopicWords");
-    }
-    Site.addNewsTopicWords(splitITmediaNewsString("CommonTopicWords"));
-    if (newsCategoryTopicWordsString != "") {
-      // Add topics for a category of this page to the array of topic words.
-      Site.addNewsTopicWords(newsCategoryTopicWordsString.split(","));
-    } else {
-      // Add topics for all categories on the top page, burst, or archive.
-      for (let i = 0; i < CATEGORY_IDS.length; i++) {
-        Site.addNewsTopicWords(
-          splitITmediaNewsString(CATEGORY_IDS[i] + "CategoryTopicWords"));
-      }
-    }
-
-    Site.displayNewsDesigns(
-      newsSiteUrlParser.toString(),
-      new NewsSelector(ExtractNews.getDomainLanguage(newsSite.domainId));
+    Site.setNewsSelector(
+      new NewsSelector(ExtractNews.getDomainLanguage(newsSite.domainId)));
+    Site.displayNewsDesigns(new Set([ "interactive" , "complete" ]));
   }).catch((error) => {
     Debug.printStackTrace(error);
   });

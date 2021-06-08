@@ -31,9 +31,11 @@ function getBrowserActionMessage(id) {
 }
 
 const PAGE_INDEX_STRING_ARRAYS = new Array();
+
 const PAGE_LIST_ITEM_COUNT = 10;
 const PAGE_LIST_ITEM_FAVICON_DATA_MAP = new Map();
 const PAGE_LIST_ITEM_DEFAULT_FAVICON_PNG = "../icons/night-40.png";
+
 const PAGE_TO_PREVIOUS_BLACK_PNG = "../icons/to_previous_black.png";
 const PAGE_TO_PREVIOUS_WHITE_PNG = "../icons/to_previous_white.png";
 const PAGE_TO_NEXT_BLACK_PNG = "../icons/to_next_black.png";
@@ -122,9 +124,7 @@ document.body.addEventListener(_Event.POINTER_DOWN, (event) => {
       && pagesNewsSelectionCount >= 0
       && pagesNewsSelectionCount < ExtractNews.SELECTION_MAX_COUNT) {
       if (listBottomPointEnabled) {
-        _Popup.closeSelectionEditWindow().then(() => {
-            return _Popup.openSelectionEditWindow();
-          }).catch((error) => {
+        _Popup.openSelectionEditWindow().catch((error) => {
             Debug.printStackTrace(error);
           }).finally(() => {
             window.close();
@@ -312,6 +312,10 @@ class PageListActionUI {
     this.actionNode.style.visibility = "hidden";
   }
 
+  unlockMenu() {
+    this.actionUnlocked = true;
+  }
+
   firePointedMenuItemEvent(event) {
     if (this.actionUnlocked && this.actionMenuPointedIndex >= 0) {
       // Lock the action until this action UI is closed and opened again.
@@ -420,10 +424,9 @@ pageListActionUI.addMenuItem(LIST_ITEM_EDIT, (event) => {
         editIndexStrings.push(
           PAGE_INDEX_STRING_ARRAYS[pageIndex][listItemIndex]);
       });
-    _Popup.closeSelectionEditWindow().then(() => {
+    _Popup.openSelectionEditWindow(editIndexStrings).then(() => {
         Debug.printMessage(
           "Edit the news selection of " + editIndexStrings.join(", ") + ".");
-        return _Popup.openSelectionEditWindow(editIndexStrings);
       }).catch((error) => {
         Debug.printStackTrace(error);
       }).finally(() => {
@@ -481,9 +484,7 @@ document.body.addEventListener(_Event.KEYDOWN, (event) => {
       } else if (! event.ctrlKey && ! event.shiftKey
         && pagesNewsSelectionCount < ExtractNews.SELECTION_MAX_COUNT) {
         // Open the edit window for new news selection if no pointed item.
-        _Popup.closeSelectionEditWindow().then(() => {
-            return _Popup.openSelectionEditWindow();
-          }).catch((error) => {
+        _Popup.openSelectionEditWindow().catch((error) => {
             Debug.printStackTrace(error);
           }).finally(() => {
             window.close();
@@ -739,6 +740,7 @@ function clearPageList() {
   for (let i = 0; i < listItems.length; i++) {
     pageList.removeChild(listItems[i]);
   }
+  pageListActionUI.unlockMenu();
   listNewsSelections = new Array();
   listNewsSelectionSiteIds = new Array();
   listItemPointedIndex = -1;
@@ -811,16 +813,14 @@ function displayNewsSelectionMessage(pageMessageId) {
 // Sets the text label and event listener to the page header or action UI,
 // and lastly call displayPageList() if a news selection exist.
 
-_Storage.readEnabledDomainIds().then((enabledDomainIds) => {
-    enabledDomainIds.forEach((enabledDomainId) => {
-        ExtractNews.setDomainEnabled(enabledDomainId, true);
-      });
-    return _Popup.querySelectionEditWindow();
-  }).then((editWindowTabId) => {
-    if (editWindowTabId != browser.tabs.TAB_ID_NONE) {
-      return Promise.resolve(-1);
+_Storage.readDomainData().then((domainDataArray) => {
+    domainDataArray.forEach(ExtractNews.setDomain);
+    return _Popup.searchSelectionEditWindow();
+  }).then((editWindow) => {
+    if (editWindow == undefined) {
+      return _Storage.readSelectionCount();
     }
-    return _Storage.readSelectionCount();
+    return Promise.resolve(-1);
   }).then((newsSelectionCount) => {
     if (newsSelectionCount >= 0) {
       var pageSize = 0;

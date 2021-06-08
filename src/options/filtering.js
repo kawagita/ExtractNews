@@ -183,129 +183,91 @@ class FilteringData {
   }
 
   /*
-   * Reads filtering data from the local storage and return the promise.
+   * Replaces filtering data by the specified map.
+   */
+  replace(filteringMap) {
+    if (this.removedCategoryIds.length <= 0) {
+      // Remove filtering data for these IDs which are not added after saving
+      // its previously from the storage when saved.
+      this.categoryIds.forEach((categoryId) => {
+          this.removedCategoryIds.push(categoryId);
+        });
+    }
+    this.categoryIds = new Array();
+    this.categoryDataArray = new Array();
+    this.categorySelectedIndex = 0;
+    this._targetDataTotal = 0;
+    filteringMap.forEach((filtering, filteringId) => {
+        // Add new filtering data of read or imported targets to the array.
+        var categoryData = createFilteringCategoryData(filtering);
+        Debug.printJSON(filtering);
+        this.categoryDataArray.push(categoryData);
+        this.categoryIds.push(filteringId);
+        this._targetDataTotal += categoryData.targetDataArray.length;
+      });
+    // Always put the category for all topics to the last position.
+    var categoryIndexforAll =
+      this.categoryIds.indexOf(ExtractNews.FILTERING_FOR_ALL);
+    if (categoryIndexforAll < 0) { // No category for all topics
+      var filtering = ExtractNews.newFiltering();
+      filtering.setCategoryName(
+        ExtractNews.getLocalizedString("AllFilteringCategoryName"));
+      filtering.setPolicyTarget(ExtractNews.TARGET_ACCEPT);
+      this.categoryDataArray.push(createFilteringCategoryData(filtering));
+      this._targetDataTotal++;
+    } else {
+      if (categoryIndexforAll < this.categoryIds.length - 1) {
+        this.categoryDataArray.push(
+          this.categoryDataArray.splice(categoryIndexforAll, 1)[0]);
+      }
+      this.categoryIds.splice(categoryIndexforAll, 1);
+    }
+    this.categoryIds.push(ExtractNews.FILTERING_FOR_ALL);
+  }
+
+  /*
+   * Reads filtering data from the storage and return the promise.
    */
   read() {
     return _Storage.readFilteringIds().then((filteringIds) => {
-        this.categoryIds = filteringIds;
-        this.categoryDataArray = new Array();
         return _Storage.readFilterings(filteringIds);
       }).then((filteringMap) => {
-        Debug.printMessage(
-          "Read filterings for " + this.categoryIds.join(", ") + ".");
-        this._targetDataTotal = 0;
-        this.categoryIds.forEach((filteringId) => {
-            var filtering = filteringMap.get(filteringId);
-            var categoryData = createFilteringCategoryData(filtering);
-            Debug.printJSON(filtering);
-            this.categoryDataArray.push(categoryData);
-            this._targetDataTotal += categoryData.targetDataArray.length;
-          });
-        this.categorySelectedIndex = 0;
-        return Promise.resolve();
+        this.replace(filteringMap)
       });
   }
 
   /*
-   * Imports filtering data from a file and return the promise fulfilled with
-   * the index of filtering targets appended to the option page.
+   * Writes filtering data into the storage and return the promise.
    */
-  import(dataReplaced = false) {
-    var filteringTargetAppendedIndex = 0;
-    var filteringTargetTotal = 0;
-    if (! dataReplaced) {
-      filteringTargetTotal = this._targetDataTotal;
-    }
-    const importPromise = new Promise((resolve) => {
-        _File.importNewsFilterings(
-          filteringTargetTotal, (filteringIds, filteringMap) => {
-            if (dataReplaced) {
-              // Replace the category name or topics, and targets of all
-              // filterings with file's data.
-              this.categoryIds.forEach((categoryId) => {
-                  // Remove these filterings from the local storage when
-                  // new filterings are saved on the option page.
-                  if (this.removedCategoryIds.indexOf(categoryId) < 0) {
-                    this.removedCategoryIds.push(categoryId);
-                  }
-                });
-              this.categoryIds = new Array();
-              this.categoryDataArray = new Array();
-              this.categorySelectedIndex = 0;
-              this._targetDataTotal = 0;
-            } else {
-              filteringTargetAppendedIndex =
-                this._getCategorySelectedData().targetDataArray.length - 1;
-            }
-            if (filteringIds.length > 0) {
-              Debug.printMessage(
-                "Import filterings for " + filteringIds.join(", ") + ".");
-              filteringIds.forEach((filteringId) => {
-                  var filtering = filteringMap.get(filteringId);
-                  Debug.printJSON(filtering);
-                  for (let i = 0; i < this.categoryDataArray.length; i++) {
-                    if (filteringId == this.categoryIds[i]) {
-                      // Insert targets before the policy target in filtering
-                      // data if has already been existed.
-                      var categoryData = this.categoryDataArray[i];
-                      var targetDataArray = categoryData.targetDataArray;
-                      if (filteringId != ExtractNews.FILTERING_FOR_ALL) {
-                        categoryData.categoryTopicsString =
-                          filtering.categoryTopics.join(",");
-                      }
-                      categoryData.name = filtering.categoryName;
-                      filtering.targets.forEach((filteringTarget) => {
-                          targetDataArray.push(
-                            createFilteringTargetData(filteringTarget));
-                        });
-                      targetDataArray.push(
-                        createFilteringTargetData(filtering.policyTarget));
-                      this._targetDataTotal += targetDataArray.length;
-                      return;
-                    }
-                  }
-                  // Add new filtering data of imported targets to the array.
-                  var categoryData = createFilteringCategoryData(filtering);
-                  this.categoryDataArray.push(categoryData);
-                  this.categoryIds.push(filteringId);
-                  this._targetDataTotal += categoryData.targetDataArray.length;
-                });
-            }
-            // Always put the category for all topics to the last position.
-            var categoryIndexforAll =
-              this.categoryIds.indexOf(ExtractNews.FILTERING_FOR_ALL);
-            if (categoryIndexforAll < 0) { // No category for all topics
-              var filtering = ExtractNews.newFiltering();
-              filtering.setCategoryName(
-                ExtractNews.getLocalizedString("AllFilteringCategoryName"));
-              filtering.setPolicyTarget(ExtractNews.TARGET_ACCEPT);
-              this.categoryDataArray.push(
-                createFilteringCategoryData(filtering));
-              this._targetDataTotal++;
-            } else {
-              if (categoryIndexforAll < this.categoryIds.length - 1) {
-                this.categoryDataArray.push(
-                  this.categoryDataArray.splice(categoryIndexforAll, 1)[0]);
-              }
-              this.categoryIds.splice(categoryIndexforAll, 1);
-            }
-            this.categoryIds.push(ExtractNews.FILTERING_FOR_ALL);
-            resolve();
-          });
-      });
-    return importPromise.then(() => {
-        return Promise.resolve(filteringTargetAppendedIndex);
+  write() {
+    return _Storage.removeFilterings(this.removedCategoryIds).then(() => {
+        if (this.removedCategoryIds.length > 0) {
+          Debug.printMessage(
+            "Remove filterings for " + this.removedCategoryIds.join(", ")
+            + ".");
+          this.removedCategoryIds = new Array();
+        }
+        return _Storage.writeFilteringIds(this.categoryIds);
+      }).then(() => {
+        return _Storage.writeFilterings(this.toMap());
+      }).then(() => {
+        if (this.categoryIds.length > 0) {
+          Debug.printMessage(
+            "Save filterings for " + this.categoryIds.join(", ") + ".");
+        }
       });
   }
 
-  _write(callback) {
+  /*
+   * Returns the map of filterings for this data.
+   */
+  toMap() {
     var filteringMap = new Map();
     this.forEachCategory((categoryId, categoryData) => {
         var filtering = ExtractNews.newFiltering();
         filtering.setCategoryName(categoryData.name);
         if (categoryId != ExtractNews.FILTERING_FOR_ALL) {
-          filtering.setCategoryTopics(
-            categoryData.topicsString.split(","));
+          filtering.setCategoryTopics(categoryData.topicsString.split(","));
         }
         var filteringTargets = new Array();
         var targetDataArray = categoryData.targetDataArray;
@@ -317,36 +279,7 @@ class FilteringData {
           targetDataArray[targetDataArray.length - 1].name);
         filteringMap.set(categoryId, filtering);
       });
-    return callback(this.categoryIds, filteringMap);
-  }
-
-  /*
-   * Exports filtering data to a file.
-   */
-  export() {
-    this._write((filteringIds, filteringMap) => {
-        _File.exportNewsFilterings(filteringIds, filteringMap);
-        Debug.printMessage(
-          "Export filterings for " + filteringIds.join(", ") + ".");
-      });
-  }
-
-  /*
-   * Saves filtering data to the local storage and return the promise.
-   */
-  save() {
-    return this._write((filteringIds, filteringMap) => {
-        return _Storage.removeFilterings(this.removedCategoryIds).then(() => {
-            this.removedCategoryIds = new Array();
-            return _Storage.writeFilteringIds(filteringIds);
-          }).then(() => {
-            return _Storage.writeFilterings(filteringMap);
-          }).then(() => {
-            Debug.printMessage(
-              "Save filterings for " + filteringIds.join(", ") + ".");
-            return Promise.resolve();
-          });
-      });
+    return filteringMap;
   }
 }
 
@@ -397,18 +330,27 @@ function _createTargetNameDiv(name, blockTerminated, policyTargetCreated) {
   targetNameDiv.appendChild(targetNameSelect);
   if (! policyTargetCreated) {
     var terminateBlockDiv = document.createElement("div");
-    var terminateBlockDivInput = document.createElement("input");
-    var terminateBlockDivLabel = document.createElement("label");
+    var terminateBlockInput = document.createElement("input");
+    var terminateBlockLabel = document.createElement("label");
     terminateBlockDiv.className = "checked_option";
-    terminateBlockDivInput.className = FILTERING_TARGET_TERMINATE_BLOCK;
-    terminateBlockDivInput.type = "checkbox";
-    terminateBlockDivInput.checked = blockTerminated;
-    terminateBlockDivLabel.textContent = _getTargetMessage("TerminateBlock");
-    terminateBlockDiv.appendChild(terminateBlockDivInput);
-    terminateBlockDiv.appendChild(terminateBlockDivLabel);
+    terminateBlockInput.className = FILTERING_TARGET_TERMINATE_BLOCK;
+    terminateBlockInput.type = "checkbox";
+    terminateBlockInput.checked = blockTerminated;
+    terminateBlockLabel.textContent = _getTargetMessage("TerminateBlock");
+    terminateBlockDiv.appendChild(terminateBlockInput);
+    terminateBlockDiv.appendChild(terminateBlockLabel);
     targetNameDiv.appendChild(terminateBlockDiv);
   }
   return targetNameDiv;
+}
+
+function _isTargetBlockTeminated(targetNode) {
+  var terminateBlockInput =
+    targetNode.querySelector("." + FILTERING_TARGET_TERMINATE_BLOCK);
+  if (terminateBlockInput != null) {
+    return terminateBlockInput.checked;
+  }
+  return false;
 }
 
 function _createTargetWordsDiv(wordsString, wordsMatches) {
@@ -493,11 +435,11 @@ function _getTargetFocusedNode(targetNode) {
 }
 
 /*
- * The pane of filterings on this option page.
+ * The pane of filterings focused on this option page.
  */
-class FilteringPane extends OptionPane {
+class FilteringPane extends FocusedOptionPane {
   constructor(focusedNodeGroup) {
-    super("Filtering", focusedNodeGroup);
+    super(focusedNodeGroup);
     this.filtering = {
         category: document.getElementById("FilteringCategory"),
         categorySelect: getOptionElement("FilteringCategoryName", "select"),
@@ -561,7 +503,7 @@ class FilteringPane extends OptionPane {
    * Creates new block at the specified index to which filtering targets from
    * the its position to the end of block are moved from the previous block.
    */
-  splitBlockAt(targetIndex) {
+  _splitBlockAt(targetIndex) {
     var splitBlock = document.createElement("div");
     var nextBlock = null;
     if (targetIndex < this.nodeSize) {
@@ -583,7 +525,7 @@ class FilteringPane extends OptionPane {
    * Removes the block at the specified index from which filtering targets from
    * the its position to the end of block are moved to the previous block.
    */
-  joinBlockAt(targetIndex) {
+  _joinBlockAt(targetIndex) {
     if (targetIndex < this.nodeSize) {
       var targetNode = this.getNode(targetIndex);
       var joinedBlock = targetNode.parentNode;
@@ -629,15 +571,21 @@ class FilteringPane extends OptionPane {
     } else {
       this.filtering.blocks.lastElementChild.appendChild(targetNode);
     }
+    if (_isTargetBlockTeminated(targetNode)) {
+      // Insert new block and move filtering target nodes in the block
+      // at the specified index after the inserted node to it.
+      this.toggleTargetEndOfBlock(targetIndex);
+    }
   }
 
   removeTargetNode(targetIndex) {
-    var targetNode = this.removeNode(targetIndex);
+    var targetNode = this.getNode(targetIndex);
     // Merge the block just after the removed target if the end of a block
     // and not the policy target.
-    if (targetNode.classList.contains(FILTERING_TARGET_END_OF_BLOCK)) {
-      this.joinBlockAt(targetIndex);
+    if (_isTargetBlockTeminated(targetNode)) {
+      this.toggleTargetEndOfBlock(targetIndex);
     }
+    this.removeNode(targetIndex);
     return targetNode.parentNode.removeChild(targetNode);
   }
 
@@ -660,7 +608,7 @@ class FilteringPane extends OptionPane {
       movedDownNextBlock.insertBefore(
         movedDownNode, movedDownNextBlock.firstElementChild)
     } else {
-      // Inserts the first target of the next block before the last target,
+      // Insert the first target of the next block before the last target,
       // or swap two targets on the same block which are not the last.
       movedUpNode.parentNode.removeChild(movedUpNode);
       movedDownBlock.insertBefore(movedUpNode, movedDownNode);
@@ -674,22 +622,24 @@ class FilteringPane extends OptionPane {
   }
 
   /*
-   * Toggle the class name "end_of_block" on the specified target node.
+   * Toggles the class name "end_of_block" on a target node of the specified
+   * index, and splits or joins the filtering block at the next of it.
    */
   toggleTargetEndOfBlock(targetIndex) {
     var targetNode = this.getNode(targetIndex);
     if (targetNode.classList.toggle(FILTERING_TARGET_END_OF_BLOCK)) {
       for (const element of targetNode.querySelectorAll("input")) {
-        switch (element.type) {
-        case "checkbox":
+        if (element.type == "checkbox") {
           if (! element.classList.contains(FILTERING_TARGET_TERMINATE_BLOCK)) {
             element.checked = false;
           }
-          break;
-        default: // Element to input words
+        } else { // Element to input filtering words
           element.value = "";
         }
       }
+      this._splitBlockAt(targetIndex + 1);
+    } else {
+      this._joinBlockAt(targetIndex + 1);
     }
   }
 

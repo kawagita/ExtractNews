@@ -6,8 +6,18 @@
 }
 
 body {
+  margin: 20px;
   font-size: 16px;
   background-color: #eeeeee;
+}
+
+body.narrow {
+  margin: 20px 10px;
+  width: 340px;
+}
+
+body.compact {
+  width: 500px;
 }
 
 div {
@@ -18,7 +28,7 @@ div {
 }
 
 header {
-  margin: 20px 25px;
+  margin: 0px 5px;
   justify-content: space-between;
   align-items: flex-end;
   flex-flow: row nowrap;
@@ -44,7 +54,7 @@ header ol {
 
 .narrow header ol {
   margin: 0px;
-  width: 320px;
+  width: 330px;
   justify-content: flex-end;
   flex-flow: row nowrap;
   display: flex;
@@ -147,38 +157,74 @@ hr {
   margin-top: -1px;
 }
 
-#OptionPage {
-  margin: 0px 20px;
+#OptionUpdate {
+  margin: 15px 20px;
+  display: block;
 }
 
-.narrow #OptionPage {
-  margin: 0px 10px;
-  width: 340px;
+.narrow #OptionUpdate {
+  margin: 15px 10px;
 }
 
-.compact #OptionPage {
-  width: 500px;
-}
-
-#GeneralPane {
-  margin: 20px;
+.edit #OptionUpdate {
   display: none;
+}
+
+#OptionUpdate p {
+  padding: 10px;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 1px;
+  color: #ff0000;
+}
+
+#OptionUpdate p.grayed_out {
+  color: #c0c0c0;
+}
+
+#OptionUpdate div {
+  margin: 5px;
+}
+
+#OptionUpdate button {
+  margin: 0px 1px;
+  padding: 3px 0px;
+  width: 96px;
+  border-width: 3px;
+  font-size: 13px;
+}
+
+section {
+  margin: 30px 0px 20px 0px;
+  padding: 0px 5px;
+  display: none;
+}
+
+.edit section {
+  margin: 20px 0px;
 }
 
 .general #GeneralPane {
   display: block;
 }
 
-.narrow #GeneralPane {
-  margin: 30px 10px;
+.filtering #FilteringPane {
+  display: block;
+}
+
+.selection #SelectionPane,
+.edit #SelectionPane {
+  display: block;
 }
 
 #GeneralPane > div {
+  margin: 15px 0px;
+  padding: 20px;
   flex-flow: column nowrap;
 }
 
 #GeneralPane h3 {
-  margin-top: 20px;
+  margin: 0px 5px 10px 5px;
 }
 
 #GeneralPane input {
@@ -191,61 +237,12 @@ hr {
   letter-spacing: 1px;
 }
 
-#EnablingSite > div {
-  margin: 20px;
-}
-
 #Advanced > div {
-  margin: 20px;
   width: 280px;
 }
 
 #Advanced .checked_option {
   width: 100%;
-}
-
-#DataUpdate {
-  margin: 20px;
-  display: none;
-}
-
-#DataUpdate p {
-  padding: 20px 20px 0px 20px;
-  font-size: 16px;
-  line-height: 24px;
-  letter-spacing: 1px;
-}
-
-#DataUpdate input {
-  margin: 10px;
-}
-
-#DataUpdate > div {
-  margin: 10px 0px;
-  justify-content: space-between;
-  align-items: center;
-  display: flex;
-}
-
-#DataUpdate .checked_option {
-  margin: 10px 20px;
-}
-
-.narrow #DataUpdate .checked_option {
-  margin: 10px;
-  width: 270px;
-}
-
-#DataButtonGroup {
-  margin: 10px 5px;
-}
-
-#DataButtonGroup button {
-  margin: 0px 1px;
-  padding: 4px 8px;
-  width: 100px;
-  border-width: 3px;
-  font-size: 13px;
 }
 
 select {
@@ -255,26 +252,8 @@ select {
   font-size: 14px;
 }
 
-#FilteringPane {
-  margin: 10px 0px;
-  padding: 0px 5px;
-  display: none;
-}
-
-.filtering #DataUpdate {
-  display: block;
-}
-
-.filtering #FilteringPane {
-  display: block;
-}
-
-#FilteringPane > div {
-  flex-flow: column nowrap;
-}
-
 #FilteringCategory {
-  margin: 25px 0px 15px 0px;
+  margin: 15px 0px;
   padding: 0px 20px;
   width: 450px;
   align-items: flex-start;
@@ -288,6 +267,10 @@ select {
 #FilteringCategory label {
   margin: 13px 8px;
   min-width: 128px;
+}
+
+.narrow #FilteringCategory label {
+  margin: 8px;
 }
 
 #FilteringCategory select {
@@ -330,7 +313,7 @@ select {
   margin: 8px;
   padding: 5px 80px;
   width: 284px;
-  border-radius: 5px;
+  border-radius: 8px;
   color: #4f4f4f;
   background-color: #c8c8c8;
   font-weight: bold;
@@ -342,14 +325,13 @@ select {
 }
 
 #FilteringBlocks {
-  padding-bottom: 15px;
   display: block;
 }
 
 .block {
-  margin: 10px 0px;
-  padding: 20px;
-  border-radius: 5px;
+  margin: 15px 0px;
+  padding: 15px 20px 20px 20px;
+  border-radius: 10px;
   background-color: #c8c8c8;
 }
 
@@ -363,7 +345,7 @@ select {
 }
 
 .target > div {
-  border-radius: 5px;
+  border-radius: 8px;
   align-items: center;
   justify-content: flex-start;
 }
@@ -562,24 +544,10 @@ select {
   display: block;
 }
 
-#SelectionPane {
-  margin: 10px 0px;
-  padding: 0px 5px;
-  display: none;
-}
-
-.selection #DataUpdate {
-  display: block;
-}
-
-.selection #SelectionPane {
-  display: block;
-}
-
 #SelectionEdit {
-  margin: 10px 0px;
+  margin: 15px 0px;
   padding: 20px;
-  border-radius: 5px;
+  border-radius: 10px;
   background-color: #c8c8c8;
   align-items: center;
   flex-flow: column nowrap;
@@ -641,6 +609,7 @@ select {
   padding: 2px 8px;
   width: 75px;
   font-size: 14px;
+  letter-spacing: 1px;
 }
 
 .edit_pane label {
@@ -654,7 +623,7 @@ select {
 }
 
 .narrow #SettingName {
-  margin: 15px 0px 0px 0px;
+  margin: 10px 0px 0px 0px;
 }
 
 #SettingName input {
@@ -678,7 +647,7 @@ select {
 .regexp textarea {
   margin: 7px 0px;
   padding: 8px;
-  height: 50px;
+  height: 60px;
   width: 360px;
   border-radius: 5px;
   font-size: 14px;
@@ -737,7 +706,7 @@ select {
 #SelectionList {
   margin: 25px 0px;
   padding: 20px;
-  border-radius: 5px;
+  border-radius: 10px;
   background-color: #c8c8c8;
 }
 
@@ -818,7 +787,7 @@ select {
 }
 
 .selection_item > div {
-  border-radius: 5px;
+  border-radius: 8px;
   align-items: center;
 }
 

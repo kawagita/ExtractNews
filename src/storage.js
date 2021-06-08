@@ -29,51 +29,209 @@ ExtractNews.Storage = (() => {
     const writeStorage = ExtractNews.writeStorage;
     const removeStorage = ExtractNews.removeStorage;
 
+    // Key to read and write the array of domain data
+    const DOMAIN_DATA_KEY = "DomainData";
+
     /*
-     * Reads IDs of enabled domains from the storage and returns the promise
-     * fulfilled with the array of its or rejected.
+     * Reads the domain data from the storage and returns the promise fulfilled
+     * with the array of it or rejected.
      */
-    function readEnabledDomainIds() {
-      var enabledDomainIds = new Array();
-      var enabledKeys = new Array();
-      ExtractNews.forEachDomain((domainId) => {
-          enabledKeys.push(domainId + ExtractNews.ENABLED_KEY);
+    function readDomainData() {
+      return readStorage(DOMAIN_DATA_KEY).then((items) => {
+          var domainDataArray = items[DOMAIN_DATA_KEY];
+          if (domainDataArray == undefined) {
+            var firstLanguage =
+              ExtractNews.splitLocalizedString("SiteLanguages")[0];
+            domainDataArray = new Array();
+            ExtractNews.forEachDomain(
+              (domainId, name, language, hostServerPatterns, hostDomain) => {
+                domainDataArray.push({
+                    id: domainId,
+                    name: name,
+                    language: language,
+                    hostServerPatterns: hostServerPatterns,
+                    hostDomain: hostDomain,
+                    enabled: language == firstLanguage
+                  });
+              });
+          }
+          return Promise.resolve(domainDataArray);
         });
-      return readStorage(enabledKeys).then((items) => {
-          enabledKeys.forEach((enabledKey) => {
-              var enabled = items[enabledKey];
-              if (enabled | enabled == undefined) {
-                enabledDomainIds.push(
-                  enabledKey.substring(
-                    0, enabledKey.indexOf(ExtractNews.ENABLED_KEY)));
-              }
-            });
-          return Promise.resolve(enabledDomainIds);
-        })
     }
 
     /*
-     * Writes the specified flag to enable the domain of the specified ID
+     * Writes the specified array of domain data into the storage and returns
+     * the promise.
+     */
+    function writeDomainData(domainDataArray) {
+      if (domainDataArray == undefined) {
+        throw newNullPointerException("domainDataArray");
+      } else if (! Array.isArray(domainDataArray)) {
+        throw newIllegalArgumentException("domainDataArray");
+      }
+      return writeStorage({
+          [DOMAIN_DATA_KEY]: domainDataArray
+        });
+    }
+
+    _Storage.readDomainData = readDomainData;
+    _Storage.writeDomainData = writeDomainData;
+
+
+    // Key to read and write the last modified time or array of site data
+    const SITE_DATA_LAST_MODIFIED_TIME_KEY = "SiteDataLastModifiedTime";
+    const SITE_DATA_KEY = "SiteData";
+
+    /*
+     * Reads the last modified time of site data from the storage and returns
+     * the promise fulfilled with its value or rejected.
+     */
+    function readSiteDataLastModifiedTime() {
+      return readStorage(SITE_DATA_LAST_MODIFIED_TIME_KEY).then((items) => {
+          var siteDataModifiedTime = items[SITE_DATA_LAST_MODIFIED_TIME_KEY];
+          if (siteDataModifiedTime == undefined) {
+            siteDataModifiedTime = -1;
+          }
+          return Promise.resolve(siteDataModifiedTime);
+        });
+    }
+
+    /*
+     * Writes the specified last modified time of site data into the storage
+     * and returns the promise.
+     */
+    function writeSiteDataLastModifiedTime(siteDataModifiedTime) {
+      if (! Number.isInteger(siteDataModifiedTime)) {
+        throw newIllegalArgumentException("siteDataModifiedTime");
+      }
+      return writeStorage({
+          [SITE_DATA_LAST_MODIFIED_TIME_KEY]: siteDataModifiedTime
+        });
+    }
+
+    /*
+     * Reads the site data from the storage and returns the promise fulfilled
+     * with the array of it or rejected.
+     */
+    function readSiteData() {
+      return readStorage(SITE_DATA_KEY).then((items) => {
+          var siteDataArray = items[SITE_DATA_KEY];
+          if (siteDataArray == undefined) {
+            siteDataArray = new Array();
+          }
+          return Promise.resolve(siteDataArray);
+        });
+    }
+
+    /*
+     * Writes the specified array of site data into the storage and returns
+     * the promise.
+     */
+    function writeSiteData(siteDataArray) {
+      if (siteDataArray == undefined) {
+        throw newNullPointerException("siteDataArray");
+      } else if (! Array.isArray(siteDataArray)) {
+        throw newIllegalArgumentException("siteDataArray");
+      }
+      return writeStorage({
+          [SITE_DATA_KEY]: siteDataArray
+        });
+    }
+
+    _Storage.readSiteDataLastModifiedTime = readSiteDataLastModifiedTime;
+    _Storage.writeSiteDataLastModifiedTime = writeSiteDataLastModifiedTime;
+    _Storage.readSiteData = readSiteData;
+    _Storage.writeSiteData = writeSiteData;
+
+    function _checkSiteId(siteId) {
+      if (siteId == undefined) {
+        throw newNullPointerException("siteId");
+      } else if ((typeof siteId) != "string") {
+        throw newIllegalArgumentException("siteId");
+      } else if (siteId == "") {
+        throw newEmptyStringException("siteId");
+      }
+    }
+
+    // Key to read and write the favicon string by suffixing the favicon ID
+    const FAVICON_KEY = "Favicon";
+
+    /*
+     * Reads the favicon on the news site of the specified ID from the storage
+     * and returns the promise fulfilled with its value or rejected.
+     */
+    function readSiteFavicon(siteId) {
+      _checkSiteId(siteId);
+      var faviconKey = siteId + FAVICON_KEY;
+      return readStorage(faviconKey).then((items) => {
+          var favicon = "";
+          if (items[faviconKey] != undefined) {
+            favicon = items[faviconKey];
+          }
+          return Promise.resolve(favicon);
+        });
+    }
+
+    /*
+     * Writes the specified favicon on the news site of the specified ID into
+     * the storage and returns the promise.
+     */
+    function writeSiteFavicon(siteId, favicon) {
+      _checkSiteId(siteId);
+      if (favicon == undefined) {
+        throw newNullPointerException("favicon");
+      } else if ((typeof favicon) != "string") {
+        throw newIllegalArgumentException("favicon");
+      } else if (favicon == "") {
+        throw newEmptyStringException("favicon");
+      }
+      var faviconKey = siteId + FAVICON_KEY;
+      return writeStorage({
+          [faviconKey]: favicon
+        });
+    }
+
+    _Storage.readSiteFavicon = readSiteFavicon;
+    _Storage.writeSiteFavicon = writeSiteFavicon;
+
+
+    // Key to read and write the comment flag by suffixing the site ID
+    const COMMENT_KEY = "Comment";
+
+    /*
+     * Reads the comment mode for the news site of the specified ID
+     * from the storage and returns the promise fulfilled with its value
+     * or rejected.
+     */
+    function readCommentMode(siteId) {
+      _checkSiteId(siteId);
+      var commentKey = siteId + COMMENT_KEY;
+      return readStorage(commentKey).then((items) => {
+          var commentOn = true;
+          if (items[commentKey] != undefined) {
+            commentOn = items[commentKey];
+          }
+          return Promise.resolve(commentOn);
+        });
+    }
+
+    /*
+     * Writes the specified comment mode for the news site of the specified ID
      * into the storage and returns the promise.
      */
-    function writeDomainEnabled(domainId, enabled) {
-      if (domainId == undefined) {
-        throw newNullPointerException("domainId");
-      } else if ((typeof domainId) != "string") {
-        throw newIllegalArgumentException("domainId");
-      } else if (domainId == "") {
-        throw newEmptyStringException("domainId");
-      } else if ((typeof enabled) != "boolean") {
-        throw newIllegalArgumentException("enabled");
+    function writeCommentMode(siteId, commentOn) {
+      _checkSiteId(siteId);
+      if ((typeof commentOn) != "boolean") {
+        throw newIllegalArgumentException("commentOn");
       }
-      var enabledKey = domainId + ExtractNews.ENABLED_KEY;
+      var commentKey = siteId + COMMENT_KEY;
       return writeStorage({
-          [enabledKey]: enabled
+          [commentKey]: commentOn
         });
     }
 
-    _Storage.readEnabledDomainIds = readEnabledDomainIds;
-    _Storage.writeDomainEnabled = writeDomainEnabled;
+    _Storage.readCommentMode = readCommentMode;
+    _Storage.writeCommentMode = writeCommentMode;
 
 
     // Key to read and write the flag whether the filtering is disabled
@@ -128,7 +286,7 @@ ExtractNews.Storage = (() => {
     }
 
     /*
-     * Writes the specified IDs of filtering on news site to the storage
+     * Writes the specified IDs of filtering on news site into the storage
      * and returns the promise.
      */
     function writeFilteringIds(filteringIds) {
@@ -162,8 +320,7 @@ ExtractNews.Storage = (() => {
             readStorage(filteringKey).then((items) => {
                 var filtering;
                 if (items[filteringKey] != undefined) {
-                  filtering =
-                    new ExtractNews.Filtering(items[filteringKey]);
+                  filtering = new ExtractNews.Filtering(items[filteringKey]);
                 } else { // Only the category for all in the initial setting
                   filtering = ExtractNews.newFiltering();
                   filtering.setCategoryName(
@@ -180,7 +337,7 @@ ExtractNews.Storage = (() => {
     }
 
     /*
-     * Writes filterings on news site in the specified map to the storage
+     * Writes filterings on news site in the specified map into the storage
      * and returns the promise.
      */
     function writeFilterings(filteringMap) {
@@ -492,163 +649,6 @@ ExtractNews.Storage = (() => {
     _Storage.removeSelection = removeSelection;
     _Storage.removeSelections = removeSelections;
     _Storage.removeSelectionAll = removeSelectionAll;
-
-
-    function _checkSiteId(siteId) {
-      if (siteId == undefined) {
-        throw newNullPointerException("siteId");
-      } else if ((typeof siteId) != "string") {
-        throw newIllegalArgumentException("siteId");
-      } else if (siteId == "") {
-        throw newEmptyStringException("siteId");
-      }
-    }
-
-    // Key to read and write the favicon string by suffixing the favicon ID
-    const FAVICON_KEY = "Favicon";
-
-    /*
-     * Reads the favicon on the news site of the specified ID from the storage
-     * and returns the promise fulfilled with its value or rejected.
-     */
-    function readSiteFavicon(siteId) {
-      _checkSiteId(siteId);
-      var faviconKey = siteId + FAVICON_KEY;
-      return readStorage(faviconKey).then((items) => {
-          var favicon = "";
-          if (items[faviconKey] != undefined) {
-            favicon = items[faviconKey];
-          }
-          return Promise.resolve(favicon);
-        });
-    }
-
-    /*
-     * Writes the specified favicon on the news site of the specified ID into
-     * the storage and returns the promise.
-     */
-    function writeSiteFavicon(siteId, favicon) {
-      _checkSiteId(siteId);
-      if (favicon == undefined) {
-        throw newNullPointerException("favicon");
-      } else if ((typeof favicon) != "string") {
-        throw newIllegalArgumentException("favicon");
-      } else if (favicon == "") {
-        throw newEmptyStringException("favicon");
-      }
-      var faviconKey = siteId + FAVICON_KEY;
-      return writeStorage({
-          [faviconKey]: favicon
-        });
-    }
-
-    _Storage.readSiteFavicon = readSiteFavicon;
-    _Storage.writeSiteFavicon = writeSiteFavicon;
-
-
-    // Key to read and write the last modified time or array of site data
-    const SITE_DATA_LAST_MODIFIED_TIME_KEY = "SiteDataLastModifiedTime";
-    const SITE_DATA_KEY = "SiteData";
-
-    /*
-     * Reads the last modified time of site data from the storage and returns
-     * the promise fulfilled with its value or rejected.
-     */
-    function readSiteDataLastModifiedTime() {
-      return readStorage(SITE_DATA_LAST_MODIFIED_TIME_KEY).then((items) => {
-          var siteDataModifiedTime = items[SITE_DATA_LAST_MODIFIED_TIME_KEY];
-          if (siteDataModifiedTime == undefined) {
-            siteDataModifiedTime = -1;
-          }
-          return Promise.resolve(siteDataModifiedTime);
-        });
-    }
-
-    /*
-     * Writes the specified last modified time of site data into the storage
-     * and returns the promise.
-     */
-    function writeSiteDataLastModifiedTime(siteDataModifiedTime) {
-      if (! Number.isInteger(siteDataModifiedTime)) {
-        throw newIllegalArgumentException("siteDataModifiedTime");
-      }
-      return writeStorage({
-          [SITE_DATA_LAST_MODIFIED_TIME_KEY]: siteDataModifiedTime
-        });
-    }
-
-    /*
-     * Reads the site data from the storage and returns the promise fulfilled
-     * with the array of it or rejected.
-     */
-    function readSiteData() {
-      return readStorage(SITE_DATA_KEY).then((items) => {
-          var siteDataArray = items[SITE_DATA_KEY];
-          if (siteDataArray == undefined) {
-            siteDataArray = new Array();
-          }
-          return Promise.resolve(siteDataArray);
-        });
-    }
-
-    /*
-     * Writes the specified array of site data into the storage and returns
-     * the promise.
-     */
-    function writeSiteData(siteDataArray) {
-      if (siteDataArray == undefined) {
-        throw newNullPointerException("siteDataArray");
-      } else if (! Array.isArray(siteDataArray)) {
-        throw newIllegalArgumentException("siteDataArray");
-      }
-      return writeStorage({
-          [SITE_DATA_KEY]: siteDataArray
-        });
-    }
-
-    _Storage.readSiteDataLastModifiedTime = readSiteDataLastModifiedTime;
-    _Storage.writeSiteDataLastModifiedTime = writeSiteDataLastModifiedTime;
-    _Storage.readSiteData = readSiteData;
-    _Storage.writeSiteData = writeSiteData;
-
-
-    // Key to read and write the comment flag by suffixing the site ID
-    const COMMENT_KEY = "Comment";
-
-    /*
-     * Reads the comment mode for the news site of the specified ID
-     * from the storage and returns the promise fulfilled with its value
-     * or rejected.
-     */
-    function readCommentMode(siteId) {
-      _checkSiteId(siteId);
-      var commentKey = siteId + COMMENT_KEY;
-      return readStorage(commentKey).then((items) => {
-          var commentOn = true;
-          if (items[commentKey] != undefined) {
-            commentOn = items[commentKey];
-          }
-          return Promise.resolve(commentOn);
-        });
-    }
-
-    /*
-     * Writes the specified comment mode for the news site of the specified ID
-     * into the storage and returns the promise.
-     */
-    function writeCommentMode(siteId, commentOn) {
-      _checkSiteId(siteId);
-      if ((typeof commentOn) != "boolean") {
-        throw newIllegalArgumentException("commentOn");
-      }
-      var commentKey = siteId + COMMENT_KEY;
-      return writeStorage({
-          [commentKey]: commentOn
-        });
-    }
-
-    _Storage.readCommentMode = readCommentMode;
-    _Storage.writeCommentMode = writeCommentMode;
 
     return _Storage;
   })();

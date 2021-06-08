@@ -19,141 +19,70 @@
 
 "use strict";
 
-// Creates and displays elements on the general setting firstly.
-
+var optionUpdateParagraph = getOptionElement("OptionUpdate", "p");
+var optionImportButton = getOptionButton("Import");
+var optionExportButton = getOptionButton("Export");
+var optionApplyButton = getOptionButton("Apply");
 var optionPointedGroup = new _Event.PointedGroup();
 
-{
-  var enablingSiteDiv = getOptionElement("EnablingSite", "div");
-  var enablingSiteInputs = new Array();
-  var advancedHeading = getOptionElement("Advanced");
-  var disableFilteringInput = getOptionElement("DisableFiltering", "input");
-  var debugInput = getOptionElement("DebugExtension", "input");
+optionUpdateParagraph.textContent = getOptionMessage("UpdateDescription");
+optionUpdateParagraph.className = OPTION_GRAYED_OUT;
+optionApplyButton.disabled = true;
 
-  ExtractNews.forEachDomain((domainId, name) => {
-      var siteDiv = document.createElement("div");
-      var siteInput = document.createElement("input");
-      var siteLabel = document.createElement("label");
-      siteDiv.className = "checked_option";
-      siteInput.type = "checkbox";
-      siteInput.value = domainId;
-      siteInput.addEventListener("input", (event) => {
-          var domainId = event.target.value;
-          var enabled = event.target.checked;
-          ExtractNews.setDomainEnabled(domainId, enabled);
-          _Storage.writeDomainEnabled(domainId, enabled).then(() => {
-              sendOpitonUpdateMessage({
-                  domainId: domainId,
-                  enabled: enabled
-                });
-            }).catch((error) => {
-              Debug.printStackTrace(error);
-            });
-        });
-      optionPointedGroup.addElement(siteInput);
-      siteLabel.textContent = name;
-      siteDiv.appendChild(siteInput);
-      siteDiv.appendChild(siteLabel);
-      enablingSiteDiv.appendChild(siteDiv);
-      enablingSiteInputs.push(siteInput);
-    });
+optionPointedGroup.addElements(
+  Array.of(optionImportButton, optionExportButton, optionApplyButton));
 
-  const displayingPromises = new Array();
+// Creates and displays elements on the general setting firstly.
 
-  displayingPromises.push(
-    _Storage.readEnabledDomainIds().then((enabledDomainIds) => {
-        var enabledDomainIdSet = new Set(enabledDomainIds);
-        enablingSiteInputs.forEach((siteInput) => {
-            // Set checkboxes to each state whether the news site is enabled.
-            if (enabledDomainIdSet.has(siteInput.value)) {
-              siteInput.checked = true;
-              ExtractNews.setDomainEnabled(siteInput.value, true);
-            }
-          });
-      }),
-    _Storage.readFilteringDisabled().then((filteringDisabled) => {
-        // Set the checkbox to the state whether word filterings are disabled
-        // and register the listener to it.
-        disableFilteringInput.checked = filteringDisabled;
-        disableFilteringInput.addEventListener("input", (event) => {
-            var disabled = event.target.checked;
-            _Storage.writeFilteringDisabled(disabled).then(() => {
-                sendOpitonUpdateMessage({
-                    filteringDisabled: disabled
-                  });
-              }).catch((error) => {
-                Debug.printStackTrace(error);
-              });
-          });
-        optionPointedGroup.addElement(disableFilteringInput);
-        return ;
-      }),
-    ExtractNews.getDebugMode().then((debugOn) => {
-        // Set the checkbox to the state whether the debug mode is turned on
-        // and register the listener to it.
-        debugInput.checked = debugOn;
-        debugInput.addEventListener("input", (event) => {
-            ExtractNews.setDebugMode(event.target.checked).then(() => {
-                sendOpitonUpdateMessage({
-                    debugOn: event.target.checked
-                  });
-              }).catch((error) => {
-                Debug.printStackTrace(error);
-              });
-          });
-        optionPointedGroup.addElement(debugInput);
-      }));
-  Promise.all(displayingPromises).catch((error) => {
-      Debug.printStackTrace(error);
-    });
-}
+var optionGeneralPane = new GeneralPane();
+var optionDataMap = new Map();
 
+_Storage.readDomainData().then((domainDataArray) => {
+    const readingPromises = new Array();
+    domainDataArray.forEach(ExtractNews.setDomain);
+    optionGeneralPane.forEachOptionData((optionData) => {
+        optionDataMap.set(optionData.id, optionData);
+        readingPromises.push(optionData.readValue());
+      });
+    return Promise.all(readingPromises);
+  }).catch((error) => {
+    Debug.printStackTrace(error);
+  });
+
+optionGeneralPane.setEventRelation(optionPointedGroup);
+
+const OPTION_MENU_GENERAL = "general";
+const OPTION_MENU_FILTERING = "filtering";
+const OPTION_MENU_SELECTION = "selection";
+
+const OPTION_MENUS = [
+    OPTION_MENU_GENERAL, OPTION_MENU_FILTERING, OPTION_MENU_SELECTION
+  ];
+
+var optionMenuClassList = document.body.classList;
 var optionMenuItems = Array.from(document.querySelectorAll("#OptionMenu li"));
-var optionFilteringMenuItem;
-var optionSelectionMenuItem;
-var optionPageElement = document.getElementById("OptionPage");
-var optionDataUpdateParagraph = document.querySelector("#DataUpdate p");
-var optionDataReplacementCheckbox =
-  getOptionElement("DataReplacement", "input");
-var optionDataReplacementCheckedMap = new Map();
-
-const OPTION_GENERAL = "general";
-const OPTION_FILTERING = "filtering";
-const OPTION_SELECTION = "selection";
-
-const OPTION_DATA_DESCRIPTION = getOptionMessage("DataDescription");
-
-var optionImportButton = getOptionButton("Import");
-var optionImportDisabledMap = new Map();
-var optionExportButton = getOptionButton("Export");
-var optionSaveButton = getOptionButton("Save");
-var optionSaveDisabledMap = new Map();
-
-optionImportButton.disabled = true;
-optionExportButton.disabled = true;
-optionSaveButton.disabled = true;
 
 var optionFilteringData = new FilteringData();
 var optionFilteringPane = new FilteringPane(new _Event.BubblingFocusedGroup());
+var optionFilteringUpdated = false;
 
 optionFilteringPane.setEventRelation(optionPointedGroup);
 
 var optionSelectionData = new SelectionData();
 var optionSelectionPageManager;
 var optionSelectionPane;
+var optionSelectionEditPane;
 
 class SelectionFocusedGroup extends _Event.BubblingFocusedGroup {
   constructor() {
     super();
   }
-
   setFocusedTarget(event) {
     super.setFocusedTarget(event);
     if (! optionSelectionPane.focusFaviconElement(event.target)) {
       optionSelectionPane.hideFaviconList(true);
     }
   }
-
   clearFocusedTarget(event) {
     var target = super.clearFocusedTarget(event);
     if (! optionSelectionPane.containsFaviconElement(event.target)) {
@@ -164,83 +93,27 @@ class SelectionFocusedGroup extends _Event.BubblingFocusedGroup {
 }
 
 optionSelectionPane = new SelectionPane(new SelectionFocusedGroup());
+optionSelectionEditPane = optionSelectionPane.getEditPane();
 optionSelectionPane.setEventRelation(optionPointedGroup);
 
 // Displays the menu list of general, filtering, and selection options.
 
-for (let i = 0; i < optionMenuItems.length; i++) {
-  var settingMenuItem = optionMenuItems[i];
-  var settingMenuItemLowerCaseId = settingMenuItem.id.toLowerCase();
-  if (settingMenuItemLowerCaseId != OPTION_GENERAL) {
-    switch(settingMenuItemLowerCaseId) {
-    case OPTION_FILTERING:
-      optionFilteringMenuItem = settingMenuItem;
-      break;
-    case OPTION_SELECTION:
-      optionSelectionMenuItem = settingMenuItem;
-      break;
-    }
-    optionDataReplacementCheckedMap.set(settingMenuItem.id, false);
-    optionImportDisabledMap.set(settingMenuItem.id, true);
-    optionSaveDisabledMap.set(settingMenuItem.id, true);
-  }
-  settingMenuItem.textContent = getOptionMessage(settingMenuItem.id);
-  optionPointedGroup.addElement(settingMenuItem);
-}
-
-var optionMenuManager =
-  new _Event.PageListManager((event, pageIndex, previousPageIndex) => {
-    var menuId = optionMenuManager.getEventTarget(pageIndex).id;
-    var menuOption = menuId.toLowerCase();
-    // Reserve the state of checkboxes or buttons for unfocused setting
-    // and restore to changed setting.
-    if (previousPageIndex >= 0) {
-      var previousMenuId =
-        optionMenuManager.getEventTarget(previousPageIndex).id;
-      optionImportDisabledMap.set(previousMenuId, optionImportButton.disabled);
-      optionSaveDisabledMap.set(previousMenuId, optionSaveButton.disabled);
-      optionDataReplacementCheckedMap.set(
-        previousMenuId, optionDataReplacementCheckbox.checked);
-    }
-    optionImportButton.disabled = optionImportDisabledMap.get(menuId);
-    optionSaveButton.disabled = optionSaveDisabledMap.get(menuId);
-    optionDataReplacementCheckbox.checked =
-      optionDataReplacementCheckedMap.get(menuId);
-    if (menuOption != OPTION_GENERAL) {
-      if (menuOption == OPTION_SELECTION) {
-        if (optionSelectionPane.isEditPaneDisplaying()) {
-          optionSelectionPane.closeEditPane(true);
-        }
-      }
-      optionDataUpdateParagraph.textContent =
-        getOptionMessage("Data" + menuId) + OPTION_DATA_DESCRIPTION;
-    }
-    optionPageElement.className = menuOption;
-  }, optionMenuItems);
-optionMenuManager.setPageSize(optionMenuItems.length);
-
-optionDataReplacementCheckbox.addEventListener("input", (event) => {
-    if (event.target.checked) {
-      optionImportButton.disabled = false;
-    } else {
-      switch (optionMenuManager.getEventTarget().id.toLowerCase()) {
-      case OPTION_FILTERING:
-        optionImportButton.disabled =
-          optionFilteringData.targetDataTotal
-            >= ExtractNews.FILTERING_MAX_COUNT;
-        break;
-      case OPTION_SELECTION:
-        optionImportButton.disabled =
-          optionSelectionData.dataSize >= ExtractNews.SELECTION_MAX_COUNT;
-        break;
-      }
-    }
+optionMenuItems.forEach((optionMenuItem) => {
+    optionMenuItem.textContent = getOptionMessage(optionMenuItem.id);
+    optionPointedGroup.addElement(optionMenuItem);
   });
 
-optionPointedGroup.addElements(
-  Array.of(
-    optionDataReplacementCheckbox, optionImportButton,
-    optionExportButton, optionSaveButton));
+var optionMenuManager =
+  new _Event.PageListManager((event, menuIndex, previousMenuIndex) => {
+    if (previousMenuIndex >= 0) {
+      if (optionSelectionEditPane.isDisplaying()) {
+        optionSelectionEditPane.close(true);
+      }
+      optionMenuClassList.toggle(OPTION_MENUS[previousMenuIndex]);
+    }
+    optionMenuClassList.toggle(OPTION_MENUS[menuIndex]);
+  }, optionMenuItems);
+optionMenuManager.setPageSize(optionMenuItems.length);
 
 // Functions to display and operate the node of filtering targets.
 
@@ -253,18 +126,21 @@ function _fireFilteringTargetNodeInsertEvent(event) {
   if (optionFilteringData.targetDataTotal >= ExtractNews.FILTERING_MAX_COUNT) {
     // Disable to insert data by increasing filtering targets to the maximum.
     optionFilteringPane.disableInsertButtonAll();
-    optionImportButton.disabled = ! optionDataReplacementCheckbox.checked;
   } else {
     optionFilteringPane.focusNode(insertedIndex);
     event.target.disabled = false;
   }
-  optionSaveButton.disabled = false;
+  optionUpdateParagraph.className = "";
+  optionFilteringUpdated = true;
+  optionApplyButton.disabled = false;
 }
 
 function _fireFilteringTargetNameChangeEvent(event) {
   var changedIndex = optionFilteringPane.getEventNodeIndex(event);
   optionFilteringData.getTargetData(changedIndex).name = event.target.value;
-  optionSaveButton.disabled = false;
+  optionUpdateParagraph.className = "";
+  optionFilteringUpdated = true;
+  optionApplyButton.disabled = false;
 }
 
 function _fireFilteringTargetDataInputEvent(event) {
@@ -272,7 +148,9 @@ function _fireFilteringTargetDataInputEvent(event) {
   var targetData = optionFilteringData.getTargetData(targetIndex);
   if (! event.target.classList.contains(FILTERING_TARGET_TERMINATE_BLOCK)) {
     if (targetData.wordsString != "") {
-      optionSaveButton.disabled = false;
+      optionUpdateParagraph.className = "";
+      optionFilteringUpdated = true;
+      optionApplyButton.disabled = false;
     }
     switch (event.target.value) {
     case ExtractNews.TARGET_WORD_BEGINNING:
@@ -287,7 +165,9 @@ function _fireFilteringTargetDataInputEvent(event) {
     default: // Target words input
       targetData.wordsString = event.target.value;
       targetData.localizedWordSet = undefined;
-      optionSaveButton.disabled = false;
+      optionUpdateParagraph.className = "";
+      optionFilteringUpdated = true;
+      optionApplyButton.disabled = false;
       break;
     }
   } else { // "End of Block" checkbox
@@ -298,13 +178,13 @@ function _fireFilteringTargetDataInputEvent(event) {
       targetData.wordBeginningMatched = false;
       targetData.wordEndMatched = false;
       targetData.wordsExcluded = false;
-      optionFilteringPane.splitBlockAt(targetIndex + 1);
     } else {
       targetData.blockTerminated = false;
-      optionFilteringPane.joinBlockAt(targetIndex + 1);
     }
     optionFilteringPane.toggleTargetEndOfBlock(targetIndex);
-    optionSaveButton.disabled = false;
+    optionUpdateParagraph.className = "";
+    optionFilteringUpdated = true;
+    optionApplyButton.disabled = false;
   }
 }
 
@@ -330,7 +210,9 @@ function _fireFilteringTargetWordsLocalizeEvent(event) {
       wordsInput.value = wordsString;
       targetData.wordsString = wordsString;
       targetData.localizedWordSet = wordSet;
-      optionSaveButton.disabled = false;
+      optionUpdateParagraph.className = "";
+      optionFilteringUpdated = true;
+      optionApplyButton.disabled = false;
     } else {
       sendOpitonWarningMessage(
         _Alert.getWarning(
@@ -391,7 +273,9 @@ function _fireFilteringTargetNodeMoveEvent(event) {
     optionFilteringPane.enableButton(movedDownIndex, OPERATION_MOVE_DOWN);
     optionFilteringPane.focusNode(movedDownIndex, OPERATION_MOVE_DOWN);
   }
-  optionSaveButton.disabled = false;
+  optionUpdateParagraph.className = "";
+  optionFilteringUpdated = true;
+  optionApplyButton.disabled = false;
 }
 
 function _fireFilteringTargetNodeRemoveEvent(event) {
@@ -410,8 +294,9 @@ function _fireFilteringTargetNodeRemoveEvent(event) {
     focusedOperation = OPERATION_REMOVE;
   }
   optionFilteringPane.focusNode(removedIndex, focusedOperation);
-  optionImportButton.disabled = false;
-  optionSaveButton.disabled = false;
+  optionUpdateParagraph.className = "";
+  optionFilteringUpdated = true;
+  optionApplyButton.disabled = false;
 }
 
 /*
@@ -426,9 +311,6 @@ function addFilteringTargetNode(targetData, policyTargetAdded = false) {
       _fireFilteringTargetNodeRemoveEvent,
       _fireFilteringTargetNameChangeEvent, _fireFilteringTargetDataInputEvent,
       _fireFilteringTargetWordsLocalizeEvent);
-    if (targetData.blockTerminated) {
-      optionFilteringPane.toggleTargetEndOfBlock(addedIndex);
-    }
   } else {
     insertFilteringTargetNode(addedIndex, targetData);
   }
@@ -445,11 +327,6 @@ function insertFilteringTargetNode(addedIndex, targetData) {
     _fireFilteringTargetNodeRemoveEvent,
     _fireFilteringTargetNameChangeEvent, _fireFilteringTargetDataInputEvent,
     _fireFilteringTargetWordsLocalizeEvent);
-
-  if (targetData.blockTerminated) {
-    optionFilteringPane.splitBlockAt(addedIndex + 1);
-    optionFilteringPane.toggleTargetEndOfBlock(addedIndex);
-  }
 
   if (addedIndex < optionFilteringPane.nodeSize + 1) {
     // Enable the "Insert" and "Remove" button if not initial addition,
@@ -498,7 +375,7 @@ function removeFilteringTargetNode(removedIndex) {
  * this option page when it's loaded firstly or imported, or other filtering
  * name is selected.
  */
-function reflectOptionFilteringData(targetIndex = 0) {
+function reflectOptionFilteringData() {
   var filteringCategoryId = optionFilteringData.categoryId;
   if (filteringCategoryId != ExtractNews.FILTERING_FOR_ALL) {
     optionFilteringPane.setCategoryTopics(
@@ -507,18 +384,17 @@ function reflectOptionFilteringData(targetIndex = 0) {
     optionFilteringPane.clearCategoryTopics();
   }
   optionFilteringPane.changeCategory(filteringCategoryId);
-  var addedTargetData = optionFilteringData.getTargetData(targetIndex);
-  for (let i = targetIndex + 1; i < optionFilteringData.targetDataSize; i++) {
+  var addedTargetData = optionFilteringData.getTargetData(0);
+  for (let i = 1; i < optionFilteringData.targetDataSize; i++) {
     addFilteringTargetNode(addedTargetData);
     addedTargetData = optionFilteringData.getTargetData(i);
   }
   addFilteringTargetNode(addedTargetData, true);
   Debug.printMessage(
-    "Display filtering targets of " + filteringCategoryId + " from "
-    + String(targetIndex) + ".");
+    "Display filtering targets of " + filteringCategoryId + ".");
   // Enable to insert, move up or down, and remove the filtering target
   // after all target nodes are appended to the option page.
-  for (let i = targetIndex; i < optionFilteringPane.nodeSize; i++) {
+  for (let i = 0; i < optionFilteringPane.nodeSize; i++) {
     optionFilteringPane.enableAllButtons(
       i, i > 0, i < optionFilteringPane.nodeSize - 2);
   }
@@ -535,13 +411,15 @@ optionFilteringPane.addCategorySelectChangeEventListener((event) => {
   });
 optionFilteringPane.addCategoryTopicsInputEventListener((event) => {
     optionFilteringData.categoryTopicsString = event.target.value;
-    optionSaveButton.disabled = false;
+    optionUpdateParagraph.className = "";
+    optionFilteringUpdated = true;
+    optionApplyButton.disabled = false;
   });
 
 // Functions to display and operate the node of news selections.
 
 function _fireNewsSelectionNodeInsertEvent(event) {
-  optionSelectionPane.openEditPane(
+  optionSelectionEditPane.open(
     optionSelectionPageManager.pageIndex * SELECTION_PAGE_NODE_SIZE
     + optionSelectionPane.getEventNodeIndex(event));
 }
@@ -556,7 +434,7 @@ function _fireNewsSelectionEditPaneOpenEvent(event, selectionDataOperation) {
     if (selectionDataOperation == OPERATION_EDIT) {
       selectionData = optionSelectionData.getData(selectionDataIndex);
     }
-    optionSelectionPane.openEditPane(selectionDataIndex, selectionData);
+    optionSelectionEditPane.open(selectionDataIndex, selectionData);
   //} else {
   // Ignore the click event on the delete checkbox, favicon, and buttons
   // focused on a news selection, not including "Insert" button.
@@ -643,7 +521,8 @@ function _fireNewsSelectionNodeMoveEvent(event) {
       optionSelectionPane.focusNode(movedDownIndex, OPERATION_MOVE_DOWN);
     }
   }
-  optionSaveButton.disabled = false;
+  optionUpdateParagraph.className = "";
+  optionApplyButton.disabled = false;
 }
 
 function _fireNewsSelectionNodeRemoveEvent(event) {
@@ -706,8 +585,8 @@ function _fireNewsSelectionNodeRemoveEvent(event) {
   }
   optionSelectionPane.focusNode(removedIndex);
   optionSelectionPane.focusNode(removedIndex, focusedOperation);
-  optionImportButton.disabled = false;
-  optionSaveButton.disabled = false;
+  optionUpdateParagraph.className = "";
+  optionApplyButton.disabled = false;
 }
 
 /*
@@ -734,8 +613,8 @@ function insertNewsSelectionNode(addedIndex, addedSelectionData) {
   }
 
   if (addedIndex < optionSelectionPane.nodeSize + 1) {
-    // Enable the inserted, edited, and removed button if not initial addition,
-    // and the moved up or down button if not the first or last selection.
+    // Enable the "Insert" and "Remove" button if not initial addition,
+    // and "Up" or "Down" button if not the first or last selection.
     var moveUpEnabled = true;
     var moveDownEnabled = true;
     if (addedIndex <= 0
@@ -788,10 +667,9 @@ function removeNewsSelectionNode(removedIndex) {
  * Reflects selection data appended after the specified index on this option
  * page when it's loaded firstly or imported.
  */
-function reflectOptionSelectionData(selectionIndex = 0) {
+function reflectOptionSelectionData() {
   var selectionDataIndex =
-    SELECTION_PAGE_NODE_SIZE * optionSelectionPageManager.pageIndex
-    + selectionIndex;
+    SELECTION_PAGE_NODE_SIZE * optionSelectionPageManager.pageIndex;
   var selectionDataSize = optionSelectionData.dataSize;
   var addedSelectionCount = selectionDataSize - selectionDataIndex;
   if (addedSelectionCount > 0) {
@@ -810,18 +688,16 @@ function reflectOptionSelectionData(selectionIndex = 0) {
     }
     for (let i = 0; i < addedSelectionCount; i++) {
       insertNewsSelectionNode(
-        selectionIndex + i,
-        optionSelectionData.getData(selectionDataIndex + i));
+        i, optionSelectionData.getData(selectionDataIndex + i));
     }
     Debug.printMessage(
-      "Display news selections from " + String(selectionIndex)
-      + " on Page " + String(optionSelectionPageManager.pageIndex + 1) + ".");
+      "Display news selections on Page "
+      + String(optionSelectionPageManager.pageIndex + 1) + ".");
     // Enable to insert, move up or down, edit, and remove the news selection
     // after all selection nodes are appended to the option page.
     for (let i = 0; i < addedSelectionCount; i++) {
       optionSelectionPane.enableAllButtons(
-        selectionIndex + i, selectionDataIndex > 0,
-        selectionDataIndex < selectionDataSize - 1);
+        i, selectionDataIndex > 0, selectionDataIndex < selectionDataSize - 1);
       selectionDataIndex++;
     }
     if (selectionDataSize >= ExtractNews.SELECTION_MAX_COUNT) {
@@ -829,7 +705,7 @@ function reflectOptionSelectionData(selectionIndex = 0) {
       optionSelectionPane.disableInsertButtonAll();
     }
   }
-  if (selectionIndex + addedSelectionCount >= optionSelectionPane.nodeSize
+  if (addedSelectionCount >= optionSelectionPane.nodeSize
     && optionSelectionPane.nodeSize < SELECTION_PAGE_NODE_SIZE) {
     // Add the append button of news selection if has not existed on this page.
     addNewsSelectionNode();
@@ -869,25 +745,25 @@ optionSelectionPane.addDeleteButtonClickEventListener((event) => {
     optionSelectionPageManager.getEventTarget().focus();
     optionSelectionPane.clear();
     reflectOptionSelectionData();
-    optionImportButton.disabled = false;
-    optionSaveButton.disabled = false;
+    optionUpdateParagraph.className = "";
+    optionApplyButton.disabled = false;
   });
-optionSelectionPane.addEditLocalizeButtonClickEventListener((event) => {
+optionSelectionEditPane.addLocalizeButtonClickEventListener((event) => {
     var regexpIndex = Number(target.value);
-    if (! optionSelectionPane.localizeEditRegularExpression(regexpIndex)) {
-      sendOpitonWarningMessage(optionSelectionPane.getEditDataWarning());
+    if (! optionSelectionEditPane.localizeRegularExpression(regexpIndex)) {
+      sendOpitonWarningMessage(optionSelectionEditPane.getDataWarning());
     }
   });
-optionSelectionPane.addEditApplyButtonClickEventListener((event) => {
-    var newsSelection = optionSelectionPane.getEditNewsSelection();
+optionSelectionEditPane.addOkButtonClickEventListener((event) => {
+    var newsSelection = optionSelectionEditPane.getNewsSelection();
     if (newsSelection == undefined) {
-      sendOpitonWarningMessage(optionSelectionPane.getEditDataWarning());
+      sendOpitonWarningMessage(optionSelectionEditPane.getDataWarning());
       return;
     }
     var selectionData = createSelectionData(newsSelection);
-    var selectionDataIndex = optionSelectionPane.editDataIndex;
+    var selectionDataIndex = optionSelectionEditPane.dataIndex;
     var selectionIndex = selectionDataIndex % SELECTION_PAGE_NODE_SIZE;
-    if (optionSelectionPane.editDataOperation == OPERATION_INSERT) {
+    if (optionSelectionEditPane.dataOperation == OPERATION_INSERT) {
       // Insert selection data and the div element into the option page
       // for an edited news selection.
       optionSelectionData.insertData(selectionDataIndex, selectionData);
@@ -895,7 +771,6 @@ optionSelectionPane.addEditApplyButtonClickEventListener((event) => {
       if (selectionNodeTotal >= ExtractNews.SELECTION_MAX_COUNT) {
         // Disable to insert data by increasing news selections to the maximum.
         optionSelectionPane.disableInsertButtonAll();
-        optionImportButton.disabled = ! optionDataReplacementCheckbox.checked;
       } else {
         // Count the node to append new data to the selection list.
         selectionNodeTotal++;
@@ -909,8 +784,9 @@ optionSelectionPane.addEditApplyButtonClickEventListener((event) => {
       optionSelectionData.setData(selectionDataIndex, selectionData);
       optionSelectionPane.updateSelectionNode(selectionIndex, selectionData);
     }
-    optionSelectionPane.closeEditPane();
-    optionSaveButton.disabled = false;
+    optionSelectionEditPane.close();
+    optionUpdateParagraph.className = "";
+    optionApplyButton.disabled = false;
   });
 
 // Reads filtering targets, news selections, and favicons from the storage.
@@ -924,6 +800,8 @@ function _fireNewsSelectionFaviconListClickEvent(event) {
   setSelectionOpenedUrl(selectionData, event.target.alt);
   optionSelectionPane.updateSelectionNode(selectionIndex, selectionData);
   optionSelectionPane.focusNode(selectionIndex);
+  optionUpdateParagraph.className = "";
+  optionApplyButton.disabled = false;
 }
 
 {
@@ -931,18 +809,11 @@ function _fireNewsSelectionFaviconListClickEvent(event) {
 
   readingPromises.push(
     optionFilteringData.read().then(() => {
-        var filteringTargetDataTotal = optionFilteringData.targetDataTotal;
-        if (filteringTargetDataTotal < ExtractNews.FILTERING_MAX_COUNT) {
-          optionImportDisabledMap.set(optionFilteringMenuItem.id, false);
-        }
         optionFilteringPane.setCategoryNames(optionFilteringData);
         reflectOptionFilteringData();
       }));
   readingPromises.push(
     optionSelectionData.read().then(() => {
-        if (optionSelectionData.dataSize < ExtractNews.SELECTION_MAX_COUNT) {
-          optionImportDisabledMap.set(optionSelectionMenuItem.id, false);
-        }
         // Set the page number to the header on the list of news selections.
         var selectionNodeTotal = optionSelectionData.dataSize;
         if (selectionNodeTotal < ExtractNews.SELECTION_MAX_COUNT) {
@@ -960,9 +831,7 @@ function _fireNewsSelectionFaviconListClickEvent(event) {
           _fireNewsSelectionFaviconListClickEvent);
       }));
 
-  Promise.all(readingPromises).then(() => {
-      optionExportButton.disabled = false;
-    }).catch((error) => {
+  Promise.all(readingPromises).catch((error) => {
       Debug.printStackTrace(error);
     });
 }
@@ -970,82 +839,53 @@ function _fireNewsSelectionFaviconListClickEvent(event) {
 // Registers click events to read and write filtering or selection data.
 
 optionImportButton.addEventListener(_Event.CLICK, (event) => {
-    var dataReplaced = optionDataReplacementCheckbox.checked;
-    switch(optionPageElement.className) {
-    case OPTION_FILTERING:
-      optionFilteringData.import(dataReplaced).then((targetAppendedIndex) => {
-          if (dataReplaced) {
-            optionFilteringPane.clear();
-          } else {
-            removeFilteringTargetNode(targetAppendedIndex);
-          }
-          optionFilteringPane.setCategoryNames(optionFilteringData);
-          reflectOptionFilteringData(targetAppendedIndex);
-          var filteringTargetDataTotal = optionFilteringData.targetDataTotal;
-          if (filteringTargetDataTotal >= ExtractNews.FILTERING_MAX_COUNT) {
-            optionImportButton.disabled = ! dataReplaced;
-          }
-          optionSaveButton.disabled = false;
-          optionSaveButton.focus();
-        });
-      break;
-    case OPTION_SELECTION:
-      optionSelectionData.import(dataReplaced).then((dataAppendedIndex) => {
-          var selectionNodeTotal = optionSelectionData.dataSize;
-          if (dataReplaced) {
-            optionSelectionPane.clear();
-            reflectOptionSelectionData();
-          } else if (optionSelectionPageManager.isLastPageKeeping()) {
-            reflectOptionSelectionData(
-              dataAppendedIndex % SELECTION_PAGE_NODE_SIZE);
-          }
-          if (selectionNodeTotal < ExtractNews.SELECTION_MAX_COUNT) {
-            // Count the node to append new data to the selection list.
-            selectionNodeTotal++;
-          } else {
-            optionImportButton.disabled = ! dataReplaced;
-          }
-          optionSelectionPageManager.setPageSize(
-            Math.ceil(selectionNodeTotal / SELECTION_PAGE_NODE_SIZE));
-          optionSaveButton.disabled = false;
-          optionSaveButton.focus();
-        });
-      break;
-    }
+    importOptionData(
+      optionDataMap, optionFilteringData, optionSelectionData).then(() => {
+        optionFilteringPane.clear();
+        optionSelectionPane.clear();
+        optionFilteringPane.setCategoryNames(optionFilteringData);
+        reflectOptionFilteringData();
+        reflectOptionSelectionData();
+        var selectionNodeTotal = optionSelectionData.dataSize;
+        if (selectionNodeTotal < ExtractNews.SELECTION_MAX_COUNT) {
+          // Count the node to append new data to the selection list.
+          selectionNodeTotal++;
+        }
+        optionSelectionPageManager.setPageSize(
+          Math.ceil(selectionNodeTotal / SELECTION_PAGE_NODE_SIZE));
+        // Send the update data enabled or disabled by checkboxes
+        // on the general pane.
+        var updatedObject = { };
+        optionDataMap.forEach((optionData) => {
+            updatedObject = optionData.getUpdatedObject(updatedObject);
+          });
+        sendOpitonUpdateMessage(updatedObject);
+        optionUpdateParagraph.className = "";
+        optionApplyButton.disabled = false;
+        optionApplyButton.focus();
+      }).catch((error) => {
+        Debug.printStackTrace(error);
+      });
   });
 optionExportButton.addEventListener(_Event.CLICK, (event) => {
-    switch(optionPageElement.className) {
-    case OPTION_FILTERING:
-      optionFilteringData.export();
-      break;
-    case OPTION_SELECTION:
-      optionSelectionData.export();
-      break;
-    }
+    exportOptionData(optionDataMap, optionFilteringData, optionSelectionData);
   });
-optionSaveButton.addEventListener(_Event.CLICK, (event) => {
-    var savingPromise = undefined;
-    switch(optionPageElement.className) {
-    case OPTION_FILTERING:
-      optionSaveButton.disabled = true;
-      savingPromise =
-        optionFilteringData.save().then(() => {
-            sendOpitonUpdateMessage();
+optionApplyButton.addEventListener(_Event.CLICK, (event) => {
+    event.target.disabled = true;
+    Promise.all(
+      Array.of(
+        optionFilteringData.write(),
+        optionSelectionData.write())).then(() => {
+            sendOpitonUpdateMessage({
+                filteringUpdated: optionFilteringUpdated
+              });
+            // Focus the menu list because the "Apply" button is disabled.
+            optionMenuManager.getEventTarget().focus();
+            optionUpdateParagraph.className = OPTION_GRAYED_OUT;
+            optionFilteringUpdated = false;
+          }).catch((error) => {
+            Debug.printStackTrace(error);
           });
-      break;
-    case OPTION_SELECTION:
-      optionSaveButton.disabled = true;
-      savingPromise = optionSelectionData.save();
-      break;
-    }
-    if (savingPromise != undefined) {
-      savingPromise.then(() => {
-          // Focus the menu list because the save button is disabled.
-          optionMenuManager.getEventTarget().focus();
-        }).catch((error) => {
-          Debug.printStackTrace(error);
-        });
-    }
   });
 
 // Registers key events to control the pane of filterings or news selections.
@@ -1053,10 +893,10 @@ optionSaveButton.addEventListener(_Event.CLICK, (event) => {
 document.body.addEventListener(_Event.KEYDOWN, (event) => {
     switch (event.code) {
     case "Escape":
-      if (optionPageElement.className == OPTION_SELECTION) {
-        if (optionSelectionPane.isEditPaneDisplaying()) {
+      if (optionMenuClassList.contains(OPTION_MENU_SELECTION)) {
+        if (optionSelectionEditPane.isDisplaying()) {
           // Close the edit pane for a news selection by the escape key.
-          optionSelectionPane.closeEditPane(true);
+          optionSelectionEditPane.close(true);
           break;
         } else if (optionSelectionPane.hideFaviconList()) {
           break;
@@ -1067,7 +907,7 @@ document.body.addEventListener(_Event.KEYDOWN, (event) => {
       break;
     case "PageUp":
     case "PageDown":
-      if (optionPageElement.className == OPTION_FILTERING) {
+      if (optionMenuClassList.contains(OPTION_MENU_FILTERING)) {
         if (optionFilteringPane.containsBlockElement(event.target)) {
           // Focus the first or last filtering target by the page up
           // or down key.
@@ -1078,7 +918,7 @@ document.body.addEventListener(_Event.KEYDOWN, (event) => {
           optionFilteringPane.focusNode(targetIndex);
           event.preventDefault();
         }
-      } else if (optionPageElement.className == OPTION_SELECTION
+      } else if (optionMenuClassList.contains(OPTION_MENU_SELECTION)
         && optionSelectionPane.containsListElement(event.target)
         && ! optionSelectionPane.isFaviconListDisplaying()) {
         // Focus the first or last news selection by the page up or down key.
@@ -1100,7 +940,7 @@ document.body.addEventListener(_Event.KEYDOWN, (event) => {
       } else {
         focusedIndex++;
       }
-      if (optionPageElement.className == OPTION_FILTERING) {
+      if (optionMenuClassList.contains(OPTION_MENU_FILTERING)) {
         if (event.target.tagName != "SELECT" && event.target.tagName != "INPUT"
           && optionFilteringPane.containsBlockElement(event.target)) {
           var targetIndex = optionFilteringPane.getEventNodeIndex(event);
@@ -1115,7 +955,7 @@ document.body.addEventListener(_Event.KEYDOWN, (event) => {
           }
           event.preventDefault();
         }
-      } else if (optionPageElement.className == OPTION_SELECTION
+      } else if (optionMenuClassList.contains(OPTION_MENU_SELECTION)
         && event.target.tagName != "INPUT"
         && optionSelectionPane.containsListElement(event.target)
         && ! optionSelectionPane.isFaviconListDisplaying()) {

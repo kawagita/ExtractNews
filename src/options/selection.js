@@ -19,7 +19,6 @@
 
 "use strict";
 
-
 const SELECTION_FAVICON_MAP = new Map();
 const SELECTION_DEFAULT_FAVICON = {
     data: "../icons/night-40.png",
@@ -134,7 +133,7 @@ class SelectionData {
   }
 
   _setDataIndexStrings(indexSize) {
-    if (this.dataIndexStrings.length <= indexSize) {
+    if (indexSize >= this.dataIndexStrings.length) {
       for (let i = this.dataIndexStrings.length; i < indexSize; i++) {
         this.dataIndexStrings.push(SELECTION_INDEX_STRINGS[i]);
       }
@@ -182,91 +181,55 @@ class SelectionData {
   }
 
   /*
-   * Reads selection data from the local storage and return the promise.
+   * Replaces selection data by the specified array.
+   */
+  replace(newsSelections) {
+    this.dataArray = new Array();
+    this._setDataIndexStrings(newsSelections.length);
+    newsSelections.forEach((newsSelection) => {
+        this.dataArray.push(createSelectionData(newsSelection));
+      });
+    Debug.printJSON(newsSelections);
+  }
+
+  /*
+   * Reads selection data from the storage and return the promise.
    */
   read() {
     return _Storage.readSelectionCount().then((newsSelectionCount) => {
         this._setDataIndexStrings(newsSelectionCount);
         return _Storage.readSelections(this.dataIndexStrings);
       }).then((newsSelections) => {
-        Debug.printMessage("Read news selections.");
-        Debug.printJSON(newsSelections);
-        newsSelections.forEach((newsSelection) => {
-            this.dataArray.push(createSelectionData(newsSelection));
-          });
-        return Promise.resolve();
+        this.replace(newsSelections);
       });
   }
 
   /*
-   * Imports selection data from a file and return the promise fulfilled with
-   * the index of news selections appended to the option page.
+   * Writes selection data into the storage and return the promise.
    */
-  import(dataReplaced = false) {
-    var selectionDataAppendedIndex = 0;
-    if (! dataReplaced) {
-      selectionDataAppendedIndex = this.dataArray.length;
-    }
-    const importPromise = new Promise((resolve, reject) => {
-        _File.importNewsSelections(
-          selectionDataAppendedIndex, (newsSelections) => {
-            if (dataReplaced) {
-              // Replace a setting name or url's regular expression,
-              // and all selections with file's data.
-              this.dataArray = new Array();
-            }
-            Debug.printMessage("Import news selections.");
-            Debug.printJSON(newsSelections);
-            newsSelections.forEach((newsSelection) => {
-                this.dataArray.push(createSelectionData(newsSelection));
-              });
-            this._setDataIndexStrings(this.dataArray.length);
-            resolve();
-          });
-      });
-    return importPromise.then(() => {
-        return Promise.resolve(selectionDataAppendedIndex);
-      });
-  }
-
-  /*
-   * Exports selection data to a file.
-   */
-  export() {
-    var newsSelections = new Array();
-    this.dataArray.forEach((selectionData) => {
-        newsSelections.push(_newSelection(selectionData));
-      });
-    _File.exportNewsSelections(newsSelections);
-    if (this.dataArray.length > 0) {
-      Debug.printMessage(
-        "Export " + this.dataArray.length + " news selection"
-        + (this.dataArray.length > 1 ? "s.": "."));
-    } else {
-      Debug.printMessage("Export no news selection.");
-    }
-  }
-
-  /*
-   * Saves selection data to the local storage and return the promise.
-   */
-  save() {
-    var newsSelections = new Array();
-    this.dataArray.forEach((selectionData) => {
-        newsSelections.push(_newSelection(selectionData));
-      });
+  write() {
     return _Storage.removeSelectionAll().then(() => {
-        return _Storage.writeSelections(this.dataIndexStrings, newsSelections);
+        return _Storage.writeSelections(this.dataIndexStrings, this.toArray());
       }).then(() => {
         if (this.dataArray.length > 0) {
           Debug.printMessage(
-            "Save " + this.dataArray.length + " news selection"
-            + (this.dataArray.length > 1 ? "s.": "."));
-        } else {
-          Debug.printMessage("Save no news selection.");
+            "Save the news selection of " + this.dataIndexStrings[0]
+            + (this.dataArray.length > 1 ?
+              " ... " + this.dataIndexStrings[this.dataArray.length - 1] : "")
+            + ".");
         }
-        return Promise.resolve();
       });
+  }
+
+  /*
+   * Returns the array of news selections for this data.
+   */
+  toArray() {
+    var newsSelections = new Array();
+    this.dataArray.forEach((selectionData) => {
+        newsSelections.push(_newSelection(selectionData));
+      });
+    return newsSelections;
   }
 }
 
@@ -360,23 +323,187 @@ function _getSelectionFaviconNode(selectionNode) {
 }
 
 /*
- * The pane of news selections on this option page.
+ * The pane to edit a news selection on this option page.
  */
-class SelectionPane extends OptionPane {
+class SelectionEditPane {
+  constructor(selectionPane, editPointedGroup) {
+    this.selectionPane = selectionPane;
+    this.editPane = _Popup.getSelectionEditPane(".edit_header span");
+    this.editOkButton = getOptionButton("OK");
+    this.editCloseButton = document.querySelector(".edit_header .close");
+    this.editCloseButton.addEventListener(_Event.CLICK, (event) => {
+        this.close(true);
+      });
+    this.editCloseButton.addEventListener(_Event.KEYUP, (event) => {
+        if (event.code == "Enter") {
+          this.close(true);
+        }
+      });
+    this.editDataIndex = -1;
+    this.editDataOperation = "";
+    this.editDataWarning = undefined;
+    editPointedGroup.addElements(
+      Array.of(
+        this.editPane.nameInput, this.editPane.urlSelect,
+        this.editOkButton, this.editCloseButton));
+    this.editPane.regexps.forEach((editRegexp) => {
+        editPointedGroup.addElement(editRegexp.textarea);
+      });
+  }
+
+  get dataIndex() {
+    return this.editDataIndex;
+  }
+
+  get dataOperation() {
+    return this.editDataOperation;
+  }
+
+  isDisplaying() {
+    return document.body.classList.contains(OPERATION_EDIT);
+  }
+
+  open(selectionDataIndex, selectionData) {
+    var openedUrl = undefined;
+    this.editDataIndex = selectionDataIndex;
+    if (selectionData != undefined) {
+      this.editDataOperation = OPERATION_EDIT;
+      var regexpStrings =
+        Array.of(
+          selectionData.topicRegularExpression,
+          selectionData.senderRegularExpression);
+      this.editPane.nameInput.value = selectionData.settingName;
+      for (let i = 0; i < this.editPane.regexps.length; i++) {
+        this.editPane.regexps[i].textarea.value = regexpStrings[i];
+      }
+      openedUrl = selectionData.openedUrl;
+    } else {
+      this.editDataOperation = OPERATION_INSERT;
+    }
+    _Popup.setSelectionEditTitle(this.editPane, selectionDataIndex);
+    _Popup.setSelectionEditUrlSelect(this.editPane, openedUrl);
+    document.body.classList.toggle(OPERATION_EDIT);
+    this.editPane.nameInput.focus();
+  }
+
+  close(canceled = false) {
+    if (this.isDisplaying()) {
+      var selectionIndex = this.editDataIndex % SELECTION_PAGE_NODE_SIZE;
+      this.editDataIndex = -1;
+      this.editDataOperation = "";
+      this.editDataWarning = undefined;
+      this.editPane.nameInput.value = "";
+      for (let i = 0; i < this.editPane.regexps.length; i++) {
+        this.editPane.regexps[i].textarea.value = "";
+      }
+      _Popup.clearSelectionEditTitle(this.editPane);
+      _Popup.clearSelectionEditUrlSelect(this.editPane);
+      document.body.classList.toggle(OPERATION_EDIT);
+      if (! this.selectionPane.focusNode(selectionIndex) && canceled) {
+        this.selectionPane.focusNode(selectionIndex, OPERATION_APPEND);
+      }
+    }
+  }
+
+  localizeRegularExpression(regexpIndex) {
+    if (regexpIndex < 0 || regexpIndex >= this.editPane.regexps.length) {
+      throw newIndexOutOfBoundsException("regular expressions", regexpIndex);
+    }
+    var editRegexp = this.editPane.regexps[regexpIndex];
+    var regexpResult =
+      _Regexp.checkRegularExpression(
+        _Text.trimText(
+          _Text.replaceTextLineBreaksToSpace(
+            _Text.removeTextZeroWidthSpaces(editRegexp.textarea.value))),
+        { localized: true });
+    if (regexpResult.errorCode < 0) {
+      var regexpString = regexpResult.localizedText.textString;
+      if (regexpString.length <= _Alert.REGEXP_MAX_UTF16_CHARACTERS) {
+        // Set localized string into text area and checked flag to true.
+        editRegexp.textarea.value = regexpString;
+        editRegexp.errorChecked = true;
+        return true;
+      }
+      this.editDataWarning = editRegexp.warningMaxUtf16CharactersExceeded;
+    } else {
+      this.editDataWarning =
+        _Regexp.getErrorWarning(editRegexp.name, regexpResult);
+    }
+    editRegexp.textarea.focus();
+    return false;
+  }
+
+  getNewsSelection() {
+    var editNewsSelection = ExtractNews.newSelection();
+    var regexpStrings = new Array();
+    var settingName =
+      _Text.trimText(
+        _Text.removeTextZeroWidthSpaces(this.editPane.nameInput.value));
+    this.editPane.nameInput.value = settingName;
+    if (_Text.getTextWidth(settingName) > _Alert.SETTING_NAME_MAX_WIDTH) {
+      this.editDataWarning =
+        _Alert.getWarning(_Alert.SETTING_NAME_MAX_WITDH_EXCEEDED);
+      this.editPane.nameInput.focus();
+      return undefined;
+    }
+    editNewsSelection.settingName = settingName;
+    // Check whether a regular expression of text area is valid.
+    for (let i = 0; i < this.editPane.regexps.length; i++) {
+      var editRegexp = this.editPane.regexps[i];
+      if (editRegexp.errorChecked) {
+        regexpStrings.push(editRegexp.textarea.value);
+        continue;
+      }
+      var regexpString =
+        _Text.trimText(
+          _Text.replaceTextLineBreaksToSpace(
+            _Text.removeTextZeroWidthSpaces(editRegexp.textarea.value)));
+      var regexpResult = _Regexp.checkRegularExpression(regexpString);
+      if (regexpResult.errorCode >= 0) {
+        this.editDataWarning =
+          _Regexp.getErrorWarning(editRegexp.name, regexpResult);
+        editRegexp.textarea.focus();
+        return undefined;
+      }
+      // Set checked string into text area and checked flag to true.
+      regexpStrings.push(regexpString);
+      editRegexp.textarea.value = regexpString;
+      editRegexp.errorChecked = true;
+    }
+    editNewsSelection.topicRegularExpression = regexpStrings[0];
+    editNewsSelection.senderRegularExpression = regexpStrings[1];
+    editNewsSelection.openedUrl = this.editPane.urlSelect.value;
+    return editNewsSelection;
+  }
+
+  getDataWarning() {
+    return this.editDataWarning;
+  }
+
+  addLocalizeButtonClickEventListener(callback) {
+    this.editPane.localizedButtons.forEach((localizedButton) => {
+        localizedButton.addEventListener(_Event.CLICK, callback);
+      });
+  }
+
+  addOkButtonClickEventListener(callback) {
+    this.editOkButton.addEventListener(_Event.CLICK, callback);
+  }
+}
+
+/*
+ * The pane of news selections focused on this option page.
+ */
+class SelectionPane extends FocusedOptionPane {
   constructor(focusedNodeGroup) {
-    super("Selection", focusedNodeGroup);
+    super(focusedNodeGroup);
     this.selection = {
-        pageNumberList: this.element.querySelector(".page_number_list"),
-        list: this.element.querySelector(".selection_list"),
-        deleteCheckbox: this.element.querySelector(".page_header input"),
+        pageNumberList: document.querySelector(".page_number_list"),
+        list: document.querySelector(".selection_list"),
+        deleteCheckbox: document.querySelector(".page_header input"),
         deleteButton: getOptionButton("Delete"),
-        editPane: _Popup.getSelectionEditPane(".edit_header span"),
-        editApplyButton: getOptionButton("Apply"),
-        editCloseButton: this.element.querySelector(".edit_header .close"),
-        editPointedGroup: new _Event.PointedGroup(),
-        editDataIndex: -1,
-        editDataOperation: "",
-        editDataWarning: undefined
+        editPane: undefined,
+        editPointedGroup: new _Event.PointedGroup()
       };
     _setSelectionPageNumberList(
       this.selection.pageNumberList, this.selection.deleteButton.tabIndex + 1);
@@ -390,21 +517,8 @@ class SelectionPane extends OptionPane {
         this.selection.deleteButton.disabled = ! event.target.checked;
       });
     this.selection.deleteButton.disabled = true;
-    this.selection.editCloseButton.addEventListener(_Event.CLICK, (event) => {
-        this.closeEditPane(true);
-      });
-    this.selection.editCloseButton.addEventListener(_Event.KEYUP, (event) => {
-        if (event.code == "Enter") {
-          this.closeEditPane(true);
-        }
-      });
-    this.selection.editPointedGroup.addElements(
-      Array.of(
-        this.selection.editPane.nameInput, this.selection.editPane.urlSelect,
-        this.selection.editApplyButton, this.selection.editCloseButton));
-    this.selection.editPane.regexps.forEach((editRegexp) => {
-        this.selection.editPointedGroup.addElement(editRegexp.textarea);
-      });
+    this.selection.editPane =
+      new SelectionEditPane(this, this.selection.editPointedGroup);
     this.faviconList = undefined;
     this.faviconFocusedIndex = -1;
     this.faviconElements = new Array();
@@ -547,146 +661,8 @@ class SelectionPane extends OptionPane {
     this.selection.list.insertBefore(movedUpNode, movedDownNode);
   }
 
-  isEditPaneDisplaying() {
-    return this.element.classList.contains(OPERATION_EDIT);
-  }
-
-  get editDataIndex() {
-    return this.selection.editDataIndex;
-  }
-
-  get editDataOperation() {
-    return this.selection.editDataOperation;
-  }
-
-  openEditPane(selectionDataIndex, selectionData) {
-    var openedUrl = undefined;
-    this.selection.editDataIndex = selectionDataIndex;
-    if (selectionData != undefined) {
-      this.selection.editDataOperation = OPERATION_EDIT;
-      var regexpStrings =
-        Array.of(
-          selectionData.topicRegularExpression,
-          selectionData.senderRegularExpression);
-      this.selection.editPane.nameInput.value = selectionData.settingName;
-      for (let i = 0; i < this.selection.editPane.regexps.length; i++) {
-        this.selection.editPane.regexps[i].textarea.value = regexpStrings[i];
-      }
-      openedUrl = selectionData.openedUrl;
-    } else {
-      this.selection.editDataOperation = OPERATION_INSERT;
-    }
-    _Popup.setSelectionEditTitle(this.selection.editPane, selectionDataIndex);
-    _Popup.setSelectionEditUrlSelect(this.selection.editPane, openedUrl);
-    this.element.classList.toggle(OPERATION_EDIT);
-    this.selection.editPane.nameInput.focus();
-  }
-
-  closeEditPane(canceled = false) {
-    if (this.isEditPaneDisplaying()) {
-      var selectionIndex = this.editDataIndex % SELECTION_PAGE_NODE_SIZE;
-      this.selection.editDataIndex = -1;
-      this.selection.editDataOperation = "";
-      this.selection.editDataWarning = undefined;
-      this.selection.editPane.nameInput.value = "";
-      for (let i = 0; i < this.selection.editPane.regexps.length; i++) {
-        this.selection.editPane.regexps[i].textarea.value = "";
-      }
-      _Popup.clearSelectionEditTitle(this.selection.editPane);
-      _Popup.clearSelectionEditUrlSelect(this.selection.editPane);
-      this.element.classList.toggle(OPERATION_EDIT);
-      if (! this.focusNode(selectionIndex) && canceled) {
-        this.focusNode(selectionIndex, OPERATION_APPEND);
-      }
-    }
-  }
-
-  localizeEditRegularExpression(regexpIndex) {
-    if (regexpIndex < 0
-      || regexpIndex >= this.selection.editPane.regexps.length) {
-      throw newIndexOutOfBoundsException("regular expressions", regexpIndex);
-    }
-    var editRegexp = this.selection.editPane.regexps[regexpIndex];
-    var regexpResult =
-      _Regexp.checkRegularExpression(
-        _Text.trimText(
-          _Text.replaceTextLineBreaksToSpace(
-            _Text.removeTextZeroWidthSpaces(editRegexp.textarea.value))),
-        { localized: true });
-    if (regexpResult.errorCode < 0) {
-      var regexpString = regexpResult.localizedText.textString;
-      if (regexpString.length <= _Alert.REGEXP_MAX_UTF16_CHARACTERS) {
-        // Set localized string into text area and checked flag to true.
-        editRegexp.textarea.value = regexpString;
-        editRegexp.errorChecked = true;
-        return true;
-      }
-      this.selection.editDataWarning =
-        editRegexp.warningMaxUtf16CharactersExceeded;
-    } else {
-      this.selection.editDataWarning =
-        _Regexp.getErrorWarning(editRegexp.name, regexpResult);
-    }
-    editRegexp.textarea.focus();
-    return false;
-  }
-
-  getEditNewsSelection() {
-    var editPane = this.selection.editPane;
-    var editNewsSelection = ExtractNews.newSelection();
-    var regexpStrings = new Array();
-    var settingName =
-      _Text.trimText(
-        _Text.removeTextZeroWidthSpaces(editPane.nameInput.value));
-    editPane.nameInput.value = settingName;
-    if (_Text.getTextWidth(settingName) > _Alert.SETTING_NAME_MAX_WIDTH) {
-      this.selection.editDataWarning =
-        _Alert.getWarning(_Alert.SETTING_NAME_MAX_WITDH_EXCEEDED);
-      editPane.nameInput.focus();
-      return undefined;
-    }
-    editNewsSelection.settingName = settingName;
-    // Check whether a regular expression of text area is valid.
-    for (let i = 0; i < editPane.regexps.length; i++) {
-      var editRegexp = editPane.regexps[i];
-      if (editRegexp.errorChecked) {
-        regexpStrings.push(editRegexp.textarea.value);
-        continue;
-      }
-      var regexpString =
-        _Text.trimText(
-          _Text.replaceTextLineBreaksToSpace(
-            _Text.removeTextZeroWidthSpaces(editRegexp.textarea.value)));
-      var regexpResult = _Regexp.checkRegularExpression(regexpString);
-      if (regexpResult.errorCode >= 0) {
-        this.selection.editDataWarning =
-          _Regexp.getErrorWarning(editRegexp.name, regexpResult);
-        editRegexp.textarea.focus();
-        return undefined;
-      }
-      // Set checked string into text area and checked flag to true.
-      regexpStrings.push(regexpString);
-      editRegexp.textarea.value = regexpString;
-      editRegexp.errorChecked = true;
-    }
-    editNewsSelection.topicRegularExpression = regexpStrings[0];
-    editNewsSelection.senderRegularExpression = regexpStrings[1];
-    editNewsSelection.openedUrl = editPane.urlSelect.value;
-    return editNewsSelection;
-  }
-
-  getEditDataWarning() {
-    return this.selection.editDataWarning;
-  }
-
-  addEditLocalizeButtonClickEventListener(callback) {
-    this.selection.editPane.localizedButtons.forEach((localizedButton) => {
-        localizedButton.addEventListener(_Event.CLICK, callback);
-      });
-  }
-
-  addEditApplyButtonClickEventListener(callback) {
-    this.selection.editApplyButton.addEventListener(_Event.CLICK, callback);
+  getEditPane() {
+    return this.selection.editPane;
   }
 
   createFaviconList() {

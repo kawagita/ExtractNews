@@ -31,18 +31,13 @@ ExtractNews.Popup = (() => {
 
     function _getQueryString(name, value) {
       var queryString = name + "=";
-      if ((typeof value) == "number") {
-        queryString += String(value);
-      } else {
+      if (Array.isArray(value)) {
         queryString += value.join(",");
+      } else {
+        queryString += String(value);
       }
       return queryString;
     }
-
-    const QUERY_KEYS = [
-        _Popup.QUERY_OPENER_TAB_ID,
-        _Popup.QUERY_SELECTION_INDEX_STRINGS
-      ];
 
     /*
      * Returns the map of parameters parsed from the query string
@@ -56,13 +51,11 @@ ExtractNews.Popup = (() => {
       } else if (url == "") {
         throw newEmptyStringException("url");
       }
-      var queryIndex = url.indexOf("?") + 1;
       var queryMap = new Map();
-      var queryParams = new URLSearchParams(url.substring(queryIndex));
-
-      QUERY_KEYS.forEach((queryKey) => {
-          if (queryParams.has(queryKey)) {
-            var queryValue = queryParams.get(queryKey);
+      var queryIndex = url.indexOf("?") + 1;
+      if (queryIndex > 0) {
+        var queryString = url.substring(queryIndex);
+        (new URLSearchParams(queryString)).forEach((queryValue, queryKey) => {
             switch (queryKey) {
             case _Popup.QUERY_OPENER_TAB_ID:
               queryMap.set(queryKey, Number(queryValue));
@@ -77,23 +70,35 @@ ExtractNews.Popup = (() => {
               queryMap.set(queryKey, queryArray);
               break;
             }
-          }
-        });
+          });
+      }
       return queryMap;
     }
 
     _Popup.getQueryMap = getQueryMap;
 
 
+    function _queryTab(tabInfo = { }) {
+      return callAsynchronousAPI(browser.tabs.query, tabInfo).then((tabs) => {
+          if (browser.runtime.lastError != undefined) {
+            Debug.printProperty(
+              "tabs.query()", browser.runtime.lastError.message);
+          }
+          return Promise.resolve(tabs);
+        })
+    }
+
     /*
      * Finds the tab of the specified ID from all tabs opened on the browser
      * and returns the promise fulfilled with its information.
      */
     function searchTab(tabId) {
-      return callAsynchronousAPI(browser.tabs.query, { }).then((tabs) => {
-          for (let i = 0; i < tabs.length; i++) {
-            if (tabId == tabs[i].id) {
-              return Promise.resolve(tabs[i]);
+      return _queryTab().then((tabs) => {
+          if (tabs != undefined) {
+            for (const tab of tabs) {
+              if (tabId == tab.id) {
+                return Promise.resolve(tab);
+              }
             }
           }
         })
@@ -104,7 +109,13 @@ ExtractNews.Popup = (() => {
      * its information.
      */
     function getTab(tabId) {
-      return callAsynchronousAPI(browser.tabs.get, tabId);
+      return callAsynchronousAPI(browser.tabs.get, tabId).then((tab) => {
+          if (browser.runtime.lastError != undefined) {
+            Debug.printProperty(
+              "tabs.get()", browser.runtime.lastError.message);
+          }
+          return Promise.resolve(tab);
+        });
     }
 
     /*
@@ -112,11 +123,13 @@ ExtractNews.Popup = (() => {
      * fulfilled with its information.
      */
     function getWindowActiveTab() {
-      return callAsynchronousAPI(browser.tabs.query, {
+      return _queryTab({
           currentWindow: true,
           active: true
         }).then((tabs) => {
-          return Promise.resolve(tabs[0]);
+          if (tabs != undefined && tabs.length > 0) {
+            return Promise.resolve(tabs[0]);
+          }
         });
     }
 
@@ -125,11 +138,13 @@ ExtractNews.Popup = (() => {
      * value.
      */
     function getWindowCount() {
-      return callAsynchronousAPI(browser.tabs.query, { }).then((tabs) => {
+      return _queryTab().then((tabs) => {
           var windowIdSet = new Set();
-          tabs.forEach((tab) => {
+          if (tabs != undefined) {
+            for (let tab of tabs) {
               windowIdSet.add(tab.windowId);
-            });
+            }
+          }
           return Promise.resolve(windowIdSet.size);
         })
     }
@@ -302,34 +317,36 @@ ExtractNews.Popup = (() => {
       // is in the order of the opened URL, opener tab, and "about:blank".
       // If an opener tab is the same as the opened URL or one of news sites,
       // removed or not added by this function or event listner. 
-      var editUrlSelectOption = undefined;
+      var selectedUrlOption = undefined;
       if (openerTabNewsOpenedUrl != undefined) { // Opener tab of a news site
-        editUrlSelectOption =
+        var openerTabNewsOpenedUrlOption =
           _addEditUrlOption(editUrlSelect, openerTabNewsOpenedUrl);
+        if (openedUrl == "") {
+          selectedUrlOption = openerTabNewsOpenedUrlOption;
+        }
       }
       ExtractNews.forEachNewsSite((siteId, siteUrl) => {
-          if (openerTabNewsOpenedUrl != siteUrl) {
-            var editUrlOption = _addEditUrlOption(editUrlSelect, siteUrl);
-            if (openedUrl == siteUrl) { // Opened URL which equals a news site
-              editUrlSelectOption = editUrlOption;
+          if (siteUrl != openerTabNewsOpenedUrl) {
+            var siteUrlOption = _addEditUrlOption(editUrlSelect, siteUrl);
+            if (siteUrl == openedUrl) { // Opened URL which equals a news site
+              selectedUrlOption = siteUrlOption;
               openedUrlAppended = false;
-            } else if (openedSiteId == siteId) {
+            } else if (siteId == openedSiteId) {
               // Append the option element for the specified opened URL to
               // the next of a news site which contains it.
-              editUrlSelectOption =
-                _addEditUrlOption(editUrlSelect, openedUrl);
+              selectedUrlOption = _addEditUrlOption(editUrlSelect, openedUrl);
               openedUrlAppended = false;
             }
           }
         });
       if (openedUrlAppended) { // Opened URL of no news site
-        editUrlSelectOption = _addEditUrlOption(editUrlSelect, openedUrl);
+        selectedUrlOption = _addEditUrlOption(editUrlSelect, openedUrl);
       }
-      var editBlankOption = _addEditUrlOption(editUrlSelect, URL_ABOUT_BLANK);
-      if (editUrlSelectOption == undefined) { // "about:blank" or new edit
-        editUrlSelectOption = editBlankOption;
+      var aboutBlankOption = _addEditUrlOption(editUrlSelect, URL_ABOUT_BLANK);
+      if (selectedUrlOption == undefined) { // "about:blank" or new edit
+        selectedUrlOption = aboutBlankOption;
       }
-      editUrlSelectOption.selected = true;
+      selectedUrlOption.selected = true;
     }
 
     /*
@@ -382,7 +399,7 @@ ExtractNews.Popup = (() => {
     _Popup.clearSelectionEditUrlSelect = clearSelectionEditUrlSelect;
 
 
-    // URL of edit window only opened on the extension
+    // URL of only an edit window opened on the extension
     const EDIT_WINDOW_URL = browser.runtime.getURL("popup/edit.html");
 
     /*
@@ -408,18 +425,18 @@ ExtractNews.Popup = (() => {
     }
 
     /*
-     * Checks whether the window to edit a news selection has been opened
-     * and returns the promise fulfilled with its tab ID if exists, otherwise,
-     * browser.tabs.TAB_ID_NONE.
+     * Finds the window to edit a news selection from all tabs opened on
+     * the browser and returns the promise fulfilled with its information.
      */
-    function querySelectionEditWindow() {
-      return callAsynchronousAPI(browser.tabs.query, { }).then((tabs) => {
-          for (let i = 0; i < tabs.length; i++) {
-            if (tabs[i].url.startsWith(EDIT_WINDOW_URL)) {
-              return Promise.resolve(tabs[i].id);
+    function searchSelectionEditWindow() {
+      return _queryTab().then((tabs) => {
+          if (tabs != undefined) {
+            for (const tab of tabs) {
+              if (tab.url.startsWith(EDIT_WINDOW_URL)) {
+                return Promise.resolve(tab);
+              }
             }
           }
-          return Promise.resolve(browser.tabs.TAB_ID_NONE);
         });
     }
 
@@ -427,17 +444,16 @@ ExtractNews.Popup = (() => {
      * Closes the window to edit a news selection and returns the promise.
      */
     function closeSelectionEditWindow() {
-      return querySelectionEditWindow().then((editWindowTabId) => {
-          if (editWindowTabId != browser.tabs.TAB_ID_NONE) {
-            return callAsynchronousAPI(browser.tabs.remove, editWindowTabId);
+      return searchSelectionEditWindow().then((tab) => {
+          if (tab != undefined) {
+            return callAsynchronousAPI(browser.tabs.remove, tab.id);
           }
         });
     }
 
     _Popup.openSelectionEditWindow = openSelectionEditWindow;
-    _Popup.querySelectionEditWindow = querySelectionEditWindow;
+    _Popup.searchSelectionEditWindow = searchSelectionEditWindow;
     _Popup.closeSelectionEditWindow = closeSelectionEditWindow;
-
 
     /*
      * Applies the setting of news selections in the specified array to a tab

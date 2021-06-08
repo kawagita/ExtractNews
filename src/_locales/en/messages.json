@@ -64,6 +64,11 @@
     "description": "Topic wards for each category of Yahoo! site."
   },
 
+  "extractNewsYahooArticleRegularExpression": {
+    "message": "^/.+\\.html?$$",
+    "description": "Regular expression of the article of Yahoo! site."
+  },
+
   "extractNewsYahooNewsHostServer": {
     "message": "news",
     "description": "Host server of Yahoo! News."
@@ -140,7 +145,7 @@
   },
 
   "extractNewsSlashdotStoryPathRegularExpression": {
-    "message": "^/story(?:/[0-9]{2}){3}/[0-9]{6,7}(?:/|$$)",
+    "message": "^/story(?:/[0-9]{2}){3}/[0-9]{6,7}/",
     "description": "Regular expression of the path of a story on Slashdot."
   },
 
@@ -634,6 +639,11 @@
     "description": "Message prefix of a line in the import file."
   },
 
+  "fileImportLineInvalidValueSpecified": {
+    "message": "Invalid value has been specified.",
+    "description": "Description of invalid value on a import line."
+  },
+
   "fileImportLineFilteringIdNotSpecified": {
     "message": "Filtering ID has not been specified.",
     "description": "Description of no filtering ID on a import line."
@@ -679,6 +689,11 @@
     "description": "Description of not enclosing the setting name by quotes on a import line."
   },
 
+  "fileImportLineRegularExpressionNotEnclosedBySlashes": {
+    "message": "Regular expression has not been enclosed by slashes.",
+    "description": "Description of not enclosing the regular expression by slashes on a import line."
+  },
+
   "fileImportLineIncorrectRegularExpression": {
     "message": "Regular expression is incorrect.",
     "description": "Description of incorrect regular expression on a import line."
@@ -687,16 +702,6 @@
   "fileImportLineOpenedUrlNotSpecified": {
     "message": "Opened URL has not been specified.",
     "description": "Description of no opened URL on a import line."
-  },
-
-  "fileImportLineTooMuchNewsSelectionDataLines": {
-    "message": "Too much data lines for news selection.",
-    "description": "Description of too much data lines for a news selection on a import line."
-  },
-
-  "fileImportDataNotIncluded": {
-    "message": "No data is included in import file.",
-    "description": "Message for including no data in the import file."
   },
 
   "contextMenuExtractNewsSettings": {
@@ -709,29 +714,14 @@
     "description": "Contenxt menu to select a news topic of selected text."
   },
 
-  "contextMenuSelectNewsTopicAdditionally": {
-    "message": "Add '%s' to selected topics",
-    "description": "Contenxt menu to select a news topic of selected text additionally."
-  },
-
   "contextMenuSelectNewsSender": {
     "message": "Select '%s' as news sender",
     "description": "Contenxt menu to select a news sender of selected text."
   },
 
-  "contextMenuSelectNewsSenderAdditionally": {
-    "message": "Add '%s' to selected senders",
-    "description": "Contenxt menu to select a news sender of selected text additionally."
-  },
-
   "contextMenuExcludeNewsTopic": {
     "message": "Exclude '%s' from news topics",
     "description": "Contenxt menu to exclude a news topic of selected text."
-  },
-
-  "contextMenuExcludeNewsTopicAdditionally": {
-    "message": "Add '%s' to excluded topics",
-    "description": "Contenxt menu to exclude a news topic of selected text additionally."
   },
 
   "contextMenuDisableTabLink": {
@@ -894,39 +884,24 @@
     "description": "Option label to debug the extension."
   },
 
-  "optionDataFiltering": {
-    "message": "The setting of word filterings",
-    "description": "Option label for the setting of word filterings."
-  },
-
-  "optionDataSelection": {
-    "message": "The setting of news selections",
-    "description": "Option label for the setting of news selections."
-  },
-
-  "optionDataDescription": {
-    "message": " could be edited on the below pane, and imported from or exported to a local file. But, changed or additional data are not updated until you click 'Save' button.",
-    "description": "Option description to update the setting."
-  },
-
-  "optionDataReplacement": {
-    "message": "Replace with file's data",
-    "description": "Option label to replace the setting of word filterings or news selections with file's data."
+  "optionUpdateDescription": {
+    "message": "Changed settings are not updated until you click 'Apply' button.",
+    "description": "Option description to update option settings."
   },
 
   "optionExport": {
     "message": "Export",
-    "description": "Option button to export filtering data to a file."
+    "description": "Option button to export option settings to a file."
   },
 
   "optionImport": {
     "message": "Import",
-    "description": "Option button to import filtering data from a file."
+    "description": "Option button to import option settings from a file."
   },
 
-  "optionSave": {
-    "message": "Save",
-    "description": "Option button to save filtering data."
+  "optionApply": {
+    "message": "Apply",
+    "description": "Option button to apply option settings."
   },
 
   "optionFilteringCategoryName": {
@@ -950,18 +925,18 @@
   },
 
   "optionTargetAccept": {
-    "message": "ACCEPT",
+    "message": "Accept",
     "description": "Option label to accept news topics by a filtering target."
   },
 
   "optionTargetDrop": {
-    "message": "DROP",
+    "message": "Drop",
     "description": "Option label to drop news topics by a filtering target."
   },
 
-  "optionTargetReturn": {
-    "message": "RETURN",
-    "description": "Option label to skip a block by a filtering target."
+  "optionTargetBreak": {
+    "message": "Exit Block",
+    "description": "Option label to exit a block by a filtering target."
   },
 
   "optionTargetTerminateBlock": {
@@ -1004,6 +979,11 @@
     "description": "Option button to append a news selection."
   },
 
+  "optionOK": {
+    "message": "OK",
+    "description": "Option button to change a news selection."
+  },
+
   "optionLocalize": {
     "message": "Localize",
     "description": "Option button to localize a filtering target."
@@ -1019,19 +999,9 @@
     "description": "Option button to move a filtering target or news selection down."
   },
 
-  "optionEdit": {
-    "message": "Edit",
-    "description": "Option button to edit a news selection."
-  },
-
   "optionRemove": {
     "message": "Remove",
     "description": "Option button to remove a filtering target or news selection."
-  },
-
-  "optionApply": {
-    "message": "Apply",
-    "description": "Option button to apply a news selection."
   },
 
   "optionDelete": {

@@ -65,7 +65,7 @@
             "site/design.js",
             "site/yahoo.js"
           ],
-        "run_at": "document_idle"
+        "run_at": "document_start"
       },
       {
         "matches": [
@@ -83,7 +83,7 @@
             "site/design.js",
             "site/slashdot.js"
           ],
-        "run_at": "document_end"
+        "run_at": "document_start"
       },
       {
         "matches": [ "https://news.yahoo.co.jp/*" ],
@@ -96,7 +96,7 @@
             "site/design.js",
             "site/yahoo_japan.js"
           ],
-        "run_at": "document_end"
+        "run_at": "document_start"
       },
       {
         "matches": [ "https://*.watch.impress.co.jp/*" ],
@@ -109,7 +109,7 @@
             "site/design.js",
             "site/impress_watch.js"
           ],
-        "run_at": "document_end"
+        "run_at": "document_start"
       },
       {
         "matches": [ "https://www.itmedia.co.jp/news/*" ],
@@ -122,7 +122,7 @@
             "site/design.js",
             "site/itmedia.js"
           ],
-        "run_at": "document_end"
+        "run_at": "document_start"
       },
       {
         "matches": [ "<all_urls>" ],
@@ -147,7 +147,7 @@
             "site/selector.js",
             "site/others.js"
           ],
-        "run_at": "document_end"
+        "run_at": "document_start"
       }
     ],
 

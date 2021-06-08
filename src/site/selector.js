@@ -141,13 +141,13 @@ class NewsSelector {
           targetBlockSkipped = ! target.terminatesBlock();
           continue;
         } else if (this._testTargetWords(target, topicString)) {
-          if (target.name != ExtractNews.TARGET_RETURN) {
+          if (target.name != ExtractNews.TARGET_BREAK) {
             return target.name == ExtractNews.TARGET_DROP;
           }
           targetBlockSkipped = true;
         }
       }
-      // Returns false for the final "RETURN" which is the same as "ACCEPT".
+      // Returns false for the final "BREAK" which is the same as "ACCEPT".
     }
     return false;
   }

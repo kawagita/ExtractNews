@@ -14,109 +14,91 @@
       <li id="General" tabindex="1"></li><li id="Filtering" tabindex="2"></li><li id="Selection" tabindex="3"></li>
     </ol>
   </header>
-  <section id="OptionPage" class="general">
-    <section id="GeneralPane">
-      <div id="EnablingSite">
-        <h3></h3>
-        <div>
-        </div>
-      </div>
-      <div id="Advanced">
-        <h3></h3>
-        <div>
-          <div id="DisableFiltering" class="checked_option">
-            <input type="checkbox">
-            <label></label>
-          </div>
-          <div id="DebugExtension" class="checked_option">
-            <input type="checkbox">
-            <label></label>
-          </div>
-        </div>
-      </div>
-    </section>
-    <aside id="DataUpdate">
-      <p>
+  <aside id="OptionUpdate">
+    <p>
+    <div>
+      <button id="Import" tabindex="4"></button>
+      <button id="Export" tabindex="5"></button>
+      <button id="Apply" tabindex="6"></button>
+    </div>
+  </aside>
+  <section id="GeneralPane">
+    <div id="EnablingSite">
+      <h3></h3>
       <div>
-        <div id="DataReplacement" class="checked_option">
+      </div>
+    </div>
+    <div id="Advanced">
+      <h3></h3>
+      <div>
+      </div>
+    </div>
+  </section>
+  <section id="FilteringPane">
+    <div id="FilteringCategory">
+      <div id="FilteringCategoryName">
+        <label></label>
+        <select></select>
+      </div>
+      <div id="FilteringCategoryTopics">
+        <label></label>
+        <input>
+      </div>
+      <div id="FilteringCategoryAlways">
+        <span></span>
+      </div>
+    </div>
+    <div id="FilteringBlocks">
+      <div class="block">
+      </div>
+    </div>
+  </section>
+  <section id="SelectionPane">
+    <div id="SelectionEdit">
+      <div class="edit_header">
+        <span></span>
+        <img src="../icons/close-20.png" class="close" tabindex="11">
+      </div>
+      <div class="edit_pane">
+        <div id="SettingName">
+          <label></label>
+          <input tabindex="4">
+        </div>
+        <div id="SelectedTopic" class="regexp">
+          <div>
+            <label></label>
+            <button class="localize" tabindex="6"></button>
+          </div>
+          <textarea tabindex="5"></textarea>
+        </div>
+        <div id="SelectedSender" class="regexp">
+          <div>
+            <label></label>
+            <button class="localize" tabindex="8"></button>
+          </div>
+          <textarea tabindex="7"></textarea>
+        </div>
+        <div id="OpenedUrl">
+          <label></label>
+          <select tabindex="9"></select>
+        </div>
+        <div>
+          <button id="OK" tabindex="10"></button>
+        </div>
+      </div>
+    </div>
+    <div id="SelectionList">
+      <div class="page_header">
+        <div>
           <input type="checkbox" tabindex="4">
-          <label><label>
+          <button id="Delete" tabindex="5"></button>
         </div>
-        <div id="DataButtonGroup">
-          <button id="Import" tabindex="5"></button>
-          <button id="Export" tabindex="6"></button>
-          <button id="Save" tabindex="7"></button>
-        </div>
+        <ol class="page_number_list">
+        </ol>
       </div>
-    </aside>
-    <section id="FilteringPane">
-      <hr>
-      <div id="FilteringCategory">
-        <div id="FilteringCategoryName">
-          <label></label>
-          <select></select>
-        </div>
-        <div id="FilteringCategoryTopics">
-          <label></label>
-          <input>
-        </div>
-        <div id="FilteringCategoryAlways">
-          <span></span>
-        </div>
+      <div class="selection_list">
       </div>
-      <div id="FilteringBlocks">
-        <div class="block">
-        </div>
-      </div>
-    </section>
-    <section id="SelectionPane">
-      <hr>
-      <div id="SelectionEdit">
-        <div class="edit_header">
-          <span></span>
-          <img src="../icons/close-20.png" class="close" tabindex="15">
-        </div>
-        <div class="edit_pane">
-          <div id="SettingName">
-            <label></label>
-            <input tabindex="8">
-          </div>
-          <div id="SelectedTopic" class="regexp">
-            <div>
-              <label></label>
-              <button class="localize" tabindex="10"></button>
-            </div>
-            <textarea tabindex="9"></textarea>
-          </div>
-          <div id="SelectedSender" class="regexp">
-            <div>
-              <label></label>
-              <button class="localize" tabindex="12"></button>
-            </div>
-            <textarea tabindex="11"></textarea>
-          </div>
-          <div id="OpenedUrl">
-            <label></label>
-            <select tabindex="13"></select>
-          </div>
-          <div>
-            <button id="Apply" tabindex="14"></button>
-          </div>
-        </div>
-      </div>
-      <div id="SelectionList">
-        <div class="page_header">
-          <div>
-            <input type="checkbox" tabindex="8">
-            <button id="Delete" tabindex="9"></button>
-          </div>
-          <ol class="page_number_list">
-          </ol>
-        </div>
-        <div class="selection_list">
-        </div>
-      </div>
-    </section>
+    </div>
   </section>
   <script src="../debug.js"></script>
   <script src="../extractnews.js"></script>
@@ -124,11 +106,11 @@
   <script src="../text.js"></script>
   <script src="../alert.js"></script>
   <script src="../event.js"></script>
-  <script src="../file.js"></script>
   <script src="../popup/popup.js"></script>
   <script src="general.js"></script>
   <script src="filtering.js"></script>
   <script src="selection.js"></script>
+  <script src="file.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

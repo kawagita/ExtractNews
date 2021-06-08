@@ -30,7 +30,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
 
     Site.displayNewsDesigns(
       newsSiteUrlParser.toString(),
-      new NewsSelector(ExtractNews.getDomainLanguage(newsSite.domainId));
+      new NewsSelector(ExtractNews.getDomainLanguage(newsSite.domainId)));
   }).catch((error) => {
     Debug.printStackTrace(error);
   });

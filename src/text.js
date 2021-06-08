@@ -1927,6 +1927,14 @@ ExtractNews.Regexp = (() => {
           this.lastWord = this.getLastWord();
         }
         if (pattern.hasOrdinaryCharacter(_isRegexpGroupAltenative)) {
+          if (this.wordSet != undefined) {
+            var lastWord = this.getLastWord();
+            if (lastWord != "") {
+              // Append the word in every alternative if not duplicate.
+              this.wordSet.add(lastWord);
+              this.lastWord = "";
+            }
+          }
           if (this.localizedContext != undefined) {
             var halfwidthAlternativeDuplicated = false;
             var halfwidthText = this.localizedContext.halfwidthText;
@@ -1945,14 +1953,6 @@ ExtractNews.Regexp = (() => {
                 this.localizedContext.fullwidthText);
             }
             this.localizedContext = new _Text.LocalizedContext();
-          }
-          if (this.wordSet != undefined) {
-            var lastWord = this.getLastWord();
-            if (lastWord != "") {
-              // Append the word in every alternative if not duplicate.
-              this.wordSet.add(lastWord);
-              this.lastWord = "";
-            }
           }
         }
         return undefined;
@@ -2002,10 +2002,11 @@ ExtractNews.Regexp = (() => {
       }
 
       getLastWord() {
-        if (this.wordSet != undefined) {
+        if (this.lastWord != undefined) {
           var lastWord = this.lastWord;
           var wordString;
           if (this.localizedContext != undefined) {
+            // It's necessary to get the localized context before cleared.
             wordString = this.localizedContext.halfwidthText.textString;
           } else {
             wordString = this.inputText().textString;
