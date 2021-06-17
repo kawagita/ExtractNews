@@ -20,13 +20,13 @@
 "use strict";
 
 /*
- * Returns the data of the specified URL if on the specified news site,
+ * Returns the data object of the specified URL on the specified site data,
  * otherwise, undefined;
  */
-function getNewsSiteUrlData(site, url) {
+function getSiteUrlData(siteData, url) {
   var urlData = {
       hostServer: "",
-      hostDomain: site.hostDomain,
+      hostDomain: siteData.hostDomain,
       path: ""
     };
   var urlHostPath;
@@ -35,23 +35,23 @@ function getNewsSiteUrlData(site, url) {
   } else if (url.startsWith("//")) {
     urlHostPath = url.substring(2);
   } else if (url.startsWith(URL_PATH_SEPARATOR)) {
-    urlData.hostServer = site.hostServer;
+    urlData.hostServer = siteData.hostServer;
     urlData.path = url;
     return urlData;
   } else {
     return undefined;
   }
-  if (urlHostPath.startsWith(site.hostDomain)) {
-    urlData.path = urlHostPath.substring(site.hostDomain.length);
+  if (urlHostPath.startsWith(siteData.hostDomain)) {
+    urlData.path = urlHostPath.substring(siteData.hostDomain.length);
   } else {
     var urlHostDomainIndex =
       urlHostPath.indexOf(URL_DOMAIN_LABEL_SEPARATOR) + 1;
     var urlHostDomainPath = urlHostPath.substring(urlHostDomainIndex);
-    if (! urlHostDomainPath.startsWith(site.hostDomain)) {
+    if (! urlHostDomainPath.startsWith(siteData.hostDomain)) {
       return undefined;
     }
     urlData.hostServer = urlHostPath.substring(0, urlHostDomainIndex - 1);
-    urlData.path = urlHostDomainPath.substring(site.hostDomain.length);
+    urlData.path = urlHostDomainPath.substring(siteData.hostDomain.length);
   }
   if (urlData.path == "" || urlData.path.startsWith(URL_PATH_SEPARATOR)) {
     return urlData;
@@ -65,7 +65,7 @@ const PATH_DIRECTORY_REGEXP = new RegExp(/^\/(?:index.html?)?$/);
  * The object to parse the URL into the path and query sequentially.
  * for a news site.
  */
-class NewsSiteUrlParser {
+class SiteUrlParser {
   constructor(urlData) {
     if (urlData == undefined) {
       throw newNullPointerException("urlData");

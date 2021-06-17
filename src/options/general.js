@@ -34,9 +34,6 @@ if (OPTION_PAGE_WIDTH < 560) {
   document.body.className = "compact";
 }
 
-// Class name of the element grayed out on this option page
-const OPTION_GRAYED_OUT = "grayed_out";
-
 /*
  * Returns the message on the option page.
  */
@@ -69,50 +66,108 @@ function getOptionButton(id) {
   return button;
 }
 
-// Tab ID send from this option page
-
-var OPTION_PAGE_TAB_ID = browser.tabs.TAB_ID_NONE;
-
-callAsynchronousAPI(browser.tabs.getCurrent).then((tab) => {
-    OPTION_PAGE_TAB_ID = tab.id;
-  }).catch((error) => {
-    Debug.printStackTrace(error);
-  });
-
 /*
- * Sends the specified warning message on this option page to the background.
+ * Sends the specified warning on the option page to the background script.
  */
 function sendOpitonWarningMessage(warning) {
-  return ExtractNews.sendRuntimeMessage({
-      command: ExtractNews.COMMAND_DIALOG_OPEN,
-      tabId: OPTION_PAGE_TAB_ID,
-      warning: warning.toObject()
-    }, " on Option Page Tab " + OPTION_PAGE_TAB_ID).catch((error) => {
+  callAsynchronousAPI(browser.tabs.getCurrent).then((tab) => {
+      ExtractNews.sendRuntimeMessage({
+          command: ExtractNews.COMMAND_DIALOG_OPEN,
+          tabId: tab.id,
+          warning: warning.toObject()
+        }, " on Option Page Tab " + tab.id);
+    }).catch((error) => {
       Debug.printStackTrace(error);
     });
 }
 
 /*
- * Sends the specified object data with "Update" command to the background.
+ * Sends the updated data of the specified object to the background script.
  */
 function sendOpitonUpdateMessage(updatedObject = { }) {
-  return ExtractNews.sendRuntimeMessage(Object.assign({
-      command: ExtractNews.COMMAND_SETTING_UPDATE,
-      tabId: OPTION_PAGE_TAB_ID,
-      filteringUpdated: false
-    }, updatedObject), " on Option Page Tab " + OPTION_PAGE_TAB_ID);
+  callAsynchronousAPI(browser.tabs.getCurrent).then((tab) => {
+      ExtractNews.sendRuntimeMessage(Object.assign({
+          command: ExtractNews.COMMAND_SETTING_UPDATE,
+          filteringUpdated: false
+        }, updatedObject), " on Option Page Tab " + tab.id);
+    });
 }
 
-// The option to change a value for the node.
+// Class name of the element grayed out on the option page
+const OPTION_GRAYED_OUT = "grayed_out";
 
+const OPTION_TRUE = "true";
+const OPTION_FALSE = "false";
+
+/*
+ * The settings of option data.
+ */
+class OptionSettings {
+  constructor(generalDataMap, filteringData, selectionData) {
+    this.settings = {
+        generalDataMap: generalDataMap,
+        generalDataUpdated: false,
+        filteringData: filteringData,
+        filteringDataUpdated: false,
+        selectionData: selectionData,
+        selectionDataUpdated: false
+      };
+  }
+
+  get generalDataMap() {
+    return this.settings.generalDataMap;
+  }
+
+  isGeneralDataUpdated() {
+    return this.settings.generalDataUpdated;
+  }
+
+  setGeneralDataUpdated() {
+    this.settings.generalDataUpdated = true;
+  }
+
+  get filteringData() {
+    return this.settings.filteringData;
+  }
+
+  isFilteringDataUpdated() {
+    return this.settings.filteringDataUpdated;
+  }
+
+  setFilteringDataUpdated() {
+    this.settings.filteringDataUpdated = true;
+  }
+
+  get selectionData() {
+    return this.settings.selectionData;
+  }
+
+  isSelectionDataUpdated() {
+    return this.settings.selectionDataUpdated;
+  }
+
+  setSelectionDataUpdated() {
+    this.settings.selectionDataUpdated = true;
+  }
+
+  clearDataUpdated() {
+    this.settings.generalDataUpdated = false;
+    this.settings.filteringDataUpdated = false;
+    this.settings.selectionDataUpdated = false;
+  }
+}
+
+/*
+ * The option to change a value for the node.
+ */
 class OptionData {
-  constructor(optionNode, read, write, updatedPropertyName) {
+  constructor(optionNode, readValue, writeValue, updatedPropertyName) {
     if (optionNode == undefined) {
       throw newNullPointerException("optionData");
-    } else if (read == undefined) {
-      throw newNullPointerException("read");
-    } else if (write == undefined) {
-      throw newNullPointerException("write");
+    } else if (readValue == undefined) {
+      throw newNullPointerException("readValue");
+    } else if (writeValue == undefined) {
+      throw newNullPointerException("writeValue");
     } else if (updatedPropertyName == undefined) {
       throw newNullPointerException("updatedPropertyName");
     } else if ((typeof updatedPropertyName) != "string") {
@@ -127,8 +182,8 @@ class OptionData {
         break;
       }
     }
-    this.read = read;
-    this.write = write;
+    this.readValue = readValue;
+    this.writeValue = writeValue;
     this.updatedPropertyName = updatedPropertyName;
   }
 
@@ -136,34 +191,61 @@ class OptionData {
     return this.optionNode.id;
   }
 
-  isChecked() {
-    return this.optionChecked;
+  getValue() {
+    if (this.optionChecked) {
+      return this.optionNode.checked;
+    }
+    return "";
   }
 
-  readValue() {
-    this.read().then((value) => {
-        if (this.optionChecked) {
-          this.optionNode.checked = value;
-          this.optionNode.addEventListener("input", (event) => {
-              this.write(event.target.checked).then(() => {
-                  sendOpitonUpdateMessage(this.getUpdatedObject());
-                }).catch((error) => {
-                  Debug.printStackTrace(error);
-                });
-            });
-        }
-      });
+  setValue(value) {
+    if (this.optionChecked) {
+      this.optionNode.checked = value;
+    }
   }
 
-  setValue(valueString) {
+  isAdvanced() {
+    return false;
+  }
+
+  isValueStringAcceptable(valueString) {
+    if (this.optionChecked) {
+      valueString = valueString.toLowerCase();
+      return valueString == OPTION_TRUE || valueString == OPTION_FALSE;
+    }
+    return false;
+  }
+
+  setValueString(valueString) {
     if (valueString == undefined) {
       throw newNullPointerException("valueString");
     } else if ((typeof valueString) != "string") {
       throw newIllegalArgumentException("valueString");
     }
     if (this.optionChecked) {
-      this.optionNode.checked = Boolean(valueString);
+      this.setValue(valueString == OPTION_TRUE);
     }
+  }
+
+  read() {
+    return this.readValue().then((value) => {
+        this.optionNode.addEventListener("input", (event) => {
+            var changedValue = this.getValue();
+            this.writeValue(changedValue).then((preventUpdate) => {
+                if (! preventUpdate) {
+                  sendOpitonUpdateMessage(this.getUpdatedObject());
+                }
+              }).catch((error) => {
+                Debug.printStackTrace(error);
+              });
+            this.setValue(changedValue);
+          });
+        this.setValue(value);
+      });
+  }
+
+  write() {
+    return this.writeValue(this.getValue());
   }
 
   getUpdatedPropertyData() {
@@ -185,7 +267,7 @@ class OptionData {
 
   toString() {
     if (this.optionChecked) {
-      return String(this.optionNode.checked);
+      return this.optionNode.checked ? OPTION_TRUE : OPTION_FALSE;
     }
     return "";
   }
@@ -205,19 +287,39 @@ function _createCheckedOptionDiv(optionId, optionText) {
 }
 
 class _EnablingSiteData extends OptionData {
-  constructor(domainCheckbox, domainData) {
+  constructor(optionSettings, domainCheckbox, domainData) {
     super(domainCheckbox, () => {
         return Promise.resolve(ExtractNews.isDomainEnabled(domainData.id));
-      }, (enabled) => {
-        ExtractNews.setDomain(domainData);
-        return Promise.resolve();
-      }, "domainDataArray");
+      }, (value) => {
+        // Not write any value to the storage until "Apply" button is pressed.
+        optionSettings.setGeneralDataUpdated();
+        return Promise.resolve(true);
+      }, "domainDataObjects");
     this.domainData = domainData;
   }
-
+  setValue(value) {
+    super.setValue(value);
+    var domainDataObject = this.domainData.toObject();
+    domainDataObject.enabled = value;
+    ExtractNews.setDomain(domainDataObject);
+  }
+  write() {
+    var domainEnabledKey = this.domainData.id + ExtractNews.ENABLED_KEY;
+    return writeStorage({
+        [domainEnabledKey]: ExtractNews.isDomainEnabled(this.domainData.id)
+      });
+  }
   getUpdatedPropertyData() {
-    this.domainData.enabled = ExtractNews.isDomainEnabled(this.domainData.id);
-    return this.domainData;
+    return this.domainData.toObject();
+  }
+}
+
+class _AdvancedOption extends OptionData {
+  constructor(optionNode, read, write, updatedPropertyName) {
+    super(optionNode, read, write, updatedPropertyName);
+  }
+  isAdvanced() {
+    return true;
   }
 }
 
@@ -228,8 +330,21 @@ const OPTION_DEBUG_EXTENSIONS  = "DebugExtension";
  * The pane of genral settings on this option page.
  */
 class GeneralPane {
-  constructor() {
+  constructor(optionSettings) {
+    this.pane = {
+        optionDataArray: new Array(),
+        optionNodeGroup: new _Event.PointedGroup()
+      };
     var enablingSiteNode = getOptionElement("EnablingSite", "div");
+    ExtractNews.forEachDomain((domainData) => {
+        var domainCheckedOptionDiv =
+          _createCheckedOptionDiv(domainData.id, domainData.name);
+        enablingSiteNode.appendChild(domainCheckedOptionDiv);
+        this.pane.optionDataArray.push(
+          new _EnablingSiteData(
+            optionSettings, domainCheckedOptionDiv.querySelector("input"),
+            domainData));
+      });
     var advancedOptionsNode = getOptionElement("Advanced", "div");
     var disableFilteringOptionDiv =
       _createCheckedOptionDiv(
@@ -237,35 +352,16 @@ class GeneralPane {
     var debugExtensionOptionDiv =
       _createCheckedOptionDiv(
         OPTION_DEBUG_EXTENSIONS, getOptionMessage(OPTION_DEBUG_EXTENSIONS));
-    this.pane = {
-        optionDataArray: new Array(),
-        optionNodeGroup: new _Event.PointedGroup()
-      };
-    ExtractNews.forEachDomain(
-      (domainId, name, language, hostServerPatterns, hostDomain) => {
-        var domainCheckedOptionDiv = _createCheckedOptionDiv(domainId, name);
-        enablingSiteNode.appendChild(domainCheckedOptionDiv);
-        this.pane.optionDataArray.push(
-          new _EnablingSiteData(
-            domainCheckedOptionDiv.querySelector("input"), {
-              id: domainId,
-              name: name,
-              language: language,
-              hostServerPatterns: hostServerPatterns,
-              hostDomain: hostDomain,
-              enabled: false
-            }));
-      });
     advancedOptionsNode.appendChild(disableFilteringOptionDiv);
     advancedOptionsNode.appendChild(debugExtensionOptionDiv);
     this.pane.optionDataArray.push(
-      new OptionData(
+      new _AdvancedOption(
         disableFilteringOptionDiv.querySelector("input"),
         _Storage.readFilteringDisabled, _Storage.writeFilteringDisabled,
         "filteringDisabled"),
-      new OptionData(
+      new _AdvancedOption(
         debugExtensionOptionDiv.querySelector("input"),
-        ExtractNews.getDebugMode, ExtractNews.setDebugMode, "debugOn"));
+        ExtractNews.readDebugMode, ExtractNews.writeDebugMode, "debugOn"));
   }
 
   forEachOptionData(callback) {
@@ -282,10 +378,12 @@ class GeneralPane {
 const OPERATION_INSERT = "insert";
 const OPERATION_APPEND = "append";
 
-const OPERATION_LOCALIZE = "localize";
-const OPERATION_MOVE_UP = "up";
-const OPERATION_MOVE_DOWN = "down";
 const OPERATION_EDIT = "edit";
+
+const OPERATION_LOCALIZE = "localize";
+
+const OPERATION_UP = "up";
+const OPERATION_DOWN = "down";
 const OPERATION_REMOVE = "remove";
 
 const OPERATIONS = [ "Up", "Down", "Remove" ];
@@ -347,16 +445,14 @@ class FocusedOptionPane {
     if (focusedNodeGroup == undefined) {
       throw newNullPointerException("focusedNodeGroup");
     }
-    this.pane = {
-        nodes: new Array(),
-        insertButtonGroup: new _Event.PointedGroup(),
-        focusedNodeGroup: focusedNodeGroup
-      };
-    this.pane.insertButtonGroup.setEventRelation(focusedNodeGroup);
+    this.nodes = new Array();
+    this.focusedNodeGroup = focusedNodeGroup;
+    this.insertButtonGroup = new _Event.PointedGroup();
+    this.insertButtonGroup.setEventRelation(focusedNodeGroup);
   }
 
   get nodeSize() {
-    return this.pane.nodes.length;
+    return this.nodes.length;
   }
 
   /*
@@ -365,7 +461,7 @@ class FocusedOptionPane {
    */
   getEventNodeIndex(event) {
     for (let i = 0; i < this.nodeSize; i++) {
-      if (this.pane.nodes[i].contains(event.target)) {
+      if (this.nodes[i].contains(event.target)) {
         return i;
       }
     }
@@ -374,9 +470,9 @@ class FocusedOptionPane {
 
   getNode(nodeIndex) {
     if (nodeIndex < 0 || nodeIndex >= this.nodeSize) {
-      throw newIndexOutOfBoundsException("section nodes", nodeIndex);
+      throw newIndexOutOfBoundsException("focused nodes", nodeIndex);
     }
-    return this.pane.nodes[nodeIndex];
+    return this.nodes[nodeIndex];
   }
 
   getFocusedNode(nodeIndex) {
@@ -397,19 +493,19 @@ class FocusedOptionPane {
     if (nodeIndex < 0 || nodeIndex > this.nodeSize) {
       throw newIndexOutOfBoundsException("section nodes", nodeIndex);
     }
-    this.pane.nodes.splice(nodeIndex, 0, node);
+    this.nodes.splice(nodeIndex, 0, node);
     var insertButton = node.querySelector("button." + OPERATION_INSERT);
     if (insertButton == null) {
       insertButton = node.querySelector("button." + OPERATION_APPEND);
     }
     insertButton.addEventListener(_Event.CLICK, fireNodeInsertEvent);
-    this.pane.insertButtonGroup.addElement(insertButton);
+    this.insertButtonGroup.addElement(insertButton);
     var focusedNode = this.getFocusedNode(nodeIndex);
     if (focusedNode != null) {
       if (fireDataInputEvent != undefined) {
         for (const element of focusedNode.querySelectorAll("input")) {
           element.addEventListener("input", fireDataInputEvent);
-          this.pane.focusedNodeGroup.addElement(element);
+          this.focusedNodeGroup.addElement(element);
         }
       }
       for (const element of focusedNode.querySelectorAll("button")) {
@@ -417,15 +513,15 @@ class FocusedOptionPane {
         case OPERATION_LOCALIZE:
           element.addEventListener(_Event.CLICK, fireWordsLocalizeEvent);
           break;
-        case OPERATION_MOVE_UP:
-        case OPERATION_MOVE_DOWN:
+        case OPERATION_UP:
+        case OPERATION_DOWN:
           element.addEventListener(_Event.CLICK, fireNodeMoveEvent);
           break;
         case OPERATION_REMOVE:
           element.addEventListener(_Event.CLICK, fireNodeRemoveEvent);
           break;
         }
-        this.pane.focusedNodeGroup.addElement(element);
+        this.focusedNodeGroup.addElement(element);
       }
     }
   }
@@ -435,15 +531,15 @@ class FocusedOptionPane {
       throw newIndexOutOfBoundsException("section nodes", nodeIndex);
     }
     var focusedNode = this.getFocusedNode(nodeIndex);
-    var node = this.pane.nodes.splice(nodeIndex, 1)[0];
+    var node = this.nodes.splice(nodeIndex, 1)[0];
     var insertButton = node.querySelector("button." + OPERATION_INSERT);
     if (insertButton == null) {
       insertButton = node.querySelector("button." + OPERATION_APPEND);
     }
-    this.pane.insertButtonGroup.removeElement(insertButton);
+    this.insertButtonGroup.removeElement(insertButton);
     if (focusedNode != null) {
       for (const element of focusedNode.querySelectorAll("input, button")) {
-        this.pane.focusedNodeGroup.removeElement(element);
+        this.focusedNodeGroup.removeElement(element);
       }
     }
     return node;
@@ -457,8 +553,8 @@ class FocusedOptionPane {
     } else if (movedUpIndex <= movedDownIndex) {
       throw newInvalidParameterException(movedUpIndex, movedDownIndex);
     }
-    this.pane.nodes.splice(
-      movedDownIndex, 0, this.pane.nodes.splice(movedUpIndex, 1)[0]);
+    this.nodes.splice(
+      movedDownIndex, 0, this.nodes.splice(movedUpIndex, 1)[0]);
   }
 
   focusNode(nodeIndex, focusedOperation) {
@@ -473,18 +569,18 @@ class FocusedOptionPane {
       focusedElement.focus();
       window.scroll(
         0, node.getBoundingClientRect().top
-          - this.pane.nodes[0].getBoundingClientRect().top);
+          - this.nodes[0].getBoundingClientRect().top);
       return true;
     }
     return false;
   }
 
-  enableAllButtons(nodeIndex, moveUpEnabled = true, moveDownEnabled = true) {
+  enableAllButtons(nodeIndex, upEnabled = true, downEnabled = true) {
     for (const element of this.getNode(nodeIndex).querySelectorAll("button")) {
-      if (element.classList.contains(OPERATION_MOVE_UP)) {
-        element.disabled = ! moveUpEnabled;
-      } else if (element.classList.contains(OPERATION_MOVE_DOWN)) {
-        element.disabled = ! moveDownEnabled;
+      if (element.classList.contains(OPERATION_UP)) {
+        element.disabled = ! upEnabled;
+      } else if (element.classList.contains(OPERATION_DOWN)) {
+        element.disabled = ! downEnabled;
       } else {
         element.disabled = false;
       }
@@ -496,11 +592,11 @@ class FocusedOptionPane {
   }
 
   disableButton(nodeIndex, disabledOperation) {
-    _setButtonEnabled(this.getNode(nodeIndex), disabledOperation, true);
+    _setButtonEnabled(this.getNode(nodeIndex), disabledOperation, false);
   }
 
   enableInsertButtonAll() {
-    this.pane.nodes.forEach((node) => {
+    this.nodes.forEach((node) => {
         if (! _setButtonEnabled(node, OPERATION_INSERT, true)) {
           _setButtonEnabled(node, OPERATION_APPEND, true);
         }
@@ -508,7 +604,7 @@ class FocusedOptionPane {
   }
 
   disableInsertButtonAll() {
-    this.pane.nodes.forEach((node) => {
+    this.nodes.forEach((node) => {
         if (! _setButtonEnabled(node, OPERATION_INSERT, false)) {
           _setButtonEnabled(node, OPERATION_APPEND, false);
         }
@@ -516,9 +612,9 @@ class FocusedOptionPane {
   }
 
   clear() {
-    this.pane.nodes = new Array();
-    this.pane.insertButtonGroup.removeElementAll();
-    this.pane.focusedNodeGroup.removeElementAll();
+    this.nodes = new Array();
+    this.insertButtonGroup.removeElementAll();
+    this.focusedNodeGroup.removeElementAll();
   }
 
   /*
@@ -526,11 +622,11 @@ class FocusedOptionPane {
    * or news selection which is selected when "focus" event occurs on its.
    */
   getFocusedNodeGroup() {
-    return this.pane.focusedNodeGroup;
+    return this.focusedNodeGroup;
   }
 
   setEventRelation(eventGroup) {
-    eventGroup.setEventRelation(this.pane.insertButtonGroup);
-    eventGroup.setEventRelation(this.pane.focusedNodeGroup);
+    eventGroup.setEventRelation(this.insertButtonGroup);
+    eventGroup.setEventRelation(this.focusedNodeGroup);
   }
 }

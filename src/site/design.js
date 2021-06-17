@@ -288,7 +288,7 @@ ExtractNews.Design = (() => {
       // advertisingTextSet  Set of advertising texts. If a text in this array
       //                     is found, news topic is skipped as the adverting.
       // skippedTextSet      Set of texts skipped in searching the text node.
-      // skippedTextRegexp   Regular expression matched and skipped in
+      // skippedTextRegExp   Regular expression matched and skipped in
       //                     searching the text node.
       // idPrefix            String prefixed with ID of a node which is found
       //                     in searching the text node but not returned.
@@ -351,8 +351,8 @@ ExtractNews.Design = (() => {
                     return;
                   } else if ((searchProperty.skippedTextSet == undefined
                       || ! searchProperty.skippedTextSet.has(nodeText))
-                    && (searchProperty.skippedTextRegexp == undefined
-                      || ! searchProperty.skippedTextRegexp.test(nodeText))) {
+                    && (searchProperty.skippedTextRegExp == undefined
+                      || ! searchProperty.skippedTextRegExp.test(nodeText))) {
                     if (searchProperty.idPrefix == undefined
                       && searchProperty.idSuffix == undefined
                       && searchProperty.className == undefined
@@ -664,7 +664,7 @@ ExtractNews.Design = (() => {
           var topicString =
             this.getNewsTopicText(newsItemParams.topicTextNode);
           var topicDropped = false;
-          if (! newsDisplayOptions.newsFilteringDisabled) {
+          if (! newsDisplayOptions.filteringDisabled) {
             if (newsItemParams.topicDropped == undefined) {
               newsItemParams.topicDropped = newsSelector.drop(topicString);
             }
@@ -674,7 +674,7 @@ ExtractNews.Design = (() => {
             this.getNewsSenderText(newsItemParams.senderTextNode);
 
           var newsItemSelected = false;
-          if (! newsDisplayOptions.newsSelectionDisabled) {
+          if (! newsDisplayOptions.selectionDisabled) {
             newsItemSelected = this.isNewsItemSelected(newsItem);
           }
           newsItemDisplaying = this.isNewsItemDisplaying(newsItem);

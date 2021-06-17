@@ -19,8 +19,8 @@
 
 "use strict";
 
-ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
-    if (newsSite == undefined) {
+ExtractNews.readEnabledSite(document.URL).then((siteData) => {
+    if (siteData == undefined) {
       Site.displayNewsDesigns();
       return;
     }
@@ -29,7 +29,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
      * Returns the string localized for the specified ID on Yahoo!.
      */
     function getYahooString(id) {
-      return ExtractNews.getLocalizedString("Yahoo" + id);
+      return getLocalizedString("Yahoo" + id);
     }
 
     /*
@@ -37,7 +37,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
      * the specified ID on Yahoo!.
      */
     function splitYahooString(id) {
-      return ExtractNews.splitLocalizedString("Yahoo" + id);
+      return splitLocalizedString("Yahoo" + id);
     }
 
     /*
@@ -45,7 +45,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
      * suffixed with "RegularExpression" on Yahoo!.
      */
     function getYahooRegExp(id) {
-      return ExtractNews.getLocalizedRegExp("Yahoo" + id);
+      return getLocalizedRegExp("Yahoo" + id);
     }
 
     const CATEGORY_LABELS = new Set(splitYahooString("CategoryLabels"));
@@ -152,10 +152,11 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
       }
 
       getObservedNodes(newsParent) {
+        var newsObservedNodes = new Array();
         if (newsParent.tagName == "SECTION") {
-          return Array.of(newsParent);
+          newsObservedNodes.push(newsParent);
         }
-        return new Array();
+        return newsObservedNodes;
       }
     }
 
@@ -188,7 +189,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
             topicProperties: Design.ONESELF_QUERY_PROPERTIES,
             itemTextProperty: {
                 topicSearchProperties: Array.of({
-                    skippedTextRegexp: Design.NEWS_VIDEO_TIME_REGEXP
+                    skippedTextRegExp: Design.NEWS_VIDEO_TIME_REGEXP
                   })
               }
           });
@@ -362,9 +363,9 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
       }
 
       getNewsParentElements() {
+        var newsParents = new Array();
         var contentViewer = document.getElementById("content-viewer");
         if (contentViewer != null) {
-          var newsParents = new Array();
           newsParents.push(contentViewer);
           this.articleIds.forEach((articleId) => {
               // Add the element of an article if has already been opened yet.
@@ -375,9 +376,8 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
                 newsParents.push(caasList);
               }
             });
-          return newsParents;
         }
-        return new Array();
+        return newsParents;
       }
 
       getNewsItemElements(newsParent) {
@@ -590,24 +590,25 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
       }
 
       getObservedNodes(newsParent) {
+        var newsObservedNodes = new Array();
         if (_isStreamContained(newsParent)) {
           var nextElementSibling = newsParent.nextElementSibling;
           if (nextElementSibling == null
             || ! nextElementSibling.classList.contains(SIMPLE_LIST)) {
             // Observe the last of simple lists on the bottom of a news page.
-            return Array.of(newsParent);
+            newsObservedNodes.push(newsParent);
           }
         }
-        return new Array();
+        return newsObservedNodes;
       }
     }
 
     const YDC_NAV = "YDC-Nav";
 
-    const NEWS_HOST_SERVER = getYahooString("NewsHostServer");
-    const FINANCE_HOST_SERVER = getYahooString("FinanceHostServer");
-    const MONEY_HOST_SERVER = getYahooString("MoneyHostServer");
-    const SPORTS_HOST_SERVER = getYahooString("SportsHostServer");
+    const NEWS_CATEGORY_SERVER = getYahooString("NewsCategoryServer");
+    const FINANCE_CATEGORY_SERVER = getYahooString("FinanceCategoryServer");
+    const MONEY_CATEGORY_SERVER = getYahooString("MoneyCategoryServer");
+    const SPORTS_CATEGORY_SERVER = getYahooString("SportsCategoryServer");
 
     /*
      * The navigation of news topics displayed in the header on Yahoo!.
@@ -633,13 +634,13 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
             var navTopicElement = newsItems[i].querySelector("a");
             if (navTopicElement != null) {
               var navTopicUrlData =
-                getNewsSiteUrlData(newsSite, navTopicElement.href);
+                getSiteUrlData(siteData, navTopicElement.href);
               if (navTopicUrlData == undefined
                 || (navTopicUrlData.hostServer != URL_DEFAULT_HOST_SERVER
-                  && navTopicUrlData.hostServer != NEWS_HOST_SERVER
-                  && navTopicUrlData.hostServer != FINANCE_HOST_SERVER
-                  && navTopicUrlData.hostServer != MONEY_HOST_SERVER
-                  && navTopicUrlData.hostServer != SPORTS_HOST_SERVER)) {
+                  && navTopicUrlData.hostServer != NEWS_CATEGORY_SERVER
+                  && navTopicUrlData.hostServer != FINANCE_CATEGORY_SERVER
+                  && navTopicUrlData.hostServer != MONEY_CATEGORY_SERVER
+                  && navTopicUrlData.hostServer != SPORTS_CATEGORY_SERVER)) {
                 // Remove the element for no news site from news items.
                 newsItems.splice(i, 1);
               }
@@ -655,10 +656,15 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
     // Display news designs arranged by a selector which selects and excludes
     // topics or senders, waiting the settings from the background script.
 
-    var newsSiteCategory = "";
-    var newsSiteUrlData = getNewsSiteUrlData(newsSite, document.URL);
+    const SITE_CATEGORIES = splitYahooString("SiteCategories");
+    const SITE_CATEGORY_HOME = SITE_CATEGORIES[0];
+    const SITE_CATEGORY_TOPIC_WORDS =
+      splitYahooString("SiteCategoryTopicWords");
 
-    class YahooUrlParser extends NewsSiteUrlParser {
+    var newsSiteUrlData = getSiteUrlData(siteData, document.URL);
+    var newsSiteCategory = newsSiteUrlData.hostServer;
+
+    class YahooUrlParser extends SiteUrlParser {
       constructor() {
         super(newsSiteUrlData);
       }
@@ -671,12 +677,15 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
     }
 
     var newsSiteUrlParser = new YahooUrlParser();
-    if (newsSiteUrlParser.parseByRegExp("Article")) { // Articles
+    if (newsSiteUrlParser.parseByRegExp("Article")) { // Standalone article
       Site.setNewsDesigns(new YahooSimpleList());
-    } else {
+      newsSiteCategory = SITE_CATEGORY_HOME;
+    } else { // Pages opened by the menu list in the top of Yahoo! site
+      const LIFE_CATEGORY_PATH = "LifeCategoryPath";
       if (newsSiteUrlParser.parseDirectory()
         || newsSiteUrlData.hostServer != URL_DEFAULT_HOST_SERVER
-        || ! newsSiteUrlParser.parse("LifePath")) {
+        || ! newsSiteUrlParser.parse(LIFE_CATEGORY_PATH)) {
+        const ENTERTAINMENT_CATEGORY_PATH = "EntertainmentCategoryPath";
         Site.setNewsDesigns(
           new YahooTopPanels(),
           new YahooStream("YDC-Stream"),
@@ -693,9 +702,9 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
           // The list of panels like Yahoo! Life categories
           new YahooSimpleList());
         if (newsSiteUrlData.hostServer != URL_DEFAULT_HOST_SERVER
-          || ! newsSiteUrlParser.parse("EntertainmentPath")) {
+          || ! newsSiteUrlParser.parse(ENTERTAINMENT_CATEGORY_PATH)) {
           switch(newsSiteUrlData.hostServer) {
-          case NEWS_HOST_SERVER: // Yahoo! News
+          case NEWS_CATEGORY_SERVER: // Yahoo! News
             Site.setNewsDesigns(
               new YahooNavigation(YDC_NAV),
               new Design.NewsDesign({
@@ -705,9 +714,8 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
                   itemProperties: Design.ONESELF_QUERY_PROPERTIES,
                   topicProperties: Design.ONESELF_QUERY_PROPERTIES
                 }));
-            newsSiteCategory = "News";
             break;
-          case FINANCE_HOST_SERVER: // Yahoo! Finance
+          case FINANCE_CATEGORY_SERVER: // Yahoo! Finance
             Site.setNewsDesigns(
               new YahooNavigation(YDC_NAV),
               new YahooNavigation("YDC-SecondaryNav"),
@@ -730,15 +738,13 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
                         })
                     }
                 }));
-            newsSiteCategory = "Finance";
             break;
-          case MONEY_HOST_SERVER: // Yahoo! Money
+          case MONEY_CATEGORY_SERVER: // Yahoo! Money
             Site.setNewsDesigns(
               new YahooNavigation(YDC_NAV),
               new YahooStream("homeStream-0-Stream"));
-            newsSiteCategory = "Money";
             break;
-          case SPORTS_HOST_SERVER: // Yahoo! Sports
+          case SPORTS_CATEGORY_SERVER: // Yahoo! Sports
             Site.setNewsDesigns(
               new YahooNavigation(YDC_NAV),
               new YahooNavigation("YDC-SecondaryNav"),
@@ -755,7 +761,6 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
                 }),
               new YahooStream("Col1-1-SportsStream"),
               new YahooStream("Col1-2-SportsStream"));
-            newsSiteCategory = "Sports";
             break;
           default: // Yahoo!
             Site.setNewsDesigns(
@@ -768,7 +773,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
                 topicProperties: Design.ONESELF_QUERY_PROPERTIES,
                 itemTextProperty: {
                     topicSearchProperties: Array.of({
-                        skippedTextRegexp: Design.NEWS_RANKING_NUMBER_REGEXP
+                        skippedTextRegExp: Design.NEWS_RANKING_NUMBER_REGEXP
                       })
                   }
               }),
@@ -785,13 +790,16 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
                     }
                 }));
             if (newsSiteUrlParser.parse("FinanceAuthorPath")) {
-              newsSiteCategory = "Finance";
+              newsSiteCategory = FINANCE_CATEGORY_SERVER;
+            } else {
+              newsSiteCategory = SITE_CATEGORY_HOME;
             }
             break;
           }
         } else { // Yahoo! Entertainment
           Site.setNewsDesign(new YahooNavigation(YDC_NAV));
-          newsSiteCategory = "Entertainment";
+          newsSiteCategory =
+            getYahooString(ENTERTAINMENT_CATEGORY_PATH).substring(1);
         }
       } else { // Yahoo! Life
         Site.setNewsDesigns(
@@ -803,15 +811,11 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
         } else {
           Site.setNewsDesign(new YahooSimpleList());
         }
-        newsSiteCategory = "Life";
+        newsSiteCategory = getYahooString(LIFE_CATEGORY_PATH).substring(1);
       }
       newsSiteUrlParser.parseAll();
       Site.setNewsOpenedUrl(newsSiteUrlParser.toString());
     }
-
-    const SITE_CATEGORIES = splitYahooString("SiteCategories");
-    const SITE_CATEGORY_TOPIC_WORDS =
-      splitYahooString("SiteCategoryTopicWords");
 
     for (let i = 0; i < SITE_CATEGORY_TOPIC_WORDS.length; i++) {
       if (newsSiteCategory == SITE_CATEGORIES[i]) {
@@ -821,7 +825,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
     }
 
     Site.setNewsSelector(
-      new NewsSelector(ExtractNews.getDomainLanguage(newsSite.domainId)));
+      new Selector(ExtractNews.getDomainLanguage(siteData.domainId)));
     Site.displayNewsDesigns(new Set([ "complete" ]));
   }).catch((error) => {
     Debug.printStackTrace(error);

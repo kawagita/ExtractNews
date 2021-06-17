@@ -150,7 +150,7 @@ class ImportData {
 }
 
 /*
- * Sends the specified warning message of this import to the background.
+ * Sends the specified warning of an imported data to the background script.
  */
 function sendImportWarningMessage(importData) {
   if (importData == undefined) {
@@ -181,13 +181,15 @@ function sendImportWarningMessage(importData) {
   } else {
     message = getFileMessage(importData.errorMessageId);
   }
-  return ExtractNews.sendRuntimeMessage({
-      command: ExtractNews.COMMAND_DIALOG_OPEN,
-      tabId: OPTION_PAGE_TAB_ID,
-      warning:
-        (new _Alert.Warning(
-          message, description, emphasisRegexpString)).toObject()
-    }, " on Option Page Tab " + OPTION_PAGE_TAB_ID).catch((error) => {
+  callAsynchronousAPI(browser.tabs.getCurrent).then((tab) => {
+      ExtractNews.sendRuntimeMessage({
+          command: ExtractNews.COMMAND_DIALOG_OPEN,
+          tabId: tab.id,
+          warning:
+            (new _Alert.Warning(
+              message, description, emphasisRegexpString)).toObject()
+        }, " by Import on Option Page " + tab.id);
+    }).catch((error) => {
       Debug.printStackTrace(error);
     });
 }
@@ -235,12 +237,10 @@ function _readFilterings(importData, filteringMap) {
         }
         filteringMap.set(filteringId, filtering);
       }
-      filteringId =
-        bracketedText.substring(0, 1).toUpperCase()
-        + bracketedText.substring(1);
+      filteringId = getCapitalizedString(bracketedText);
       if (FILTERING_ID_REGEXP.test(filteringId)) {
         if (! filteringMap.has(filteringId)) {
-          // Set the filtering ID to a string enclosed by "[" and "]".
+          // Set the filtering category ID to a string enclosed by "[" and "]".
           filtering = ExtractNews.newFiltering();
           filteringTargets = new Array();
           if (filteringId == ExtractNews.FILTERING_FOR_ALL) {
@@ -255,8 +255,8 @@ function _readFilterings(importData, filteringMap) {
     } else if (filteringId != undefined) {
       if (filtering.categoryName == "") {
         if (lineFirstText != "") {
-          // Set the filtering category name to the 1st and topics
-          // to 2nd data separated by "," on the next line of ID.
+          // Set the filtering category name to the 1st and topics to 2nd data
+          // separated by "," on the next line of a category ID.
           if (filteringId != ExtractNews.FILTERING_FOR_ALL) {
             var categoryTopicsString = "";
             if (importData.lineTextSize > 1) {
@@ -270,10 +270,11 @@ function _readFilterings(importData, filteringMap) {
         importData.setLineError("FilteringCategoryNameNotSpecified");
       } else if (ExtractNews.isFilteringTargetName(lineFirstText)) {
         if (filteringTargetTotal < ExtractNews.FILTERING_MAX_COUNT) {
-          // Set the filtering target name to 1st data on each line.
+          // Set the filtering target name to 1st data on the next line
+          // of a category name and topics.
           var filteringTargetName = lineFirstText;
           if (importData.lineTextSize >= 2) {
-            // Set words and/or options for its separated by ","
+            // Set words and/or options for those separated by ","
             // of a filtering target to the 2nd and/or 3rd data.
             var wordsString = importData.getLineText(1);
             if (wordsString.length
@@ -337,12 +338,11 @@ function _readFilterings(importData, filteringMap) {
     }
     return false;
   }
-  if (filteringId != undefined) {
+  if (filteringId != undefined) { // Last category ID
     if (! _setFilteringTargets(filtering, filteringTargets)) {
       importData.setLineError("FilteringCategoryNotTerminatedByEndOfBlock");
       return false;
     }
-    // Append the filtering data for the last category to the map.
     if (filtering.categoryName == "") {
       filtering.categoryName = filteringId;
     }
@@ -375,8 +375,7 @@ function _readSelections(importData, newsSelections) {
         var quotedText =
           importData.getFirstEnclosedText(SELECTION_SETTING_NAME_QUOTES);
         if (quotedText != undefined) {
-            // Set the selection name to the 1st text enclosed by quotes
-            // on the file top or after empty line.
+            // Set the selection name to the 1st line text enclosed by quotes.
             var settingName = quotedText;
             var settingNameWidth = _Text.getTextWidth(settingName);
             if (settingNameWidth <= _Alert.SETTING_NAME_MAX_WIDTH) {
@@ -397,7 +396,7 @@ function _readSelections(importData, newsSelections) {
         importData.getFirstEnclosedText(SELECTION_REGULAR_EXPRESSION_SLASHES);
       if (slashedText != undefined) {
         // Set the regular expression of selected topics or senders
-        // to the 2nd and 3rd text.
+        // to the 2nd and 3rd line text enclosed by slashes.
         var regexpString =
           _Text.replaceTextLineBreaksToSpace(
             _Text.removeTextZeroWidthSpaces(slashedText));
@@ -425,7 +424,7 @@ function _readSelections(importData, newsSelections) {
         importData.setLineError("RegularExpressionNotEnclosedBySlashes");
       }
     } else {
-      // Set the opened URL by a news selection to the 4th text.
+      // Set the opened URL by a news selection to the 4th line text.
       var url = importData.getFirstText();
       if (url == URL_ABOUT_BLANK || url.startsWith(URL_HTTPS_SCHEME)) {
         selection.openedUrl = url;
@@ -436,8 +435,7 @@ function _readSelections(importData, newsSelections) {
     }
     return false;
   }
-  if (selection != undefined) {
-    // Append the last news selection to the array.
+  if (selection != undefined) { // Last news selection
     if (selectionDataLine >= SELECTION_SELECTED_TOPIC_LINE) {
       selection.topicRegularExpression = regexpStrings.shift();
       if (selectionDataLine >= SELECTION_SELECTED_SENDER_LINE) {
@@ -453,7 +451,7 @@ function _readSelections(importData, newsSelections) {
  * Imports the option data from a file specified by the dialog to open it
  * and returns the promise.
  */
-function importOptionData(optionDataMap, filteringData, selectionData) {
+function importOptionData(optionSettings) {
   return new Promise((resolve, reject) => {
       var importInput = document.createElement("input");
       importInput.type = "file";
@@ -462,44 +460,46 @@ function importOptionData(optionDataMap, filteringData, selectionData) {
           reader.addEventListener("load", (readEvent) => {
               var importData = new ImportData(readEvent.target.result);
               while (importData.readLine()) {
-                if (! importData.hasIgnoredLine()) {
-                  var lineFirstText = importData.getFirstText();
-                  if (lineFirstText == OPTION_DATA_SELECTION) {
-                    // Replace the selection data by news selections read from
-                    // the file even if contains an error.
-                    var newsSelections = new Array();
-                    var noError = _readSelections(importData, newsSelections);
-                    selectionData.replace(newsSelections);
-                    if (! noError) {
+                if (importData.hasIgnoredLine()) {
+                  continue;
+                }
+                var lineFirstText = importData.getFirstText();
+                if (lineFirstText == OPTION_DATA_SELECTION) {
+                  // Replace the selection data by news selections read from
+                  // the file even if contains an error.
+                  var newsSelections = new Array();
+                  var noError = _readSelections(importData, newsSelections);
+                  optionSettings.selectionData.replace(newsSelections);
+                  optionSettings.setSelectionDataUpdated();
+                  if (! noError) {
+                    sendImportWarningMessage(importData);
+                    break;
+                  }
+                } else if (lineFirstText == OPTION_DATA_FITERING) {
+                  // Replace the fitering data by the filtering ID, category,
+                  // or targets read from the file even if contains an error.
+                  var filteringMap = new Map();
+                  var noError = _readFilterings(importData, filteringMap);
+                  optionSettings.filteringData.replace(filteringMap);
+                  optionSettings.setFilteringDataUpdated();
+                  if (! noError) {
+                    sendImportWarningMessage(importData);
+                    break;
+                  }
+                } else { // General options
+                  var optionData =
+                    optionSettings.generalDataMap.get(lineFirstText);
+                  if (optionData != undefined && importData.lineTextSize > 1) {
+                    // Set the option data if its ID exists in the data map.
+                    var valueString = importData.getLineText(1);
+                    if (! optionData.isValueStringAcceptable(valueString)) {
+                      importData.setLineError("InvalidValueSpecified");
                       sendImportWarningMessage(importData);
                       break;
                     }
-                  } else if (lineFirstText == OPTION_DATA_FITERING) {
-                    // Replace the fitering data by the filtering ID, category,
-                    // or targets read from the file even if contains an error.
-                    var filteringMap = new Map();
-                    var noError = _readFilterings(importData, filteringMap);
-                    filteringData.replace(filteringMap);
-                    if (! noError) {
-                      sendImportWarningMessage(importData);
-                      break;
-                    }
-                  } else {
-                    var optionData = optionDataMap.get(lineFirstText);
-                    if (optionData != undefined
-                      && importData.lineTextSize > 1) {
-                      // Set the option data if its ID exists in the data map.
-                      var optionValueString = importData.getLineText(1);
-                      if (optionData.isChecked()) {
-                        optionValueString = optionValueString.toLowerCase();
-                        if (optionValueString != "true"
-                          && optionValueString != "false") {
-                          importData.setLineError("InvalidValueSpecified");
-                          sendImportWarningMessage(importData);
-                          break;
-                        }
-                      }
-                      optionData.setValue(optionValueString);
+                    optionData.setValueString(valueString);
+                    if (! optionData.isAdvanced()) {
+                      optionSettings.setGeneralDataUpdated();
                     }
                   }
                 }
@@ -604,31 +604,31 @@ function _writeSelections(exportData, newsSelections) {
 }
 
 /*
- * Exports the specified option data to the file as "ExtractNewsOption.tsv".
+ * Exports the specified option data to the file as "ExtractNewsSettings.tsv".
  */
-function exportOptionData(optionDataMap, filteringData, selectionData) {
+function exportOptionData(optionSettings) {
   var exportData = new ExportData();
   exportData.addLineText(OPTION_DATA_GENERAL);
   exportData.writeLine();
-  optionDataMap.forEach((optionData) => {
+  optionSettings.generalDataMap.forEach((optionData) => {
       exportData.addLineText(optionData.id);
       exportData.addLineText(optionData.toString());
       exportData.writeLine();
     });
-  if (filteringData.targetDataTotal > 0) {
+  if (optionSettings.filteringData.targetDataTotal > 0) {
     exportData.addLineText(OPTION_DATA_FITERING);
     exportData.writeLine();
-    _writeFilterings(exportData, filteringData.toMap());
+    _writeFilterings(exportData, optionSettings.filteringData.toMap());
   }
-  if (selectionData.dataSize > 0) {
+  if (optionSettings.selectionData.dataSize > 0) {
     exportData.addLineText(OPTION_DATA_SELECTION);
     exportData.writeLine();
-    _writeSelections(exportData, selectionData.toArray());
+    _writeSelections(exportData, optionSettings.selectionData.toArray());
   }
   var exportUrl = URL.createObjectURL(exportData.getBlob());
   var exportAnchor = document.createElement("a");
   exportAnchor.href = exportUrl;
-  exportAnchor.download = "ExtractNewsSelections.tsv";
+  exportAnchor.download = "ExtractNewsSettings.tsv";
   exportAnchor.click();
   URL.revokeObjectURL(exportUrl);
 }

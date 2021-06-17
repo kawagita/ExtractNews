@@ -53,10 +53,10 @@ browser.runtime.onMessage.addListener((message) => {
         if (message.emphasisRegularExpression != "") {
           var description = message.description;
           var descriptionIndex = 0;
-          var emphasisRegexp =
+          var emphasisRegExp =
             new RegExp(message.emphasisRegularExpression, "g");
           var emphasis;
-          while ((emphasis = emphasisRegexp.exec(description)) != null) {
+          while ((emphasis = emphasisRegExp.exec(description)) != null) {
             var dialogParagraphEmphasis = document.createElement("span");
             dialogParagraphEmphasis.textContent = emphasis[1];
             dialogParagraph.appendChild(

@@ -261,9 +261,11 @@ ExtractNews.Event = (() => {
 
       addElement(element) {
         super.addElement(element);
+        // Must be contained in the element added by addFocusedElement().
         if (element.classList != null) {
           do {
-            if (element.classList.contains(TARGET_FOCUSED_OUT)) {
+            if (element.classList.contains(TARGET_FOCUSED_OUT)
+              || element.classList.contains(TARGET_FOCUSED_IN)) {
               return;
             }
             element = element.parentNode;

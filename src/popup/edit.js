@@ -43,7 +43,7 @@ function getEditButton(id) {
 }
 
 /*
- * Sends the specified warning message on this edit window to the background.
+ * Sends the specified warning on the edit window to the background script.
  */
 function sendEditWarningMessage(warning) {
   callAsynchronousAPI(browser.tabs.getCurrent).then((tab) => {
@@ -64,9 +64,6 @@ var newsSelectionEditQueryMap = _Popup.getQueryMap(document.URL);
 var newsSelectionEditPane =
   _Popup.getSelectionEditPane(
     "title", newsSelectionEditQueryMap.get(_Popup.QUERY_OPENER_TAB_ID));
-
-var newsSelectionEditSaveButton = getEditButton("Save");
-var newsSelectionEditRemoveButton = getEditButton("Remove");
 var newsSelectionEditPointedGroup = new _Event.PointedGroup();
 
 newsSelectionEditPointedGroup.addElements(
@@ -75,7 +72,9 @@ newsSelectionEditPane.regexps.forEach((editRegexp) => {
     newsSelectionEditPointedGroup.addElement(editRegexp.textarea);
   });
 
-// Sets buttons to localize the regular expression of a news selection.
+// Sets the alternative of halfwidth and fullwidth strings for a regular
+// expression into the textarea when "Localize" button is pressed, after it's
+// checked whether the regular expression are valid or length is fit.
 
 newsSelectionEditPane.localizedButtons.forEach((localizedButton) => {
     localizedButton.disabled = true;
@@ -91,8 +90,6 @@ newsSelectionEditPane.localizedButtons.forEach((localizedButton) => {
         if (regexpResult.errorCode < 0) {
           var regexpString = regexpResult.localizedText.textString;
           if (regexpString.length <= _Alert.REGEXP_MAX_UTF16_CHARACTERS) {
-            // Set the localized string into text area and checked flag to
-            // true.
             editRegexp.textarea.value = regexpString;
             editRegexp.errorChecked = true;
             return;
@@ -107,10 +104,18 @@ newsSelectionEditPane.localizedButtons.forEach((localizedButton) => {
     newsSelectionEditPointedGroup.addElement(localizedButton);
   });
 
+var newsSelectionEditSaveButton = getEditButton("Save");
+var newsSelectionEditRemoveButton = getEditButton("Remove");
+
 newsSelectionEditSaveButton.disabled = true;
 newsSelectionEditRemoveButton.disabled = true;
 
-// Registers the click event to save and remove the news selection.
+newsSelectionEditPointedGroup.addElements(
+  Array.of(newsSelectionEditSaveButton, newsSelectionEditRemoveButton));
+
+// Writes the news selection into the storage when "Save" button is pressed,
+// after it's checked whether the length of a setting name is fit or regular
+// expressions are valid, and finally closes the edit window.
 
 newsSelectionEditSaveButton.addEventListener(_Event.CLICK, (event) => {
     var newsSelection = ExtractNews.newSelection();
@@ -127,7 +132,6 @@ newsSelectionEditSaveButton.addEventListener(_Event.CLICK, (event) => {
       return;
     }
     newsSelection.settingName = settingName;
-    // Check whether a regular expression of text area is valid.
     for (let i = 0; i < newsSelectionEditPane.regexps.length; i++) {
       var editRegexp = newsSelectionEditPane.regexps[i];
       if (editRegexp.errorChecked) {
@@ -145,7 +149,6 @@ newsSelectionEditSaveButton.addEventListener(_Event.CLICK, (event) => {
         editRegexp.textarea.focus();
         return;
       }
-      // Set the checked string into text area and checked flag to true.
       regexpStrings.push(regexpString);
       editRegexp.textarea.value = regexpString;
       editRegexp.errorChecked = true;
@@ -170,6 +173,10 @@ newsSelectionEditSaveButton.addEventListener(_Event.CLICK, (event) => {
         _Popup.closeSelectionEditWindow();
       });
   });
+
+// Removes the news selection from the storage when "Remove" button is pressed
+// if not new edit, otherwise, do nothing, and finally closes the edit window.
+
 newsSelectionEditRemoveButton.addEventListener(_Event.CLICK, (event) => {
     var removingPromise = Promise.resolve();
     if (! newsSelectionNewEdit) {
@@ -187,9 +194,6 @@ newsSelectionEditRemoveButton.addEventListener(_Event.CLICK, (event) => {
         _Popup.closeSelectionEditWindow();
       });
   });
-
-newsSelectionEditPointedGroup.addElements(
-  Array.of(newsSelectionEditSaveButton, newsSelectionEditRemoveButton));
 
 _Storage.readSelectionCount().then((newsSelectionCount) => {
     var editIndexStrings =
@@ -248,12 +252,12 @@ _Storage.readSelectionCount().then((newsSelectionCount) => {
       }
     }
 
-    _Storage.readSiteData().then((siteDataArray) => {
-        // Set URLs to open the news site to which above news selection is
+    _Storage.readDomainData(false).then(() => {
+        return _Storage.readSiteData(false);
+      }).then(() => {
+        // Set URLs to open the site to which above news selection is
         // applied into the select element on the edit window.
-        siteDataArray.forEach((siteData) => {
-            ExtractNews.setNewsSite(new ExtractNews.NewsSite(siteData));
-          });
+        ExtractNews.setDomainSites();
         _Popup.setSelectionEditUrlSelect(
           newsSelectionEditPane, newsSelection.openedUrl);
 
@@ -262,8 +266,6 @@ _Storage.readSelectionCount().then((newsSelectionCount) => {
           });
         newsSelectionEditSaveButton.disabled = false;
         newsSelectionEditRemoveButton.disabled = false;
-
-        ExtractNews.getDebugMode();
       });
   }).catch((error) => {
     Debug.printStackTrace(error);

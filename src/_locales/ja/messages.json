@@ -44,24 +44,34 @@
     "description": "Yahoo! ニュースのドメイン。"
   },
 
-  "extractNewsYahooJapanNewsSitePaths": {
+  "extractNewsYahooJapanNewsPaths": {
     "message": "",
-    "description": "Yahoo! ニュースサイトのパス。"
+    "description": "Yahoo! ニュースのパス。"
   },
 
-  "extractNewsYahooJapanNewsCommentHostServerPatterns": {
+  "extractNewsYahooJapanNewsCommentServerPatterns": {
     "message": "news",
-    "description": "Yahoo! ニュースでユーザーがコメントするホストサーバーパターン。"
+    "description": "Yahoo! ニュースでユーザーがコメントするサーバーパターン。"
   },
 
-  "extractNewsYahooJapanNewsCommentSitePaths": {
+  "extractNewsYahooJapanNewsCommentPaths": {
     "message": "",
-    "description": "Yahoo! ニュースでユーザーがコメントするサイトのパス。"
+    "description": "Yahoo! ニュースでユーザーがコメントするパス。"
   },
 
   "extractNewsYahooJapanNewsArticlePaths": {
     "message": "/articles,/pickup",
+    "description": "Yahoo! ニュースの記事とピックアップのパス。"
+  },
+
+  "extractNewsYahooJapanNewsArticlePath": {
+    "message": "/articles",
     "description": "Yahoo! ニュースの記事のパス。"
+  },
+
+  "extractNewsYahooJapanNewsArticleCommentsRegularExpression": {
+    "message": "^/[0-9a-f]+/comments$",
+    "description": "Yahoo! ニュースの各記事に対するコメントの正規表現。"
   },
 
   "extractNewsYahooJapanNewsCategoryRootPath": {
@@ -159,19 +169,19 @@
     "description": "Impress Watchのドメイン。"
   },
 
-  "extractNewsImpressWatchSitePaths": {
+  "extractNewsImpressWatchPaths": {
     "message": "",
-    "description": "Impress Watchサイトのパス。"
+    "description": "Impress Watchのパス。"
   },
 
-  "extractNewsImpressWatchCommentHostServerPatterns": {
+  "extractNewsImpressWatchCommentServerPatterns": {
     "message": "",
-    "description": "Impress Watchでユーザーがコメントするホストサーバーパターン。"
+    "description": "Impress Watchでユーザーがコメントするサーバーパターン。"
   },
 
-  "extractNewsImpressWatchCommentSitePaths": {
+  "extractNewsImpressWatchCommentPaths": {
     "message": "",
-    "description": "Impress Watchでユーザーがコメントするサイトのパス。"
+    "description": "Impress Watchでユーザーがコメントするパス。"
   },
 
   "extractNewsImpressWatchSiteHostServers": {
@@ -179,9 +189,9 @@
     "description": "Impress Watchサイトのホストサーバー。"
   },
 
-  "extractNewsImpressWatchDocumentsRegularExpression": {
+  "extractNewsImpressWatchArticleRegularExpression": {
     "message": "^(?:/.+)?/[0-9]+\\.html$$",
-    "description": "Impress Watchの記事の正規表現。"
+    "description": "Impress Watchの各記事の正規表現。"
   },
 
   "extractNewsImpressWatchTopicWords": {
@@ -259,19 +269,19 @@
     "description": "ITmediaのドメイン。"
   },
 
-  "extractNewsITmediaSitePaths": {
+  "extractNewsITmediaPaths": {
     "message": "/news",
-    "description": "ITmediaサイトのパス。"
+    "description": "ITmediaのパス。"
   },
 
-  "extractNewsITmediaCommentHostServerPatterns": {
+  "extractNewsITmediaCommentServerPatterns": {
     "message": "",
-    "description": "ITmediaでユーザーがコメントするホストサーバーパターン。"
+    "description": "ITmediaでユーザーがコメントするサーバーパターン。"
   },
 
-  "extractNewsITmediaCommentSitePaths": {
+  "extractNewsITmediaCommentPaths": {
     "message": "",
-    "description": "ITmediaでユーザーがコメントするサイトのパス。"
+    "description": "ITmediaでユーザーがコメントするパス。"
   },
 
   "extractNewsITmediaNewsName": {
@@ -284,9 +294,9 @@
     "description": "ITmedia NEWSサイトのトピックワード。"
   },
 
-  "extractNewsITmediaNewsArticlesRegularExpression": {
+  "extractNewsITmediaNewsArticleRegularExpression": {
     "message": "^(?:/.+)?/news[0-9]+(?:_[0-9]+)?\\.html$$",
-    "description": "ITmedia NEWSの記事の正規表現。"
+    "description": "ITmedia NEWSの各記事の正規表現。"
   },
 
   "extractNewsITmediaNewsCategoryRootPath": {
@@ -429,24 +439,24 @@
     "description": "スラドのドメイン。"
   },
 
-  "extractNewsSradSitePaths": {
+  "extractNewsSradPaths": {
     "message": "",
-    "description": "スラドサイトのパス。"
+    "description": "スラドのパス。"
   },
 
-  "extractNewsSradCommentHostServerPatterns": {
+  "extractNewsSradCommentServerPatterns": {
     "message": ",*",
-    "description": "スラドでユーザーがコメントするホストサーバーパターン。"
+    "description": "スラドでユーザーがコメントするサーバーパターン。"
   },
 
-  "extractNewsSradCommentSitePaths": {
+  "extractNewsSradCommentPaths": {
     "message": "",
-    "description": "スラドでユーザーがコメントするサイトのパス。"
+    "description": "スラドでユーザーがコメントするパス。"
   },
 
-  "extractNewsSradStoryPathRegularExpression": {
+  "extractNewsSradStoryRegularExpression": {
     "message": "^/story(?:/[0-9]{2}){3}/[0-9]{6,7}/$$",
-    "description": "スラドの各ストーリーのパスの正規表現。"
+    "description": "スラドの各ストーリーの正規表現。"
   },
 
   "extractNewsSradStoriesPathRegularExpression": {
@@ -674,7 +684,7 @@
     "description": "日本語で単語の後ろに付ける語。"
   },
 
-  "extractNewsAllFilteringCategoryName": {
+  "extractNewsFilteringAllCategoryName": {
     "message": "すべて",
     "description": "すべての話題に対するフィルタリングのカテゴリ名。"
   },

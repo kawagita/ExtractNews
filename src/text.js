@@ -34,7 +34,7 @@ ExtractNews.Text = (() => {
     const HALFWIDTH_CODE_POINTS = new Array();
     const FULLWIDTH_CODE_POINTS = new Array();
 
-    var fullwidthChars = ExtractNews.getLocalizedString("FullwidthCharacters");
+    var fullwidthChars = getLocalizedString("FullwidthCharacters");
     for (let i = 0; i < fullwidthChars.length; i++) {
       var codePoint = fullwidthChars.codePointAt(i);
       if (codePoint > 0xFFFF) {
@@ -42,7 +42,7 @@ ExtractNews.Text = (() => {
       }
       FULLWIDTH_CODE_POINTS.push(codePoint);
     }
-    var halfwidthChars = ExtractNews.getLocalizedString("HalfwidthCharacters");
+    var halfwidthChars = getLocalizedString("HalfwidthCharacters");
     halfwidthChars.split("").forEach((halfwidthChar) => {
         var halfwidthCodePoint = halfwidthChar.codePointAt(0);
         if (halfwidthCodePoint == 0x3A) {
@@ -591,8 +591,7 @@ ExtractNews.Text = (() => {
     /*
      * Returns the string concatenating texts in the specified array.
      */
-    const TEXT_CONCATENATION =
-      ExtractNews.getLocalizedString("TextConcatenation");
+    const TEXT_CONCATENATION = getLocalizedString("TextConcatenation");
     const TEXT_CONCATENATION_WIDTH = getTextWidth(TEXT_CONCATENATION);
 
     function concatTextStrings(textArray, maxTextWidth) {
@@ -2006,7 +2005,8 @@ ExtractNews.Regexp = (() => {
           var lastWord = this.lastWord;
           var wordString;
           if (this.localizedContext != undefined) {
-            // It's necessary to get the localized context before cleared.
+            // It's necessary to get the localized context before cleared
+            // in preparse().
             wordString = this.localizedContext.halfwidthText.textString;
           } else {
             wordString = this.inputText().textString;

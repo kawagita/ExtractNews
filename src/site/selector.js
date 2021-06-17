@@ -19,7 +19,7 @@
 
 "use strict";
 
-function _newRegexp(regexpString) {
+function _newRegExp(regexpString) {
   if (regexpString != undefined) {
     if ((typeof regexpString) != "string") {
       throw newIllegalArgumentException("regexpString");
@@ -34,11 +34,10 @@ function _newRegexp(regexpString) {
  * The selector which settles to show or hide news topics and/or senders by
  * arranging news items on a news site.
  */
-class NewsSelector {
+class Selector {
   constructor(language) {
     this.wordSeparatorSet = new Set();
-    var wordSeparators =
-      ExtractNews.getLocalizedString(language + "WordSeparators");
+    var wordSeparators = getLocalizedString(language + "WordSeparators");
     for (let i = 0; i < wordSeparators.length; i++) {
       var codePoint = wordSeparators.codePointAt(i);
       if (codePoint > 0xFFFF) {
@@ -46,12 +45,11 @@ class NewsSelector {
       }
       this.wordSeparatorSet.add(codePoint);
     }
-    this.wordSuffixes =
-      ExtractNews.splitLocalizedString(language + "WordSuffixes");
+    this.wordSuffixes = splitLocalizedString(language + "WordSuffixes");
     this.newsFilteringTargets = undefined;
-    this.newsTopicRegexp = undefined;
-    this.newsSenderRegexp = undefined;
-    this.newsExcludedRegexp = undefined;
+    this.newsTopicRegExp = undefined;
+    this.newsSenderRegExp = undefined;
+    this.newsExcludedRegExp = undefined;
   }
 
   setNewsFilterings(filteringTargetObjects = new Array()) {
@@ -73,9 +71,9 @@ class NewsSelector {
 
   setNewsSelection(
     topicRegexpString, senderRegexpString, excludedRegexpString) {
-    this.newsTopicRegexp = _newRegexp(topicRegexpString);
-    this.newsSenderRegexp = _newRegexp(senderRegexpString);
-    this.newsExcludedRegexp = _newRegexp(excludedRegexpString);
+    this.newsTopicRegExp = _newRegExp(topicRegexpString);
+    this.newsSenderRegExp = _newRegExp(senderRegexpString);
+    this.newsExcludedRegExp = _newRegExp(excludedRegexpString);
   }
 
   _testTargetWords(target, topicString) {
@@ -153,20 +151,20 @@ class NewsSelector {
   }
 
   select(topicString, senderString) {
-    if (this.newsTopicRegexp != undefined
-      && ! this.newsTopicRegexp.test(topicString)) {
+    if (this.newsTopicRegExp != undefined
+      && ! this.newsTopicRegExp.test(topicString)) {
       return false;
     }
     if (senderString != undefined
-      && this.newsSenderRegexp != undefined
-      && ! this.newsSenderRegexp.test(senderString)) {
+      && this.newsSenderRegExp != undefined
+      && ! this.newsSenderRegExp.test(senderString)) {
       return false;
     }
     return true;
   }
 
   exclude(topicString) {
-    return this.newsExcludedRegexp != undefined
-      && this.newsExcludedRegexp.test(topicString);
+    return this.newsExcludedRegExp != undefined
+      && this.newsExcludedRegExp.test(topicString);
   }
 }

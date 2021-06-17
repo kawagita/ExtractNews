@@ -24,6 +24,7 @@ const SELECTION_DEFAULT_FAVICON = {
     data: "../icons/night-40.png",
     siteUrl: URL_ABOUT_BLANK
   };
+const SELECTION_FAVICON = "favicon";
 
 const SELECTION_INDEX_STRINGS = new Array();
 
@@ -40,21 +41,14 @@ function readSelectionSiteData() {
   return _Storage.readSiteData().then((siteDataArray) => {
       const readingPromises = new Array();
       siteDataArray.forEach((siteData) => {
-          var newsSite = new ExtractNews.NewsSite(siteData);
-          var selectionSiteData = {
-              id: newsSite.id,
-              url: newsSite.url,
-              accessCount: siteData.accessCount
-            };
-          ExtractNews.setNewsSite(newsSite);
           // Sort the site ID and URL by the access count to the news site.
           for (let i = 0; i < selectionSiteDataArray.length; i++) {
             if (siteData.accessCount > selectionSiteDataArray[i].accessCount) {
-              selectionSiteDataArray.splice(i, 0, selectionSiteData);
+              selectionSiteDataArray.splice(i, 0, siteData);
               return;
             }
           }
-          selectionSiteDataArray.push(selectionSiteData);
+          selectionSiteDataArray.push(siteData);
         });
       selectionSiteDataArray.forEach((siteData) => {
           readingPromises.push(_Storage.readSiteFavicon(siteData.id));
@@ -72,7 +66,6 @@ function readSelectionSiteData() {
           });
       }
       SELECTION_FAVICON_MAP.set("", SELECTION_DEFAULT_FAVICON);
-      return Promise.resolve();
     });
 }
 
@@ -81,9 +74,11 @@ function readSelectionSiteData() {
  */
 function setSelectionOpenedUrl(selectionData, openedUrl) {
   if (openedUrl != URL_ABOUT_BLANK) {
-    var newsSite = ExtractNews.getNewsSite(openedUrl);
-    if (newsSite != undefined) {
-      selectionData.openedSiteId = newsSite.id;
+    var siteData = ExtractNews.getSite(openedUrl);
+    if (siteData != undefined) {
+      selectionData.openedSiteId = siteData.id;
+    } else {
+      selectionData.openedSiteId = "";
     }
     selectionData.openedUrl = openedUrl;
   } else {
@@ -115,8 +110,7 @@ function createSelectionData(newsSelection) {
 function _newSelection(selectionData) {
   var newsSelection = ExtractNews.newSelection();
   newsSelection.settingName = selectionData.settingName;
-  newsSelection.topicRegularExpression =
-    selectionData.topicRegularExpression;
+  newsSelection.topicRegularExpression = selectionData.topicRegularExpression;
   newsSelection.senderRegularExpression =
     selectionData.senderRegularExpression;
   newsSelection.openedUrl = selectionData.openedUrl;
@@ -189,6 +183,7 @@ class SelectionData {
     newsSelections.forEach((newsSelection) => {
         this.dataArray.push(createSelectionData(newsSelection));
       });
+    Debug.printMessage("Replace the selection data ...");
     Debug.printJSON(newsSelections);
   }
 
@@ -213,7 +208,7 @@ class SelectionData {
       }).then(() => {
         if (this.dataArray.length > 0) {
           Debug.printMessage(
-            "Save the news selection of " + this.dataIndexStrings[0]
+            "Write the news selection of " + this.dataIndexStrings[0]
             + (this.dataArray.length > 1 ?
               " ... " + this.dataIndexStrings[this.dataArray.length - 1] : "")
             + ".");
@@ -238,8 +233,6 @@ class SelectionData {
 const SELECTION_PAGE_NODE_SIZE = 20;
 const SELECTION_PAGE_SIZE =
   Math.ceil(ExtractNews.SELECTION_MAX_COUNT / SELECTION_PAGE_NODE_SIZE);
-
-const SELECTION_FAVICON = "favicon";
 
 function _createSelectionFaviconInput(favicon) {
   var faviconInput = document.createElement("input");
@@ -266,10 +259,7 @@ function _createSelectionFaviconList() {
   return faviconList;
 }
 
-/*
- * Creates the element to set a news selection and insert the previous.
- */
-function createSelectionNode(selectionData) {
+function _createSelectionNode(selectionData) {
   var selectionNode = document.createElement("div");
   var selectionAppended = selectionData == undefined;
   selectionNode.className = "selection_item";
@@ -419,7 +409,6 @@ class SelectionEditPane {
     if (regexpResult.errorCode < 0) {
       var regexpString = regexpResult.localizedText.textString;
       if (regexpString.length <= _Alert.REGEXP_MAX_UTF16_CHARACTERS) {
-        // Set localized string into text area and checked flag to true.
         editRegexp.textarea.value = regexpString;
         editRegexp.errorChecked = true;
         return true;
@@ -434,6 +423,8 @@ class SelectionEditPane {
   }
 
   getNewsSelection() {
+    // Return the news selection checked whether the length of a setting name
+    // is fit or regular expressions are valid.
     var editNewsSelection = ExtractNews.newSelection();
     var regexpStrings = new Array();
     var settingName =
@@ -447,7 +438,6 @@ class SelectionEditPane {
       return undefined;
     }
     editNewsSelection.settingName = settingName;
-    // Check whether a regular expression of text area is valid.
     for (let i = 0; i < this.editPane.regexps.length; i++) {
       var editRegexp = this.editPane.regexps[i];
       if (editRegexp.errorChecked) {
@@ -465,7 +455,6 @@ class SelectionEditPane {
         editRegexp.textarea.focus();
         return undefined;
       }
-      // Set checked string into text area and checked flag to true.
       regexpStrings.push(regexpString);
       editRegexp.textarea.value = regexpString;
       editRegexp.errorChecked = true;
@@ -497,39 +486,39 @@ class SelectionEditPane {
 class SelectionPane extends FocusedOptionPane {
   constructor(focusedNodeGroup) {
     super(focusedNodeGroup);
-    this.selection = {
+    this.pane = {
         pageNumberList: document.querySelector(".page_number_list"),
-        list: document.querySelector(".selection_list"),
+        selectionList: document.querySelector(".selection_list"),
         deleteCheckbox: document.querySelector(".page_header input"),
         deleteButton: getOptionButton("Delete"),
         editPane: undefined,
         editPointedGroup: new _Event.PointedGroup()
       };
     _setSelectionPageNumberList(
-      this.selection.pageNumberList, this.selection.deleteButton.tabIndex + 1);
-    this.selection.deleteCheckbox.addEventListener("input", (event) => {
+      this.pane.pageNumberList, this.pane.deleteButton.tabIndex + 1);
+    this.pane.deleteCheckbox.addEventListener("input", (event) => {
         for (let i = 0; i < this.nodeSize; i++) {
           var selectionCheckbox = this.getSelectionCheckbox(i);
           if (selectionCheckbox != null) {
             selectionCheckbox.checked = event.target.checked;
           }
         }
-        this.selection.deleteButton.disabled = ! event.target.checked;
+        this.pane.deleteButton.disabled = ! event.target.checked;
       });
-    this.selection.deleteButton.disabled = true;
-    this.selection.editPane =
-      new SelectionEditPane(this, this.selection.editPointedGroup);
+    this.pane.deleteButton.disabled = true;
+    this.pane.editPane =
+      new SelectionEditPane(this, this.pane.editPointedGroup);
     this.faviconList = undefined;
     this.faviconFocusedIndex = -1;
     this.faviconElements = new Array();
   }
 
   get pageNumberArray() {
-    return Array.from(this.selection.pageNumberList.children);
+    return Array.from(this.pane.pageNumberList.children);
   }
 
   containsListElement(element) {
-    return this.selection.list.contains(element);
+    return this.pane.selectionList.contains(element);
   }
 
   getSelectionCheckbox(selectionIndex) {
@@ -545,12 +534,12 @@ class SelectionPane extends FocusedOptionPane {
         break;
       }
     }
-    this.selection.deleteCheckbox.checked = deleteChecked;
-    this.selection.deleteButton.disabled = ! deleteChecked;
+    this.pane.deleteCheckbox.checked = deleteChecked;
+    this.pane.deleteButton.disabled = ! deleteChecked;
   }
 
   addDeleteButtonClickEventListener(callback) {
-    this.selection.deleteButton.addEventListener(_Event.CLICK, callback);
+    this.pane.deleteButton.addEventListener(_Event.CLICK, callback);
   }
 
   getFocusedNode(selectionIndex) {
@@ -558,28 +547,40 @@ class SelectionPane extends FocusedOptionPane {
   }
 
   insertSelectionNode(
-    selectionIndex, selectionNode, fireSelectionNodeInsertEvent,
+    selectionIndex, selectionData, fireSelectionNodeInsertEvent,
     fireSelectionNodeMoveEvent, fireSelectionNodeRemoveEvent,
     fireSelectionEditPaneOpenEvent) {
+    var selectionNode = _createSelectionNode(selectionData);
     var selectionFocusedNode = _getSelectionFocusedNode(selectionNode);
     if (selectionFocusedNode != null) {
       // Set the event listener into elements focused on the selection node.
       var selectionFocusedNodeGroup = this.getFocusedNodeGroup();
       var selectionCheckbox = _getSelectionCheckbox(selectionFocusedNode);
-      var selectionFaviconInput =
+      var selectionFaviconImage =
         _getSelectionFaviconNode(selectionFocusedNode).querySelector("input");
       selectionCheckbox.addEventListener("input", (event) => {
           if (event.target.checked) {
-            this.selection.deleteCheckbox.checked = true;
-            this.selection.deleteButton.disabled = false;
+            this.pane.deleteCheckbox.checked = true;
+            this.pane.deleteButton.disabled = false;
           } else {
             this.setSelectionCheckboxAll();
           }
         });
-      selectionFaviconInput.addEventListener(_Event.CLICK, (event) => {
+      selectionFaviconImage.addEventListener(_Event.CLICK, (event) => {
           if (this.faviconList != undefined) {
-            this.faviconList.parentNode.removeChild(this.faviconList);
-            event.target.parentNode.appendChild(this.faviconList);
+            // Display the favicon list on the node of a selection data.
+            var selectionFaviconNode = event.target.parentNode;
+            if (this.faviconList.parentNode != null) {
+              this.faviconList.parentNode.removeChild(this.faviconList);
+              selectionFaviconNode.appendChild(this.faviconList);
+            } else {
+              // Set favicon elements for which the border or popup URL is
+              // appeared by pointer and key events of the group focused on
+              // the pane. However, this addition must be after the list is
+              // appended to a node because of the check of focused parent.
+              selectionFaviconNode.appendChild(this.faviconList);
+              this.getFocusedNodeGroup().addElements(this.faviconElements);
+            }
             this.faviconList.style.visibility = "visible";
             this.faviconFocusedIndex = 0;
             this.faviconElements[0].focus();
@@ -595,26 +596,17 @@ class SelectionPane extends FocusedOptionPane {
         })
       selectionFocusedNodeGroup.addFocusedElement(selectionFocusedNode);
       selectionFocusedNodeGroup.addElements(
-        Array.of(selectionCheckbox, selectionFaviconInput));
-      // Append the favicon list to the node of the first selection data.
-      if (this.faviconList != undefined
-        && this.faviconList.parentNode == null) {
-        var selectionFaviconNode = _getSelectionFaviconNode(selectionNode);
-        if (selectionFaviconNode != null) {
-          selectionFaviconNode.appendChild(this.faviconList);
-          selectionFocusedNodeGroup.addElements(this.faviconElements);
-        }
-      }
+        Array.of(selectionCheckbox, selectionFaviconImage));
     }
     super.insertNode(
       selectionIndex, selectionNode, fireSelectionNodeInsertEvent,
       fireSelectionNodeMoveEvent, fireSelectionNodeRemoveEvent);
-    // Append the specified node to the current page at the specified index.
+    // Append the specified node at the specified index to the current page.
     var nextSelectionNode = null;
     if (selectionIndex < this.nodeSize - 1) {
       nextSelectionNode = this.getNode(selectionIndex + 1);
     }
-    this.selection.list.insertBefore(selectionNode, nextSelectionNode);
+    this.pane.selectionList.insertBefore(selectionNode, nextSelectionNode);
   }
 
   updateSelectionNode(selectionIndex, selectionData) {
@@ -623,15 +615,15 @@ class SelectionPane extends FocusedOptionPane {
     if (selectionFaviconNode != null) {
       var selectionSetingNameLabel =
         selectionFaviconNode.parentNode.querySelector("label");
-      var selectionFaviconInput =
+      var selectionFaviconImage =
         selectionFaviconNode.querySelector("input");
       var selectionFavicon =
         SELECTION_FAVICON_MAP.get(selectionData.openedSiteId);
       if (selectionFavicon == undefined) {
         selectionFavicon = SELECTION_DEFAULT_FAVICON;
       }
-      selectionFaviconInput.src = selectionFavicon.data;
-      selectionFaviconInput.title = selectionData.openedUrl;
+      selectionFaviconImage.src = selectionFavicon.data;
+      selectionFaviconImage.title = selectionData.openedUrl;
       selectionSetingNameLabel.textContent = selectionData.settingName;
     }
   }
@@ -639,7 +631,7 @@ class SelectionPane extends FocusedOptionPane {
   removeSelectionNode(selectionIndex) {
     var selectionNode = this.removeNode(selectionIndex);
     selectionNode.parentNode.removeChild(selectionNode);
-    // Remove the favicon list from the node of the specified index
+    // Remove the favicon list from the node at the specified index
     // and append to the first node.
     var selectionFaviconNode = _getSelectionFaviconNode(selectionNode);
     if (selectionFaviconNode != null
@@ -657,17 +649,17 @@ class SelectionPane extends FocusedOptionPane {
     var movedUpNode = this.getNode(movedUpIndex);
     var movedDownNode = this.getNode(movedDownIndex);
     this.swapNode(movedUpIndex, movedDownIndex);
-    this.selection.list.removeChild(movedUpNode);
-    this.selection.list.insertBefore(movedUpNode, movedDownNode);
+    this.pane.selectionList.removeChild(movedUpNode);
+    this.pane.selectionList.insertBefore(movedUpNode, movedDownNode);
   }
 
   getEditPane() {
-    return this.selection.editPane;
+    return this.pane.editPane;
   }
 
   createFaviconList() {
     // Create the list of favicons which have been read from the storage yet
-    // but no news selection node contain it until appending new data.
+    // but it has no parent until those are displayed for the first time.
     this.faviconList = _createSelectionFaviconList();
     this.faviconList.querySelectorAll("input").forEach((element) => {
         element.addEventListener(_Event.KEYDOWN, (event) => {
@@ -698,7 +690,7 @@ class SelectionPane extends FocusedOptionPane {
               }
               break;
             }
-            // Prevent moving from the favicon list by the tab or other keys.
+            // Prevent moving from the favicon list by tab or other keys.
             event.preventDefault();
           });
         this.faviconElements.push(element);
@@ -758,19 +750,19 @@ class SelectionPane extends FocusedOptionPane {
     if (this.faviconList != undefined && this.faviconList.parentNode != null) {
       this.faviconList.parentNode.removeChild(this.faviconList);
     }
-    var removedItems = Array.from(this.selection.list.children);
+    var removedItems = Array.from(this.pane.selectionList.children);
     for (let i = removedItems.length - 1; i >= 0; i--) {
-      this.selection.list.removeChild(removedItems[i]);
+      this.pane.selectionList.removeChild(removedItems[i]);
     }
-    this.selection.deleteCheckbox.checked = false;
-    this.selection.deleteButton.disabled = true;
+    this.pane.deleteCheckbox.checked = false;
+    this.pane.deleteButton.disabled = true;
   }
 
   setEventRelation(eventGroup) {
     super.setEventRelation(eventGroup);
     eventGroup.addElements(this.pageNumberArray);
     eventGroup.addElements(
-      Array.of(this.selection.deleteCheckbox, this.selection.deleteButton));
-    eventGroup.setEventRelation(this.selection.editPointedGroup);
+      Array.of(this.pane.deleteCheckbox, this.pane.deleteButton));
+    eventGroup.setEventRelation(this.pane.editPointedGroup);
   }
 }

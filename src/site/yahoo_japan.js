@@ -19,8 +19,8 @@
 
 "use strict";
 
-ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
-    if (newsSite == undefined) {
+ExtractNews.readEnabledSite(document.URL).then((siteData) => {
+    if (siteData == undefined) {
       Site.displayNewsDesigns();
       return;
     }
@@ -29,7 +29,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
      * Returns the string localized for the specified ID on Yahoo! News.
      */
     function getYahooNewsString(id) {
-      return ExtractNews.getLocalizedString("YahooJapanNews" + id);
+      return getLocalizedString("YahooJapanNews" + id);
     }
 
     /*
@@ -37,7 +37,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
      * the specified ID on Yahoo! News.
      */
     function splitYahooNewsString(id) {
-      return ExtractNews.splitLocalizedString("YahooJapanNews" + id);
+      return splitLocalizedString("YahooJapanNews" + id);
     }
 
     /*
@@ -45,7 +45,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
      * suffixed with "RegularExpression" on Yahoo! News.
      */
     function getYahooNewsRegExp(id) {
-      return ExtractNews.getLocalizedRegExp("YahooJapanNews" + id);
+      return getLocalizedRegExp("YahooJapanNews" + id);
     }
 
     const NEWS_FEED_LIST = "newsFeed_list";
@@ -56,7 +56,16 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
 
     const CONTENTS_WRAP = "contentsWrap";
 
+    const UAMODS_ALSO_READ = "uamods-also_read";
+
     const VIEWABLE_COMMENT = "viewable_comment";
+
+    const CATEGORIES = splitYahooNewsString("Categories");
+    const CATEGORY_TOPIC_WORDS_MAP = new Map();
+
+    splitYahooNewsString("CategoryTopicWords").forEach((topicWords, index) => {
+        CATEGORY_TOPIC_WORDS_MAP.set(CATEGORIES[index], topicWords.split(" "));
+      });
 
     /*
      * News topics displayed in the category top on Yahoo! News.
@@ -324,10 +333,11 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
       }
 
       getObservedNodes(newsParent) {
+        var newsObservedNodes = new Array();
         if (newsParent.tagName != "NAV") {
-          return Array.of(newsParent);
+          newsObservedNodes.push(newsParent);
         }
-        return new Array();
+        return newsObservedNodes;
       }
 
       isRearrangementNewsItemsCleared(changedNodes) {
@@ -362,7 +372,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
               }),
             itemTextProperty: {
                 topicSearchProperties: Array.of({
-                    skippedTextRegexp: Design.NEWS_VIDEO_TIME_REGEXP
+                    skippedTextRegExp: Design.NEWS_VIDEO_TIME_REGEXP
                   })
               },
             observerOptions: Design.SUBTREE_OBSERVER_OPTIONS,
@@ -379,24 +389,50 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
       }
 
       getObservedNodes(newsParent) {
+        var newsObservedNodes = new Array();
         if (newsParent.classList.contains(CONTENTS_WRAP)) {
-          return Array.of(newsParent);
+          newsObservedNodes.push(newsParent);
         }
-        return new Array();
+        return newsObservedNodes;
       }
 
       getObservedNewsItemElements(addedNode) {
-        if(addedNode.tagName == "LI") {
-          return Array.of(addedNode);
-        } else if (addedNode.id == "newsFeed"
-          || addedNode.id == "uamods-also_read") {
+        if (addedNode.id == "newsFeed" || addedNode.id == UAMODS_ALSO_READ) {
           return Array.from(addedNode.querySelectorAll("li"));
         }
-        return new Array();
+        var newsItems = new Array();
+        if(addedNode.tagName == "LI") {
+          newsItems.push(addedNode);
+        }
+        return newsItems;
       }
 
       hasComments() {
         return document.getElementById(VIEWABLE_COMMENT) != null;
+      }
+    }
+
+    const HEADING_TOPIC_SET = new Set(CATEGORIES);
+    const HEADING_TOPIC_REGEXP = getYahooNewsRegExp("HeadingTopic");
+
+    // Adds topics for categories enclosed by "(" and ")" in the specified
+    // heading text to the array of topic words.
+
+    function _setSideHeadingTopic(headingText) {
+      var headingTopicMatch = headingText.match(HEADING_TOPIC_REGEXP);
+      if (headingTopicMatch != null) {
+        var headingTopics = Array.of(headingTopicMatch[1]);
+        if (headingTopicMatch[2] != undefined) {
+          headingTopics.push(headingTopicMatch[2]);
+        }
+        headingTopics.forEach((headingTopic) => {
+            for (const category of CATEGORIES) {
+              if (category == headingTopic) {
+                Site.addNewsTopicWords(CATEGORY_TOPIC_WORDS_MAP.get(category));
+                break;
+              }
+            }
+          });
       }
     }
 
@@ -406,9 +442,11 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
      * Lists of news topics displayed in the side on Yahoo! News.
      */
     class YahooNewsSideLists extends Design.NewsDesign {
-      constructor(setHeadingTopic) {
+      constructor(articleSideListed = false, lateSectionObserved = false) {
         super({
             parentProperties: Array.of({
+                selectors: "div.yjnSub_list"
+              }, {
                 selectorsForAll: "div.yjnSub_list section",
                 setNewsElement: (element, newsParents) => {
                     var headingElement = element.querySelector("h2");
@@ -416,8 +454,8 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
                       var headingText = headingElement.textContent.trim();
                       if (headingText.indexOf(PAID_NEWS) >= 0) {
                         return;
-                      } else if (setHeadingTopic != undefined) {
-                        setHeadingTopic(headingText);
+                      } else if (articleSideListed) {
+                        _setSideHeadingTopic(headingText);
                       }
                     }
                     newsParents.push(element);
@@ -426,35 +464,28 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
             topicProperties: Design.ONESELF_QUERY_PROPERTIES,
             itemTextProperty: {
                 topicSearchProperties: Array.of({
-                    skippedTextRegexp: getYahooNewsRegExp("CommentCount")
-                  })
-              }
-        });
-      }
-    }
-
-    /*
-     * Lists of news topics displayed later in the side on Yahoo! News.
-     */
-    class YahooNewsLateSideLists extends Design.NewsDesign {
-      constructor() {
-        super({
-            parentProperties: Array.of({
-                selectors: "div.yjnSub_list"
-              }),
-            topicProperties: Design.ONESELF_QUERY_PROPERTIES,
-            itemTextProperty: {
-                topicSearchProperties: Array.of({
-                    skippedTextRegexp: Design.NEWS_RANKING_NUMBER_REGEXP
+                    skippedTextRegExp: getYahooNewsRegExp("CommentCount")
                   })
               },
             observedProperties: Design.ONESELF_QUERY_PROPERTIES,
             observedItemAddedAtOnce: true
         });
+        this.lateSectionObserved = lateSectionObserved;
       }
 
       getNewsItemElements(newsParent) {
+        if (newsParent.tagName == "SECTION") {
+          return Array.from(newsParent.querySelectorAll("li"));
+        }
         return new Array();
+      }
+
+      getObservedNodes(newsParent) {
+        var newsObservedNodes = new Array();
+        if (this.lateSectionObserved && newsParent.tagName == "DIV") {
+          newsObservedNodes.push(newsParent);
+        }
+        return newsObservedNodes;
       }
 
       getObservedNewsItemElements(addedNode) {
@@ -463,20 +494,13 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
           if (headingElement != null) {
             var headingText = headingElement.textContent.trim();
             if (headingText.indexOf(PAID_NEWS) < 0) {
-              return addedNode.querySelectorAll("li");
+              return Array.from(addedNode.querySelectorAll("li"));
             }
           }
         }
         return new Array();
       }
     }
-
-    const CATEGORIES = splitYahooNewsString("Categories");
-    const CATEGORY_TOPIC_WORDS_MAP = new Map();
-
-    splitYahooNewsString("CategoryTopicWords").forEach((topicWords, index) => {
-        CATEGORY_TOPIC_WORDS_MAP.set(CATEGORIES[index], topicWords.split(" "));
-      });
 
     // Adds categories gotten by the specified URL parser to the specified set.
 
@@ -500,44 +524,39 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
     // Display news designs arranged by a selector which selects and excludes
     // topics or senders, waiting the settings from the background script.
 
-    const HEADING_TOPIC_SET = new Set(CATEGORIES);
-    const HEADING_TOPIC_REGEXP = getYahooNewsRegExp("HeadingTopic");
-
-    class YahooNewsUrlParser extends NewsSiteUrlParser {
+    class YahooNewsUrlParser extends SiteUrlParser {
       constructor() {
-        super(getNewsSiteUrlData(newsSite, document.URL));
+        super(getSiteUrlData(siteData, document.URL));
       }
       getPathString(pathId) {
         return getYahooNewsString(pathId);
       }
+      getPathRegExp(pathId) {
+        return getYahooNewsRegExp(pathId);
+      }
     }
 
     var newsSiteUrlParser = new YahooNewsUrlParser();
-    if (newsSiteUrlParser.parse("ArticlePaths")) { // Articles
-      Site.setNewsDesigns(
-        new YahooNewsArticlePane(),
-        new YahooNewsSideLists((headingText) => {
-            // Add topics for categories enclosed by "(" and ")"
-            // in the heading text to the array of topic words.
-            var headingTopicMatch = headingText.match(HEADING_TOPIC_REGEXP);
-            if (headingTopicMatch != null) {
-              var headingTopics = Array.of(headingTopicMatch[1]);
-              if (headingTopicMatch[2] != undefined) {
-                headingTopics.push(headingTopicMatch[2]);
-              }
-              headingTopics.forEach((headingTopic) => {
-                  for (const category of CATEGORIES) {
-                    if (category == headingTopic) {
-                      Site.addNewsTopicWords(
-                        CATEGORY_TOPIC_WORDS_MAP.get(category));
-                      break;
-                    }
-                  }
-                });
-            }
-          }),
-        new YahooNewsLateSideLists());
-    } else { // Paths except for articles started from "/articles" or "/pickup"
+    if (newsSiteUrlParser.parse("ArticlePaths")) { // An article or its pickup
+      var lateSectionObserved = false;
+      if (! newsSiteUrlParser.parseByRegExp("ArticleComments")) {
+        if (newsSiteUrlParser.endsWith("ArticlePath")) {
+          // Set the flag whether the section "Douga Access Ranking" is late
+          // in the article side.
+          lateSectionObserved = true;
+        }
+        Site.setNewsDesign(new YahooNewsArticlePane());
+      } else { // Comment list for an article
+        Site.setNewsDesign(
+          new Design.NewsDesign({
+              parentProperties: Array.of({
+                  selectors: "#" + UAMODS_ALSO_READ
+                }),
+              topicProperties: Design.ONESELF_QUERY_PROPERTIES
+            }));
+      }
+      Site.setNewsDesign(new YahooNewsSideLists(true, lateSectionObserved));
+    } else { // News feed displayed in the bottom of the main pane
       var newsCategorySet = new Set();
       if (newsSiteUrlParser.parseDirectory()
         || newsSiteUrlParser.parse("CategoryRootPath")) { // Category's top
@@ -572,10 +591,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
         && newsSiteUrlParser.parse("RankingPaths")) { // Access ranking
         _parseNewsCategory(newsSiteUrlParser, newsCategorySet);
       }
-      Site.setNewsDesigns(
-        // News feed displayed in the bottom on Yahoo! News
-        new YahooNewsFeed(),
-        new YahooNewsSideLists());
+      Site.setNewsDesigns(new YahooNewsFeed(), new YahooNewsSideLists());
       // Add topics for categories of this page to the array of topic words.
       if (newsCategorySet.size <= 0) {
         newsCategorySet.add(CATEGORIES[0]);
@@ -587,8 +603,8 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
     }
 
     Site.setNewsSelector(
-      new NewsSelector(ExtractNews.getDomainLanguage(newsSite.domainId)));
-    Site.displayNewsDesigns(new Set([ "interactive" , "complete" ]));
+      new Selector(ExtractNews.getDomainLanguage(siteData.domainId)));
+    Site.displayNewsDesigns();
   }).catch((error) => {
     Debug.printStackTrace(error);
   });

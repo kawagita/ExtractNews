@@ -114,7 +114,7 @@ ExtractNews.Menus = (() => {
      * and returns the promise.
      */
     function createContextMenus() {
-      var enabledSiteUrlPatterns = ExtractNews.getEnabledNewsSiteUrlPatterns();
+      var enabledSiteUrlPatterns = ExtractNews.getEnabledSiteUrlPatterns();
       var enabledCommentSiteUrlPatterns =
         ExtractNews.getEnabledCommentSiteUrlPatterns();
       var separatorCount = 0;
@@ -202,16 +202,16 @@ ExtractNews.Menus = (() => {
 
     _Menus.createContextMenus = createContextMenus;
 
-    // Enable or disable the menu of the specified ID on a tab
+    // Enables or disables the menu of the specified ID on a tab
     // and sets light or dark icon.
 
-    function _updateTabNewsSettingMenuDisabled(menuId, menuDisabled) {
+    function _updateTabNewsSettingMenuEnabled(menuId, menuEnabled) {
       var menuUpdateProperty = {
-          enabled: ! menuDisabled
+          enabled: menuEnabled
         };
       if (browser.contextMenus.refresh != undefined) {
         var menuIconSuffix = "";
-        if (menuDisabled) {
+        if (! menuEnabled) {
           menuIconSuffix = DISABLED_ICON_SUFFIX;
         }
         menuUpdateProperty.icons =
@@ -227,19 +227,19 @@ ExtractNews.Menus = (() => {
       }
       return Promise.all(
         Array.of(
-          _updateTabNewsSettingMenuDisabled(
+          _updateTabNewsSettingMenuEnabled(
             ID_SAVE_TAB_NEWS_SELECTION,
-            tabSetting.newsSelectedTopicRegularExpression == ""
-              && tabSetting.newsSelectedSenderRegularExpression == ""),
-          _updateTabNewsSettingMenuDisabled(
+            tabSetting.hasNewsSelectedTopicRegularExpression()
+              || tabSetting.hasNewsSelectedSenderRegularExpression()),
+          _updateTabNewsSettingMenuEnabled(
             ID_CLEAR_TAB_SELECTED_TOPIC,
-            tabSetting.newsSelectedTopicRegularExpression == ""),
-          _updateTabNewsSettingMenuDisabled(
+            tabSetting.hasNewsSelectedTopicRegularExpression()),
+          _updateTabNewsSettingMenuEnabled(
             ID_CLEAR_TAB_SELECTED_SENDER,
-            tabSetting.newsSelectedSenderRegularExpression == ""),
-          _updateTabNewsSettingMenuDisabled(
+            tabSetting.hasNewsSelectedSenderRegularExpression()),
+          _updateTabNewsSettingMenuEnabled(
             ID_CLEAR_TAB_NEWS_EXCLUSION,
-            tabSetting.newsExcludedRegularExpression == "")));
+            tabSetting.hasNewsExcludedTopicRegularExpression())));
     }
 
     /*
@@ -268,10 +268,12 @@ ExtractNews.Menus = (() => {
     function updateContextMenus(tabSetting) {
       return Promise.all(
         Array.of(
-          _updateMenuChecked(ID_DISABLE_TAB_LINK, tabSetting.linkDisabled),
+          _updateMenuChecked(ID_DISABLE_TAB_LINK, tabSetting.isLinkDisabled()),
           _updateMenuChecked(
-            ID_DISABLE_TAB_NEWS_SELECTION, tabSetting.newsSelectionDisabled),
-          _updateMenuChecked(ID_HIDE_COMMENT, tabSetting.newsCommentHidden),
+            ID_DISABLE_TAB_NEWS_SELECTION,
+            tabSetting.isNewsSelectionDisabled()),
+          _updateMenuChecked(
+            ID_HIDE_COMMENT, tabSetting.isNewsSiteCommentHidden()),
           _updateTabNewsSettingMenus(tabSetting))).then(() => {
               if (browser.contextMenus.refresh != undefined) {
                 browser.contextMenus.refresh();

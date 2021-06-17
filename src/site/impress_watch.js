@@ -19,8 +19,8 @@
 
 "use strict";
 
-ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
-    if (newsSite == undefined) {
+ExtractNews.readEnabledSite(document.URL).then((siteData) => {
+    if (siteData == undefined) {
       Site.displayNewsDesigns();
       return;
     }
@@ -29,7 +29,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
      * Returns the string localized for the specified ID on Impress Watch.
      */
     function getImpressWatchString(id) {
-      return ExtractNews.getLocalizedString("ImpressWatch" + id);
+      return getLocalizedString("ImpressWatch" + id);
     }
 
     /*
@@ -37,7 +37,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
      * the specified ID on Impress Watch.
      */
     function splitImpressWatchString(id) {
-      return ExtractNews.splitLocalizedString("ImpressWatch" + id);
+      return splitLocalizedString("ImpressWatch" + id);
     }
 
     /*
@@ -45,7 +45,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
      * suffixed with "RegularExpression" on Impress Watch.
      */
     function getImpressWatchRegExp(id) {
-      return ExtractNews.getLocalizedRegExp("ImpressWatch" + id);
+      return getLocalizedRegExp("ImpressWatch" + id);
     }
 
     const TOPIC_ITEM = "item";
@@ -216,10 +216,11 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
       }
 
       getObservedNodes(newsParent) {
+        var newsObservedNodes = new Array();
         if (newsParent.classList.contains(BLOCK_ITEM_GROUP)) {
-          return Array.of(newsParent.querySelector("ul"));
+          newsObservedNodes.push(newsParent.querySelector("ul"));
         }
-        return new Array();
+        return newsObservedNodes;
       }
 
       isObserverNodesAddedAtOnce(observedNode) {
@@ -267,10 +268,11 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
       }
 
       getObservedNewsItemElements(addedNode) {
+        var newsItems = new Array();
         if (addedNode.tagName == "LI") {
-          return Array.of(addedNode);
+          newsItems.push(addedNode);
         }
-        return new Array();
+        return newsItems;
       }
     }
 
@@ -384,7 +386,7 @@ ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
             topicProperties: Design.ONESELF_QUERY_PROPERTIES,
             itemTextProperty: {
                 topicSearchProperties: Array.of({
-                    skippedTextRegexp: Design.NEWS_RANKING_NUMBER_REGEXP
+                    skippedTextRegExp: Design.NEWS_RANKING_NUMBER_REGEXP
                   })
               },
             observedProperties: Array.of({
@@ -511,7 +513,7 @@ s    }
 
     const SITE_HOST_SERVERS = splitImpressWatchString("SiteHostServers");
 
-    var newsSiteUrlData = getNewsSiteUrlData(newsSite, document.URL);
+    var newsSiteUrlData = getSiteUrlData(siteData, document.URL);
     var newsSiteIndex = SITE_HOST_SERVERS.indexOf(newsSiteUrlData.hostServer);
     if (newsSiteIndex >= 0) { // INTERNET Watch, PC Watch, ..., and Watch Video
       Site.addNewsTopicWords(
@@ -520,7 +522,7 @@ s    }
       Site.addNewsTopicWords(splitImpressWatchString("TopicWords"));
     }
 
-    class ImpressWatchUrlParser extends NewsSiteUrlParser {
+    class ImpressWatchUrlParser extends SiteUrlParser {
       constructor() {
         super(newsSiteUrlData);
       }
@@ -533,7 +535,7 @@ s    }
     }
 
     var newsSiteUrlParser = new ImpressWatchUrlParser();
-    if (newsSiteUrlParser.parseByRegExp("Documents")) { // Articles
+    if (newsSiteUrlParser.parseByRegExp("Article")) { // An article
       Site.setNewsDesigns(
         // Links to the previous or next article
         new Design.NewsDesign({
@@ -635,8 +637,8 @@ s    }
       new ImpressWatchRanking("all-ranking"));
 
     Site.setNewsSelector(
-      new NewsSelector(ExtractNews.getDomainLanguage(newsSite.domainId)));
-    Site.displayNewsDesigns(new Set([ "interactive" , "complete" ]));
+      new Selector(ExtractNews.getDomainLanguage(siteData.domainId)));
+    Site.displayNewsDesigns();
   }).catch((error) => {
     Debug.printStackTrace(error);
   });

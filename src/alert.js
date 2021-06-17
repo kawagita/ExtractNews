@@ -93,59 +93,53 @@ ExtractNews.Alert = (() => {
     }
 
     function _newWarning(messageId, substitutions) {
-      return new Warning(
-        ExtractNews.getLocalizedString(messageId, substitutions));
+      return new Warning(getLocalizedString(messageId, substitutions));
     }
 
     // Map of warnings for message IDs
     const WARNING_MAP = new Map();
 
     {
-      var settingNameMaxWidth = String(_Alert.SETTING_NAME_MAX_WIDTH);
-
+      var settingNameMaxWidth = _Alert.SETTING_NAME_MAX_WIDTH;
       if (browser.i18n.getUILanguage().startsWith("ja")) {
-        var localizedContext =
-          ExtractNews.Text.getLocalizedContext(
-            String(_Alert.SETTING_NAME_MAX_WIDTH / 2));
-        if (localizedContext.hasDifferentWidth()) {
-          settingNameMaxWidth = localizedContext.fullwidthText.textString;
-        }
+        settingNameMaxWidth /= 2;
       }
-
       WARNING_MAP.set(
         _Alert.SETTING_NAME_MAX_WITDH_EXCEEDED,
         _newWarning(
-          _Alert.SETTING_NAME_MAX_WITDH_EXCEEDED, settingNameMaxWidth));
-      WARNING_MAP.set(
-        _Alert.SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED,
-        _newWarning(
-          _Alert.SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED,
-          String(_Alert.REGEXP_MAX_UTF16_CHARACTERS)));
-      WARNING_MAP.set(
-        _Alert.SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED,
-        _newWarning(
-          _Alert.SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED,
-          String(_Alert.REGEXP_MAX_UTF16_CHARACTERS)));
-      WARNING_MAP.set(
-        _Alert.EXCLUDED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED,
-        _newWarning(
-          _Alert.EXCLUDED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED,
-          String(_Alert.REGEXP_MAX_UTF16_CHARACTERS)));
-      WARNING_MAP.set(
-        _Alert.SELECTION_NOT_SAVED_ANY_MORE,
-        _newWarning(_Alert.SELECTION_NOT_SAVED_ANY_MORE));
-      WARNING_MAP.set(
-        _Alert.FILETERING_WORDS_MAX_UTF16_CHARACTERS_EXCEEDED,
-        _newWarning(
-          _Alert.FILETERING_WORDS_MAX_UTF16_CHARACTERS_EXCEEDED,
-          String(_Alert.FILTERING_WORDS_MAX_UTF16_CHARACTERS)));
-      WARNING_MAP.set(
-        _Alert.FILTERING_NOT_SAVED_ANY_MORE,
-        _newWarning(_Alert.FILTERING_NOT_SAVED_ANY_MORE));
-      WARNING_MAP.set(
-        _Alert.TAB_SETTING_NOT_ENABLED,
-        _newWarning(_Alert.TAB_SETTING_NOT_ENABLED));
+          _Alert.SETTING_NAME_MAX_WITDH_EXCEEDED,
+          String(settingNameMaxWidth)));
     }
+
+    WARNING_MAP.set(
+      _Alert.SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED,
+      _newWarning(
+        _Alert.SELECTED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED,
+        String(_Alert.REGEXP_MAX_UTF16_CHARACTERS)));
+    WARNING_MAP.set(
+      _Alert.SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED,
+      _newWarning(
+        _Alert.SELECTED_SENDER_MAX_UTF16_CHARACTERS_EXCEEDED,
+        String(_Alert.REGEXP_MAX_UTF16_CHARACTERS)));
+    WARNING_MAP.set(
+      _Alert.EXCLUDED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED,
+      _newWarning(
+        _Alert.EXCLUDED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED,
+        String(_Alert.REGEXP_MAX_UTF16_CHARACTERS)));
+    WARNING_MAP.set(
+      _Alert.SELECTION_NOT_SAVED_ANY_MORE,
+      _newWarning(_Alert.SELECTION_NOT_SAVED_ANY_MORE));
+    WARNING_MAP.set(
+      _Alert.FILETERING_WORDS_MAX_UTF16_CHARACTERS_EXCEEDED,
+      _newWarning(
+        _Alert.FILETERING_WORDS_MAX_UTF16_CHARACTERS_EXCEEDED,
+        String(_Alert.FILTERING_WORDS_MAX_UTF16_CHARACTERS)));
+    WARNING_MAP.set(
+      _Alert.FILTERING_NOT_SAVED_ANY_MORE,
+      _newWarning(_Alert.FILTERING_NOT_SAVED_ANY_MORE));
+    WARNING_MAP.set(
+      _Alert.TAB_SETTING_NOT_ENABLED,
+      _newWarning(_Alert.TAB_SETTING_NOT_ENABLED));
 
     /*
      * Returns the information of a warning for the specified ID displayed

@@ -30,9 +30,9 @@ ExtractNews.Site = (() => {
     var newsTopicWordSet = new Set();
     var newsDesigns = new Array();
     var newsDisplayOptions = {
-        newsCommentHidden: false,
-        newsFilteringDisabled: false,
-        newsSelectionDisabled: false
+        filteringDisabled: false,
+        selectionDisabled: false,
+        commentHidden: false
       };
     var newsReadyStateSet = undefined;
 
@@ -137,7 +137,7 @@ ExtractNews.Site = (() => {
               arrangingPromises.push(
                 new Promise((resolve) => {
                     var commentNodes = newsDesign.getCommentNodes();
-                    if (newsDisplayOptions.newsCommentHidden) {
+                    if (newsDisplayOptions.commentHidden) {
                       commentNodes.forEach(newsDesign.hideComment);
                       Debug.printMessage("Hide comment nodes.");
                     } else {
@@ -159,58 +159,52 @@ ExtractNews.Site = (() => {
         "Receive the command " + message.command.toUpperCase() + ".");
       switch (message.command) {
       case ExtractNews.COMMAND_SETTING_APPLY:
-        if (message.newsFilteringTargetObjects != undefined) {
+        if (newsSelector == undefined) {
+          throw newUnsupportedOperationException();
+        } else if (message.filteringTargetObjects != undefined) {
           newsDesigns.forEach((newsDesign) => {
               newsDesign.reset();
             });
-          newsSelector.setNewsFilterings(message.newsFilteringTargetObjects);
-          newsDisplayOptions.newsCommentHidden = message.newsCommentHidden;
-          newsDisplayOptions.newsFilteringDisabled =
-            message.newsFilteringDisabled;
+          newsSelector.setNewsFilterings(message.filteringTargetObjects);
+          newsDisplayOptions.filteringDisabled = message.filteringDisabled;
+          newsDisplayOptions.commentHidden = message.commentHidden;
           Debug.printProperty(
-            "Comment Hidden", String(message.newsCommentHidden));
-          Debug.printProperty(
-            "Filtering Disabled", String(message.newsFilteringDisabled));
+            "Filtering Disabled", String(message.filteringDisabled));
+          Debug.printProperty("Comment Hidden", String(message.commentHidden));
         }
         newsSelector.setNewsSelection(
-          message.newsSelectedTopicRegularExpression,
-          message.newsSelectedSenderRegularExpression,
-          message.newsExcludedRegularExpression);
+          message.selectedTopicRegularExpression,
+          message.selectedSenderRegularExpression,
+          message.excludedRegularExpression);
         Debug.printProperty(
-          "Selected Topic", message.newsSelectedTopicRegularExpression);
+          "Selected Topic", message.selectedTopicRegularExpression);
         Debug.printProperty(
-          "Selected Sender", message.newsSelectedSenderRegularExpression);
-        Debug.printProperty(
-          "Exclusion", message.newsExcludedRegularExpression);
+          "Selected Sender", message.selectedSenderRegularExpression);
+        Debug.printProperty("Exclusion", message.excludedRegularExpression);
         break;
       case ExtractNews.COMMAND_SETTING_SWITCH:
-        if (message.newsCommentHidden == newsDisplayOptions.newsCommentHidden
-          && message.newsFilteringDisabled
-            == newsDisplayOptions.newsFilteringDisabled
-          && message.newsSelectionDisabled
-            == newsDisplayOptions.newsSelectionDisabled) {
+        if (message.filteringDisabled == newsDisplayOptions.filteringDisabled
+          && message.selectionDisabled == newsDisplayOptions.selectionDisabled
+          && message.commentHidden == newsDisplayOptions.commentHidden) {
           Debug.printMessage("Keep the same arrangement.");
           return;
         }
-        newsDisplayOptions.newsCommentHidden = message.newsCommentHidden;
-        newsDisplayOptions.newsFilteringDisabled =
-          message.newsFilteringDisabled;
-        newsDisplayOptions.newsSelectionDisabled =
-          message.newsSelectionDisabled;
+        newsDisplayOptions.filteringDisabled = message.filteringDisabled;
+        newsDisplayOptions.selectionDisabled = message.selectionDisabled;
+        newsDisplayOptions.commentHidden = message.commentHidden;
         Debug.printProperty(
-          "Comment Hidden", String(message.newsCommentHidden));
+          "Filtering Disabled", String(message.filteringDisabled));
         Debug.printProperty(
-          "Filtering Disabled", String(message.newsFilteringDisabled));
-        Debug.printProperty(
-          "Selection Disabled", String(message.newsSelectionDisabled));
+          "Selection Disabled", String(message.selectionDisabled));
+        Debug.printProperty("Comment Hidden", String(message.commentHidden));
         break;
       case ExtractNews.COMMAND_SETTING_DISPOSE:
         if (newsSelector != undefined) {
           newsSelector.setNewsFilterings();
           newsSelector.setNewsSelection();
-          newsDisplayOptions.newsCommentHidden = false;
-          newsDisplayOptions.newsFilteringDisabled = false;
-          newsDisplayOptions.newsSelectionDisabled = false;
+          newsDisplayOptions.filteringDisabled = false;
+          newsDisplayOptions.selectionDisabled = false;
+          newsDisplayOptions.commentHidden = false;
           Debug.printMessage("Disabling this site.");
         }
         break;
@@ -263,15 +257,13 @@ ExtractNews.Site = (() => {
       }
     }
 
+    // The state in which the DOM tree of a document can be accessed
+    const DOM_TREE_ACCESSED_STATE_SET = new Set([ "interactive" , "complete" ]);
+
     /*
      * Displays news designs arranged by the selector on this site.
      */
-    function displayNewsDesigns(readyStateSet) {
-      if (readyStateSet == undefined) {
-        throw newNullPointerException("readyStateSet");
-      } else if (newsSelector == undefined) {
-        throw newUnsupportedOperationException();
-      }
+    function displayNewsDesigns(readyStateSet = DOM_TREE_ACCESSED_STATE_SET) {
       if (! readyStateSet.has(document.readyState)) {
         newsReadyStateSet = readyStateSet;
         document.addEventListener("readystatechange", _setNewsDisplaying);
@@ -281,8 +273,6 @@ ExtractNews.Site = (() => {
     }
 
     _Site.displayNewsDesigns = displayNewsDesigns;
-
-    ExtractNews.getDebugMode();
 
     window.addEventListener("beforeunload", (event) => {
         newsDesigns.forEach((newsDesign) => {

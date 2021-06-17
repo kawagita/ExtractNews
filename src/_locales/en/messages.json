@@ -39,23 +39,23 @@
     "description": "Domain of Yahoo!."
   },
 
-  "extractNewsYahooSitePaths": {
+  "extractNewsYahooPaths": {
     "message": "",
-    "description": "Paths of Yahoo! site."
+    "description": "Paths of Yahoo!."
   },
 
-  "extractNewsYahooCommentHostServerPatterns": {
+  "extractNewsYahooCommentServerPatterns": {
     "message": "",
-    "description": "Host server patterns of Yahoo! on which users comment."
+    "description": "Server patterns of Yahoo! on which users comment."
   },
 
-  "extractNewsYahooCommentSitePaths": {
+  "extractNewsYahooCommentPaths": {
     "message": "",
-    "description": "Paths of Yahoo! site on which users comment."
+    "description": "Paths of Yahoo! on which users comment."
   },
 
   "extractNewsYahooSiteCategories": {
-    "message": ",News,Finance,Money,Sports,Entertainment,Life",
+    "message": "home,news,finance,money,sports,entertainment,life",
     "description": "Categories of Yahoo! site."
   },
 
@@ -69,12 +69,12 @@
     "description": "Regular expression of the article of Yahoo! site."
   },
 
-  "extractNewsYahooNewsHostServer": {
+  "extractNewsYahooNewsCategoryServer": {
     "message": "news",
     "description": "Host server of Yahoo! News."
   },
 
-  "extractNewsYahooFinanceHostServer": {
+  "extractNewsYahooFinanceCategoryServer": {
     "message": "finance",
     "description": "Host server of Yahoo! Finance."
   },
@@ -84,22 +84,22 @@
     "description": "Path including authors of Yahoo! Finance."
   },
 
-  "extractNewsYahooMoneyHostServer": {
+  "extractNewsYahooMoneyCategoryServer": {
     "message": "money",
     "description": "Host server of Yahoo! Money."
   },
 
-  "extractNewsYahooSportsHostServer": {
+  "extractNewsYahooSportsCategoryServer": {
     "message": "sports",
     "description": "Host server of Yahoo! Sports."
   },
 
-  "extractNewsYahooEntertainmentPath": {
+  "extractNewsYahooEntertainmentCategoryPath": {
     "message": "/entertainment",
     "description": "Path of Yahoo! Entertainment."
   },
 
-  "extractNewsYahooLifePath": {
+  "extractNewsYahooLifeCategoryPath": {
     "message": "/lifestyle",
     "description": "Path of Yahoo! Life."
   },
@@ -129,24 +129,24 @@
     "description": "Domain of Slashdot."
   },
 
-  "extractNewsSlashdotSitePaths": {
+  "extractNewsSlashdotPaths": {
     "message": "",
-    "description": "Paths of Slashdot site."
+    "description": "Paths of Slashdot."
   },
 
-  "extractNewsSlashdotCommentHostServerPatterns": {
+  "extractNewsSlashdotCommentServerPatterns": {
     "message": ",*",
-    "description": "Host server patterns of Slashdot on which users comment."
+    "description": "Server patterns of Slashdot on which users comment."
   },
 
-  "extractNewsSlashdotCommentSitePaths": {
+  "extractNewsSlashdotCommentPaths": {
     "message": "",
-    "description": "Paths of Slashdot site on which users comment."
+    "description": "Paths of Slashdot on which users comment."
   },
 
-  "extractNewsSlashdotStoryPathRegularExpression": {
+  "extractNewsSlashdotStoryRegularExpression": {
     "message": "^/story(?:/[0-9]{2}){3}/[0-9]{6,7}/",
-    "description": "Regular expression of the path of a story on Slashdot."
+    "description": "Regular expression of the story of Slashdot."
   },
 
   "extractNewsSlashdotStoriesPathRegularExpression": {
@@ -444,7 +444,7 @@
     "description": "IDs of the filtering."
   },
 
-  "extractNewsAllFilteringCategoryName": {
+  "extractNewsFilteringAllCategoryName": {
     "message": "ALL",
     "description": "Category name of the filtering for all topics."
   },
@@ -935,7 +935,7 @@
   },
 
   "optionTargetBreak": {
-    "message": "Exit Block",
+    "message": "To Next Block",
     "description": "Option label to exit a block by a filtering target."
   },
 

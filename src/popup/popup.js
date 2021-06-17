@@ -133,26 +133,8 @@ ExtractNews.Popup = (() => {
         });
     }
 
-    /*
-     * Counts the number of windows and returns the promise fulfilled with its
-     * value.
-     */
-    function getWindowCount() {
-      return _queryTab().then((tabs) => {
-          var windowIdSet = new Set();
-          if (tabs != undefined) {
-            for (let tab of tabs) {
-              windowIdSet.add(tab.windowId);
-            }
-          }
-          return Promise.resolve(windowIdSet.size);
-        })
-    }
-
     _Popup.searchTab = searchTab;
-    _Popup.getTab = getTab;
     _Popup.getWindowActiveTab = getWindowActiveTab;
-    _Popup.getWindowCount = getWindowCount;
 
 
     function _getEditMessage(id) {
@@ -289,49 +271,54 @@ ExtractNews.Popup = (() => {
       editPane.titleElement.textContent = "";
     }
 
-    function _setEditUrlSelect(editPane, openedUrl, openerTabNewsOpenedUrl) {
+    function _setEditUrlSelect(editPane, openedUrl, tabSelectionOpenedUrl) {
       var editUrlSelect = editPane.urlSelect;
       var openedSiteId = undefined;
       var openedUrlAppended = false;
       if (openedUrl != "") {
         if (openedUrl != URL_ABOUT_BLANK) {
-          if (openedUrl == openerTabNewsOpenedUrl) {
-            openerTabNewsOpenedUrl = undefined;
+          if (openedUrl == tabSelectionOpenedUrl) {
+            tabSelectionOpenedUrl = undefined;
           }
-          var openedSite = ExtractNews.getNewsSite(openedUrl);
-          if (openedSite != undefined) {
-            openedSiteId = openedSite.id;
+          var openedSiteData = ExtractNews.getSite(openedUrl);
+          if (openedSiteData != undefined) {
+            openedSiteId = openedSiteData.id;
           }
           openedUrlAppended = true;
         }
       }
+
       // Put URLs to the select element on the edit pane in below order.
       //
-      //   https://devices.slashdot.org          - Opener tab if exists
+      //   https://devices.slashdot.org          - Opener tab on a news site
       //   https://www.yahoo.com
-      //   https://www.yahoo.com/entertainment/  - Opened URL if exists
+      //   https://www.yahoo.com/entertainment/  - Opened URL if not empty
       //   https://slashdot.org
       //   about:blank
       //
       // The priority which the URL is selected firstly in the select element
       // is in the order of the opened URL, opener tab, and "about:blank".
-      // If an opener tab is the same as the opened URL or one of news sites,
-      // removed or not added by this function or event listner. 
+      // The opener tab same as the opened URL is not added and one of news
+      // sites same as the opener tab is also not added.
       var selectedUrlOption = undefined;
-      if (openerTabNewsOpenedUrl != undefined) { // Opener tab of a news site
-        var openerTabNewsOpenedUrlOption =
-          _addEditUrlOption(editUrlSelect, openerTabNewsOpenedUrl);
+      if (tabSelectionOpenedUrl != "") { // Opener tab on a news site
+        var tabSelectionOpenedUrlOption =
+          _addEditUrlOption(editUrlSelect, tabSelectionOpenedUrl);
         if (openedUrl == "") {
-          selectedUrlOption = openerTabNewsOpenedUrlOption;
+          selectedUrlOption = tabSelectionOpenedUrlOption;
         }
       }
-      ExtractNews.forEachNewsSite((siteId, siteUrl) => {
-          if (siteUrl != openerTabNewsOpenedUrl) {
+      ExtractNews.forEachSite((siteData) => {
+          if (! ExtractNews.isDomainEnabled(siteData.domainId)) {
+            return;
+          }
+          var siteUrl = siteData.url;
+          if (siteUrl != tabSelectionOpenedUrl) {
             var siteUrlOption = _addEditUrlOption(editUrlSelect, siteUrl);
-            if (siteUrl == openedUrl) { // Opened URL which equals a news site
+            if (siteUrl == openedUrl) { // Opened URL same as a news site
               selectedUrlOption = siteUrlOption;
               openedUrlAppended = false;
-            } else if (siteId == openedSiteId) {
+            } else if (siteData.id == openedSiteId) {
               // Append the option element for the specified opened URL to
               // the next of a news site which contains it.
               selectedUrlOption = _addEditUrlOption(editUrlSelect, openedUrl);
@@ -360,7 +347,8 @@ ExtractNews.Popup = (() => {
         // Receive the opened URL on the news site tab of the specified ID.
         browser.runtime.onMessage.addListener((message) => {
             if (message.command == ExtractNews.COMMAND_SETTING_INFORM) {
-              _setEditUrlSelect(editPane, openedUrl, message.newsOpenedUrl);
+              _setEditUrlSelect(
+                editPane, openedUrl, message.selectionOpenedUrl);
             }
           });
         ExtractNews.sendRuntimeMessage({
@@ -370,7 +358,7 @@ ExtractNews.Popup = (() => {
             Debug.printStackTrace(error);
           });
       } else {
-        _setEditUrlSelect(editPane, openedUrl);
+        _setEditUrlSelect(editPane, openedUrl, "");
       }
     }
 
@@ -489,11 +477,11 @@ ExtractNews.Popup = (() => {
       return tabGettingPromise.then((tab) => {
           var tabUpdated = true;
           if (! tabOpen) {
-            var newsSite = ExtractNews.getNewsSite(tab.url);
-            if (newsSite != undefined) {
+            var siteData = ExtractNews.getSite(tab.url);
+            if (siteData != undefined) {
               // Update the active tab by the opened URL of news selections
               // if its site is not enabled.
-              tabUpdated = ! ExtractNews.isDomainEnabled(newsSite.domainId);
+              tabUpdated = ! ExtractNews.isDomainEnabled(siteData.domainId);
             }
             if (tabUpdated && newsSelections[0].openedUrl == URL_ABOUT_BLANK) {
               return Promise.resolve();

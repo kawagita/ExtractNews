@@ -636,9 +636,9 @@ function displayPageList(pageIndex) {
       newsSelections.forEach((newsSelection) => {
           var siteId = "";
           if (newsSelection.openedUrl != URL_ABOUT_BLANK) {
-            var newsSite = ExtractNews.getNewsSite(newsSelection.openedUrl);
-            if (newsSite != undefined) {
-              siteId = newsSite.id;
+            var siteData = ExtractNews.getSite(newsSelection.openedUrl);
+            if (siteData != undefined) {
+              siteId = siteData.id;
             }
           }
           if (siteId != ""
@@ -759,9 +759,9 @@ function displayNewsSelectionMessage(pageMessageId) {
   pageMessageElement.style.visibility = "visible";
 }
 
-// Displays the page header and title with the manager of page links.
-
 {
+  // Displays the page header and title with the manager of page links.
+
   var pageHeader = document.querySelector(".page_header");
   var pageTitle = pageHeader.querySelector(".page_title");
   var linkToPreviousPage = pageHeader.firstElementChild;
@@ -808,42 +808,40 @@ function displayNewsSelectionMessage(pageMessageId) {
         event.target.firstElementChild.src = PAGE_TO_NEXT_BLACK_PNG;
       }
     });
-}
 
-// Sets the text label and event listener to the page header or action UI,
-// and lastly call displayPageList() if a news selection exist.
+  // Sets the text label and event listener to the page header or action UI,
+  // and lastly call displayPageList() if a news selection exist.
 
-_Storage.readDomainData().then((domainDataArray) => {
-    domainDataArray.forEach(ExtractNews.setDomain);
-    return _Popup.searchSelectionEditWindow();
-  }).then((editWindow) => {
-    if (editWindow == undefined) {
-      return _Storage.readSelectionCount();
-    }
-    return Promise.resolve(-1);
-  }).then((newsSelectionCount) => {
-    if (newsSelectionCount >= 0) {
-      var pageSize = 0;
-      for (let i = 0; i < newsSelectionCount; i++) {
-        if (i % PAGE_LIST_ITEM_COUNT == 0) {
-          PAGE_INDEX_STRING_ARRAYS.push(new Array());
-          pageSize++;
-        }
-        PAGE_INDEX_STRING_ARRAYS[pageSize - 1].push(String(i));
+  _Storage.readDomainData(false).then(() => {
+      ExtractNews.setDomainSites();
+      return _Popup.searchSelectionEditWindow();
+    }).then((editWindow) => {
+      if (editWindow == undefined) {
+        return _Storage.readSelectionCount();
       }
-      // Call the update function in the page manager, and display the link to
-      // the previous or next page and list items on the first page, otherwise,
-      // the message of no news selection.
-      pageManager.setPageSize(pageSize);
-    } else {
-      displayNewsSelectionMessage("NewsSelectionNowEditing");
-    }
-    pagesNewsSelectionCount = newsSelectionCount;
-
-    ExtractNews.getDebugMode();
-  }).catch((error) => {
-    Debug.printStackTrace(error);
-  });
+      return Promise.resolve(-1);
+    }).then((newsSelectionCount) => {
+      if (newsSelectionCount >= 0) {
+        var pageSize = 0;
+        for (let i = 0; i < newsSelectionCount; i++) {
+          if (i % PAGE_LIST_ITEM_COUNT == 0) {
+            PAGE_INDEX_STRING_ARRAYS.push(new Array());
+            pageSize++;
+          }
+          PAGE_INDEX_STRING_ARRAYS[pageSize - 1].push(String(i));
+        }
+        // Call updating the list in the page manager, and display the link
+        // to the previous or next page and list items on the first page,
+        // otherwise, the message of no news selection.
+        pageManager.setPageSize(pageSize);
+      } else {
+        displayNewsSelectionMessage("NewsSelectionNowEditing");
+      }
+      pagesNewsSelectionCount = newsSelectionCount;
+    }).catch((error) => {
+      Debug.printStackTrace(error);
+    });
+}
 
 document.addEventListener("contextmenu", (event) => {
     event.preventDefault();

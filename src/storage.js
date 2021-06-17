@@ -25,52 +25,43 @@
 ExtractNews.Storage = (() => {
     const _Storage = { };
 
-    const readStorage = ExtractNews.readStorage;
-    const writeStorage = ExtractNews.writeStorage;
-    const removeStorage = ExtractNews.removeStorage;
-
     // Key to read and write the array of domain data
     const DOMAIN_DATA_KEY = "DomainData";
 
     /*
-     * Reads the domain data from the storage and returns the promise fulfilled
-     * with the array of it or rejected.
+     * Reads the data object for each domain from the storage and returns
+     * the promise fulfilled with the array of domain data registered to
+     * the current context or rejected.
      */
-    function readDomainData() {
+    function readDomainData(domainDebugOn = Debug.isLoggingOn()) {
       return readStorage(DOMAIN_DATA_KEY).then((items) => {
-          var domainDataArray = items[DOMAIN_DATA_KEY];
-          if (domainDataArray == undefined) {
-            var firstLanguage =
-              ExtractNews.splitLocalizedString("SiteLanguages")[0];
-            domainDataArray = new Array();
-            ExtractNews.forEachDomain(
-              (domainId, name, language, hostServerPatterns, hostDomain) => {
-                domainDataArray.push({
-                    id: domainId,
-                    name: name,
-                    language: language,
-                    hostServerPatterns: hostServerPatterns,
-                    hostDomain: hostDomain,
-                    enabled: language == firstLanguage
-                  });
-              });
+          var domainDataObjects = items[DOMAIN_DATA_KEY];
+          if (domainDataObjects != undefined) {
+            var debugOn = Debug.isLoggingOn();
+            ExtractNews.setDebugMode(domainDebugOn);
+            Debug.printMessage("Read the domain data ...");
+            domainDataObjects.forEach(ExtractNews.setDomain);
+            ExtractNews.setDebugMode(debugOn);
           }
+          var domainDataArray = new Array();
+          ExtractNews.forEachDomain((domainData) => {
+              domainDataArray.push(domainData);
+            });
           return Promise.resolve(domainDataArray);
         });
     }
 
     /*
-     * Writes the specified array of domain data into the storage and returns
-     * the promise.
+     * Writes the data object for each domain registered in the current context
+     * into the storage and returns the promise.
      */
-    function writeDomainData(domainDataArray) {
-      if (domainDataArray == undefined) {
-        throw newNullPointerException("domainDataArray");
-      } else if (! Array.isArray(domainDataArray)) {
-        throw newIllegalArgumentException("domainDataArray");
-      }
+    function writeDomainData() {
+      var domainDataObjects = new Array();
+      ExtractNews.forEachDomain((domainData) => {
+          domainDataObjects.push(domainData.toObject());
+        });
       return writeStorage({
-          [DOMAIN_DATA_KEY]: domainDataArray
+          [DOMAIN_DATA_KEY]: domainDataObjects
         });
     }
 
@@ -110,31 +101,38 @@ ExtractNews.Storage = (() => {
     }
 
     /*
-     * Reads the site data from the storage and returns the promise fulfilled
-     * with the array of it or rejected.
+     * Reads the data object for each site from the storage and returns
+     * the promise fulfilled with the array of site data registered to
+     * the current contenxt or rejected.
      */
-    function readSiteData() {
+    function readSiteData(siteDebugOn = Debug.isLoggingOn()) {
       return readStorage(SITE_DATA_KEY).then((items) => {
-          var siteDataArray = items[SITE_DATA_KEY];
-          if (siteDataArray == undefined) {
-            siteDataArray = new Array();
+          var siteDataArray = new Array();
+          var siteDataObjects = items[SITE_DATA_KEY];
+          if (siteDataObjects != undefined) {
+            var debugOn = Debug.isLoggingOn();
+            ExtractNews.setDebugMode(siteDebugOn);
+            Debug.printMessage("Read the site data ...");
+            siteDataObjects.forEach((siteDataObject) => {
+                siteDataArray.push(ExtractNews.addSite(siteDataObject));
+              });
+            ExtractNews.setDebugMode(debugOn);
           }
           return Promise.resolve(siteDataArray);
         });
     }
 
     /*
-     * Writes the specified array of site data into the storage and returns
-     * the promise.
+     * Writes the data object for each site registered in the current context
+     * into the storage and returns the promise.
      */
-    function writeSiteData(siteDataArray) {
-      if (siteDataArray == undefined) {
-        throw newNullPointerException("siteDataArray");
-      } else if (! Array.isArray(siteDataArray)) {
-        throw newIllegalArgumentException("siteDataArray");
-      }
+    function writeSiteData() {
+      var siteDataObjects = new Array();
+      ExtractNews.forEachSite((siteData) => {
+          siteDataObjects.push(siteData.toObject());
+        });
       return writeStorage({
-          [SITE_DATA_KEY]: siteDataArray
+          [SITE_DATA_KEY]: siteDataObjects
         });
     }
 
@@ -278,8 +276,7 @@ ExtractNews.Storage = (() => {
       return readStorage(FILTERING_KEY).then((items) => {
           var filteringIdsString = items[FILTERING_KEY];
           if (filteringIdsString == undefined) {
-            filteringIdsString =
-              ExtractNews.getLocalizedString("FilteringIds");
+            filteringIdsString = getLocalizedString("FilteringIds");
           }
           return Promise.resolve(filteringIdsString.split(","));
         });
@@ -316,16 +313,19 @@ ExtractNews.Storage = (() => {
       var filteringMap = new Map();
       filteringIds.forEach((filteringId) => {
           var filteringKey = FILTERING_KEY + filteringId;
-          readingPromises.push(
-            readStorage(filteringKey).then((items) => {
+          readingPromises.push(readStorage(filteringKey).then((items) => {
                 var filtering;
                 if (items[filteringKey] != undefined) {
                   filtering = new ExtractNews.Filtering(items[filteringKey]);
-                } else { // Only the category for all in the initial setting
+                } else { // Initial setting for each category
                   filtering = ExtractNews.newFiltering();
-                  filtering.setCategoryName(
-                    ExtractNews.getLocalizedString(
-                      filteringId + "FilteringCategoryName"));
+                  if (filteringId == ExtractNews.FILTERING_FOR_ALL) {
+                    filtering.setCategoryName(
+                      getLocalizedString(
+                        "Filtering" + filteringId + "CategoryName"));
+                  } else {
+                    filtering.setCategoryName(filteringId);
+                  }
                   filtering.setPolicyTarget(ExtractNews.TARGET_ACCEPT);
                 }
                 filteringMap.set(filteringId, filtering);

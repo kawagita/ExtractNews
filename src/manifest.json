@@ -42,6 +42,7 @@
           "text.js",
           "alert.js",
           "popup/popup.js",
+          "tab_setting.js",
           "context_menu.js",
           "background.js"
         ]

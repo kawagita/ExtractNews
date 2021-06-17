@@ -175,10 +175,8 @@ class FilteringData {
    * Calls the specified function with the ID and data for each category.
    */
   forEachCategory(callback) {
-    if (callback != undefined) {
-      for (let i = 0; i < this.categoryIds.length; i++) {
-        callback(this.categoryIds[i], this.categoryDataArray[i]);
-      }
+    for (let i = 0; i < this.categoryIds.length; i++) {
+      callback(this.categoryIds[i], this.categoryDataArray[i]);
     }
   }
 
@@ -197,6 +195,7 @@ class FilteringData {
     this.categoryDataArray = new Array();
     this.categorySelectedIndex = 0;
     this._targetDataTotal = 0;
+    Debug.printMessage("Replace the filtering data ...");
     filteringMap.forEach((filtering, filteringId) => {
         // Add new filtering data of read or imported targets to the array.
         var categoryData = createFilteringCategoryData(filtering);
@@ -211,7 +210,7 @@ class FilteringData {
     if (categoryIndexforAll < 0) { // No category for all topics
       var filtering = ExtractNews.newFiltering();
       filtering.setCategoryName(
-        ExtractNews.getLocalizedString("AllFilteringCategoryName"));
+        getLocalizedString("FilteringAllCategoryName"));
       filtering.setPolicyTarget(ExtractNews.TARGET_ACCEPT);
       this.categoryDataArray.push(createFilteringCategoryData(filtering));
       this._targetDataTotal++;
@@ -243,7 +242,7 @@ class FilteringData {
     return _Storage.removeFilterings(this.removedCategoryIds).then(() => {
         if (this.removedCategoryIds.length > 0) {
           Debug.printMessage(
-            "Remove filterings for " + this.removedCategoryIds.join(", ")
+            "Remove the filtering for " + this.removedCategoryIds.join(", ")
             + ".");
           this.removedCategoryIds = new Array();
         }
@@ -253,7 +252,7 @@ class FilteringData {
       }).then(() => {
         if (this.categoryIds.length > 0) {
           Debug.printMessage(
-            "Save filterings for " + this.categoryIds.join(", ") + ".");
+            "Write the filtering for " + this.categoryIds.join(", ") + ".");
         }
       });
   }
@@ -295,13 +294,12 @@ const FILTERING_BLOCK = "block";
 
 const FILTERING_TARGET_END_OF_BLOCK = "end_of_block";
 const FILTERING_TARGET_TERMINATE_BLOCK = "terminate_block";
+
 const FILTERING_TARGET_NAME_MAP = new Map();
 
 ExtractNews.TARGET_NAME_SET.forEach((targetName) => {
-    var targetNameId =
-      targetName.substring(0, 1).toUpperCase()
-      + targetName.substring(1).toLowerCase();
-    FILTERING_TARGET_NAME_MAP.set(targetName, _getTargetMessage(targetNameId));
+    FILTERING_TARGET_NAME_MAP.set(
+      targetName, _getTargetMessage(getCapitalizedString(targetName)));
   });
 
 const FILTERING_TARGET_WORDS = "target_words";
@@ -313,6 +311,8 @@ const FILTERING_TARGET_WORDS_MATCH_LABEL_TEXTS = [
     _getTargetMessage("MatchWordBeginning"),
     _getTargetMessage("MatchWordEnd")
   ];
+
+const FILTERING_TARGET_ANY = "target_any";
 
 function _createTargetNameDiv(name, blockTerminated, policyTargetCreated) {
   var targetNameDiv = document.createElement("div");
@@ -350,7 +350,7 @@ function _isTargetBlockTeminated(targetNode) {
   if (terminateBlockInput != null) {
     return terminateBlockInput.checked;
   }
-  return false;
+  return true;
 }
 
 function _createTargetWordsDiv(wordsString, wordsMatches) {
@@ -379,16 +379,13 @@ function _createTargetWordsDiv(wordsString, wordsMatches) {
   return targetWordsDiv;
 }
 
-/*
- * Creates the element to set a filtering target and insert the previous.
- */
-function createTargetNode(targetData, policyTargetCreated = false) {
+function _createTargetNode(targetData, policyTargetCreated = false) {
   var targetNode = document.createElement("div");
   var targetAnyDiv = document.createElement("div");
   var targetAnySpan = document.createElement("span");
   var targetDataDiv = document.createElement("div");
   targetNode.className = "target";
-  targetAnyDiv.className = "target_any";
+  targetAnyDiv.className = FILTERING_TARGET_ANY;
   targetAnySpan.textContent = _getTargetMessage("AnyWordMatched");
   targetAnyDiv.appendChild(targetAnySpan);
   targetDataDiv.tabIndex = 0;
@@ -434,26 +431,33 @@ function _getTargetFocusedNode(targetNode) {
   return null;
 }
 
+function _isTargetAnyMatched(targetNode) {
+  var targetFocusedNode = _getTargetFocusedNode(targetNode);
+  return targetFocusedNode != null
+    && targetFocusedNode.lastElementChild.className == FILTERING_TARGET_ANY;
+}
+
 /*
  * The pane of filterings focused on this option page.
  */
 class FilteringPane extends FocusedOptionPane {
   constructor(focusedNodeGroup) {
     super(focusedNodeGroup);
-    this.filtering = {
-        category: document.getElementById("FilteringCategory"),
-        categorySelect: getOptionElement("FilteringCategoryName", "select"),
-        categoryTopicsInput:
+    this.pane = {
+        filteringCategory: document.getElementById("FilteringCategory"),
+        filteringCategorySelect:
+          getOptionElement("FilteringCategoryName", "select"),
+        filteringCategoryTopicsInput:
           getOptionElement("FilteringCategoryTopics", "input"),
-        blocks: document.getElementById("FilteringBlocks")
+        filteringBlocks: document.getElementById("FilteringBlocks")
       };
-    this.filtering.categoryTopicsInput.placeholder =
+    this.pane.filteringCategoryTopicsInput.placeholder =
       getOptionMessage("SeparateFilteringCategoryTopicsByCommas");
     getOptionElement("FilteringCategoryAlways");
   }
 
   changeCategory(categoryId) {
-    var categoryOptions = this.filtering.categorySelect.children;
+    var categoryOptions = this.pane.filteringCategorySelect.children;
     for (let i = 0; i < categoryOptions.length; i++) {
       if (categoryId == categoryOptions[i].value) {
         categoryOptions[i].selected = true;
@@ -463,40 +467,41 @@ class FilteringPane extends FocusedOptionPane {
   }
 
   setCategoryNames(filteringData) {
-    if (this.filtering.categorySelect.children.length > 0) {
-      var categoryOptions = Array.from(this.filtering.categorySelect.children);
+    if (this.pane.filteringCategorySelect.children.length > 0) {
+      var categoryOptions =
+        Array.from(this.pane.filteringCategorySelect.children);
       for (let i = 0; i < categoryOptions.length; i++) {
-        this.filtering.categorySelect.removeChild(categoryOptions[i]);
+        this.pane.filteringCategorySelect.removeChild(categoryOptions[i]);
       }
     }
     filteringData.forEachCategory((categoryId, categoryData) => {
         var categoryOption = document.createElement("option");
         categoryOption.value = categoryId;
         categoryOption.text = categoryData.name;
-        this.filtering.categorySelect.appendChild(categoryOption);
+        this.pane.filteringCategorySelect.appendChild(categoryOption);
       });
   }
 
   addCategorySelectChangeEventListener(callback) {
-    this.filtering.categorySelect.addEventListener("change", callback);
+    this.pane.filteringCategorySelect.addEventListener("change", callback);
   }
 
   setCategoryTopics(categoryTopicsString) {
-    this.filtering.categoryTopicsInput.value = categoryTopicsString;
-    this.filtering.category.className = "";
+    this.pane.filteringCategoryTopicsInput.value = categoryTopicsString;
+    this.pane.filteringCategory.className = "";
   }
 
   clearCategoryTopics() {
-    this.filtering.categoryTopicsInput.value = "";
-    this.filtering.category.className = FILTERING_CATEGORY_FOR_ALL;
+    this.pane.filteringCategoryTopicsInput.value = "";
+    this.pane.filteringCategory.className = FILTERING_CATEGORY_FOR_ALL;
   }
 
   addCategoryTopicsInputEventListener(callback) {
-    this.filtering.categoryTopicsInput.addEventListener("input", callback);
+    this.pane.filteringCategoryTopicsInput.addEventListener("input", callback);
   }
 
   containsBlockElement(element) {
-    return this.filtering.blocks.contains(element);
+    return this.pane.filteringBlocks.contains(element);
   }
 
   /*
@@ -518,7 +523,7 @@ class FilteringPane extends FocusedOptionPane {
       } while (targetNode != null);
     }
     splitBlock.className = FILTERING_BLOCK;
-    this.filtering.blocks.insertBefore(splitBlock, nextBlock);
+    this.pane.filteringBlocks.insertBefore(splitBlock, nextBlock);
   }
 
   /*
@@ -537,7 +542,7 @@ class FilteringPane extends FocusedOptionPane {
           previousBlock.appendChild(targetNode);
           targetNode = nextTargetNode;
         } while (targetNode != null);
-        this.filtering.blocks.removeChild(joinedBlock);
+        this.pane.filteringBlocks.removeChild(joinedBlock);
       }
     }
   }
@@ -547,10 +552,11 @@ class FilteringPane extends FocusedOptionPane {
   }
 
   insertTargetNode(
-    targetIndex, targetNode, fireTargetNodeInsertEvent,
+    targetIndex, targetData, policyTargetAdded, fireTargetNodeInsertEvent,
     fireTargetNodeMoveEvent, fireTargetNodeRemoveEvent,
     fireTargetNameChangeEvent, fireTargetDataInputEvent,
     fireTargetWordsLocalizeEvent) {
+    var targetNode = _createTargetNode(targetData, policyTargetAdded);
     var targetFocusedNode = _getTargetFocusedNode(targetNode);
     if (targetFocusedNode != null) {
       // Set the event listener into elements focused on the target node.
@@ -564,12 +570,12 @@ class FilteringPane extends FocusedOptionPane {
       targetIndex, targetNode, fireTargetNodeInsertEvent,
       fireTargetNodeMoveEvent, fireTargetNodeRemoveEvent,
       fireTargetDataInputEvent, fireTargetWordsLocalizeEvent);
-    // Append the specified target node to the block at the specified index.
+    // Append the specified target node at the specified index to the block.
     if (targetIndex < this.nodeSize - 1) {
       var nextTargetNode = this.getNode(targetIndex + 1);
       nextTargetNode.parentNode.insertBefore(targetNode, nextTargetNode);
     } else {
-      this.filtering.blocks.lastElementChild.appendChild(targetNode);
+      this.pane.filteringBlocks.lastElementChild.appendChild(targetNode);
     }
     if (_isTargetBlockTeminated(targetNode)) {
       // Insert new block and move filtering target nodes in the block
@@ -637,7 +643,10 @@ class FilteringPane extends FocusedOptionPane {
           element.value = "";
         }
       }
-      this._splitBlockAt(targetIndex + 1);
+      if (! _isTargetAnyMatched(targetNode)) {
+        // Create new block at the next of a target except for the policy.
+        this._splitBlockAt(targetIndex + 1);
+      }
     } else {
       this._joinBlockAt(targetIndex + 1);
     }
@@ -646,19 +655,20 @@ class FilteringPane extends FocusedOptionPane {
   clear() {
     super.clear();
     // Remove all blocks and create an empty element of ".block".
-    var removedBlocks = Array.from(this.filtering.blocks.children);
+    var removedBlocks = Array.from(this.pane.filteringBlocks.children);
     for (let i = removedBlocks.length - 1; i >= 0; i--) {
-      this.filtering.blocks.removeChild(removedBlocks[i]);
+      this.pane.filteringBlocks.removeChild(removedBlocks[i]);
     }
     var emptyBlock = document.createElement("div");
     emptyBlock.className = FILTERING_BLOCK;
-    this.filtering.blocks.appendChild(emptyBlock);
+    this.pane.filteringBlocks.appendChild(emptyBlock);
   }
 
   setEventRelation(eventGroup) {
     super.setEventRelation(eventGroup);
     eventGroup.addElements(
       Array.of(
-        this.filtering.categorySelect, this.filtering.categoryTopicsInput));
+        this.pane.filteringCategorySelect,
+        this.pane.filteringCategoryTopicsInput));
   }
 }

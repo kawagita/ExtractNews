@@ -40,6 +40,90 @@ function callAsynchronousAPI(browserFunc, ...args) {
     });
 }
 
+// Storage area to store the settings of this extension
+const BROWSER_STORAGE_AREA = browser.storage.local;
+
+/*
+ * Reads the storage area by the specified key and returns the promise
+ * fulfilled with its value.
+ */
+function readStorage(key) {
+  if (BROWSER_PROMISE_RETURNED) {
+    return BROWSER_STORAGE_AREA.get(key);
+  }
+  return new Promise((resolve) => {
+      BROWSER_STORAGE_AREA.get(key, resolve);
+    });
+}
+
+/*
+ * Writes the storage area by the specified object which consists of pairs
+ * of a key and value and returns the promise.
+ */
+function writeStorage(items) {
+  if (BROWSER_PROMISE_RETURNED) {
+    return BROWSER_STORAGE_AREA.set(items);
+  }
+  return new Promise((resolve) => {
+      BROWSER_STORAGE_AREA.set(items, resolve);
+    });
+}
+
+/*
+ * Reads the storage area by the specified key and returns the promise
+ * fulfilled with its value.
+ */
+function removeStorage(key) {
+  if (BROWSER_PROMISE_RETURNED) {
+    return BROWSER_STORAGE_AREA.remove(key);
+  }
+  return new Promise((resolve) => {
+      BROWSER_STORAGE_AREA.remove(key, resolve);
+    });
+}
+
+/*
+ * Returns the string localized for the specified ID prefixed with
+ * "extractNews".
+ */
+function getLocalizedString(id, substitutions) {
+  return browser.i18n.getMessage("extractNews" + id, substitutions);
+}
+
+/*
+ * Returns the array of strings localized for the specified ID prefixed
+ * with "extractNews" and separated by commas.
+ */
+function splitLocalizedString(id) {
+  return getLocalizedString(id).split(",");
+}
+
+/*
+ * Returns the RegExp object of a string localized for the specified ID
+ * prefixed with "extractNews" and suffixed with "RegularExpression".
+ */
+function getLocalizedRegExp(id) {
+  var regexpString = getLocalizedString(id + "RegularExpression");
+  if (regexpString != "") {
+    return new RegExp(regexpString);
+  }
+  return new RegExp("^$");
+}
+
+/*
+ * Returns the string capitalized for the specified text.
+ */
+function getCapitalizedString(textString) {
+  if (textString.length > 0) {
+    var capitalizedString = textString.substring(0, 1).toUpperCase();
+    if (textString.length > 1) {
+      capitalizedString += textString.substring(1);
+    }
+    return capitalizedString;
+  }
+  return "";
+}
+
 const URL_ABOUT_BLANK = "about:blank";
 
 const URL_HTTPS_SCHEME = "https://";
@@ -49,7 +133,6 @@ const URL_DOMAIN_LABEL_SEPARATOR = ".";
 const URL_DOMAIN_LABEL_REGULAR_EXPRESSION =
   "[0-9A-Za-z](?:[-0-9A-Za-z]*[0-9A-Za-z])?";
 const URL_PATH_SEPARATOR = "/";
-const URL_PATH_SEPARATOR_CODE_POINT = URL_PATH_SEPARATOR.codePointAt(0);
 
 const URL_PATTERN_NON_EXISTENCE = "";
 const URL_PATTERN_ANY_MATCH = "*";
@@ -95,548 +178,441 @@ const ExtractNews = (() => {
         COMMAND_DIALOG_CLOSE: "close"
       };
 
-    // Storage area to store the settings of this extension
-    const STORAGE_AREA = browser.storage.local;
+    /*
+     * The debug object in the current context.
+     */
+    class DebugLogger extends Logger {
+      constructor() {
+        super();
+        this.debugOn = false;
+      }
+
+      setDebugMode(debugOn) {
+        return this.debugOn = debugOn;
+      }
+
+      isLoggingOn() {
+        return this.debugOn;
+      }
+    }
+
+    const Debug = new DebugLogger();
+
+    const DEBUG_KEY = "Debug";
+
+    readStorage(DEBUG_KEY).then((items) => {
+        var debugOn = items[DEBUG_KEY];
+        if (debugOn != undefined) {
+          Debug.setDebugMode(debugOn);
+        }
+      }).catch((error) => {
+        Debug.printStackTrace(error);
+      });
+
+    _ExtractNews.Debug = Debug;
 
     /*
-     * Reads the storage area by the specified key and returns the promise
-     * fulfilled with its value.
+     * Reads the debug mode from the storage and returns the promise
+     * fulfilled with its value or rejected.
      */
-    function readStorage(key) {
-      if (BROWSER_PROMISE_RETURNED) {
-        return STORAGE_AREA.get(key);
-      }
-      return new Promise((resolve) => {
-          STORAGE_AREA.get(key, resolve);
+    function readDebugMode() {
+      return readStorage(DEBUG_KEY).then((items) => {
+          var debugOn = items[DEBUG_KEY];
+          if (debugOn == undefined) {
+            debugOn = false;
+          }
+          return Promise.resolve(debugOn);
         });
     }
 
     /*
-     * Writes the storage area by the specified object which consists of pairs
-     * of a key and value and returns the promise.
+     * Writes the specified debug mode into the storage and returns
+     * the promise.
      */
-    function writeStorage(items) {
-      if (BROWSER_PROMISE_RETURNED) {
-        return STORAGE_AREA.set(items);
+    function writeDebugMode(debugOn) {
+      if ((typeof debugOn) != "boolean") {
+        throw newIllegalArgumentException("debugOn");
       }
-      return new Promise((resolve) => {
-          STORAGE_AREA.set(items, resolve);
+      return writeStorage({
+          [DEBUG_KEY]: debugOn
         });
     }
 
     /*
-     * Reads the storage area by the specified key and returns the promise
-     * fulfilled with its value.
+     * Sets the specified debug mode into the current context.
      */
-    function removeStorage(key) {
-      if (BROWSER_PROMISE_RETURNED) {
-        return STORAGE_AREA.remove(key);
+    function setDebugMode(debugOn) {
+      if ((typeof debugOn) != "boolean") {
+        throw newIllegalArgumentException("debugOn");
       }
-      return new Promise((resolve) => {
-          STORAGE_AREA.remove(key, resolve);
+      Debug.setDebugMode(debugOn);
+    }
+
+    _ExtractNews.readDebugMode = readDebugMode;
+    _ExtractNews.writeDebugMode = writeDebugMode;
+    _ExtractNews.setDebugMode = setDebugMode;
+
+     /*
+      * Sends the specified messeage of a command to the background script
+      * and returns the promise.
+      */
+    function sendRuntimeMessage(message, senderOnTab = "") {
+      if (message == undefined) {
+        throw newNullPointerException("message");
+      } else if (message.command == undefined
+        || (typeof message.command) != "string") {
+        throw newIllegalArgumentException("message");
+      }
+      return callAsynchronousAPI(
+        browser.runtime.sendMessage, message).then(() => {
+          if (browser.runtime.lastError != undefined) {
+            Debug.printProperty(
+              "runtime.sendMessage()", browser.runtime.lastError.message);
+          }
+          Debug.printMessage(
+            "Send the command " + message.command.toUpperCase()
+            + senderOnTab + ".");
         });
     }
 
-    _ExtractNews.readStorage = readStorage;
-    _ExtractNews.writeStorage = writeStorage;
-    _ExtractNews.removeStorage = removeStorage;
+    _ExtractNews.sendRuntimeMessage = sendRuntimeMessage;
 
-    /*
-     * Returns the string localized for the specified ID prefixed with
-     * "extractNews" on this extension.
-     */
-    function getLocalizedString(id, substitutions) {
-      return browser.i18n.getMessage("extractNews" + id, substitutions);
-    }
 
-    /*
-     * Returns the array of strings separated by commas after localizing for
-     * the specified ID prefixed with "extractNews" on this extension.
-     */
-    function splitLocalizedString(id) {
-      return getLocalizedString(id).split(",");
-    }
-
-    /*
-     * Returns RegExp object created after localizing for the specified ID
-     * prefixed with "extractNews" and suffixed with "RegularExpression" on
-     * this extension.
-     */
-    function getLocalizedRegExp(id) {
-      var regexpString = getLocalizedString(id + "RegularExpression");
-      if (regexpString != "") {
-        return new RegExp(regexpString);
+    function _checkDomainId(domainId) {
+      if (domainId == undefined) {
+        throw newNullPointerException("domainId");
+      } else if ((typeof domainId) != "string") {
+        throw newIllegalArgumentException("domainId");
+      } else if (domainId == "") {
+        throw newEmptyStringException("domainId");
       }
-      return new RegExp("^$");
-    }
-
-    _ExtractNews.getLocalizedString = getLocalizedString;
-    _ExtractNews.splitLocalizedString = splitLocalizedString;
-    _ExtractNews.getLocalizedRegExp = getLocalizedRegExp;
-
-
-    function _capitalizeString(str) {
-      return str.substring(0, 1).toUpperCase() + str.substring(1);
-    }
-
-    function _createNewsDomainId(hostDomain) {
-      var domainId = "";
-      var domainLabels = hostDomain.split(URL_DOMAIN_LABEL_SEPARATOR);
-      domainLabels.forEach((domainLabel) => {
-          domainId += _capitalizeString(domainLabel);
-        });
-      return domainId;
-    }
-
-    function _forEachHostServerUrlPatterns(
-      callback, hostServerPattern, hostDomain, sitePaths) {
-      var hostName = "";
-      if (hostServerPattern != URL_PATTERN_NON_EXISTENCE) {
-        hostName = hostServerPattern + URL_DOMAIN_LABEL_SEPARATOR;
-      }
-      hostName += hostDomain;
-      if (sitePaths != undefined) {
-        for (const sitePath of sitePaths) {
-          callback(URL_HTTPS_SCHEME + hostName + sitePath
-            + URL_PATH_SEPARATOR + URL_PATTERN_ANY_MATCH);
-        }
-      } else {
-        callback(URL_HTTPS_SCHEME + hostName + URL_PATH_SEPARATOR
-          + URL_PATTERN_ANY_MATCH);
-      }
-    }
-
-    /*
-     * The information of a news domain.
-     */
-    class NewsDomain {
-      constructor(
-        name, language, hostServerPatterns, hostDomain, sitePaths,
-        commentHostServerPatterns, commentSitePaths) {
-        this.domain = {
-            name: name,
-            language: language,
-            hostServerPatterns: hostServerPatterns,
-            hostDomain: hostDomain
-          };
-        if (sitePaths != undefined
-          && sitePaths.length > 0 && sitePaths[0] != "") {
-          if (hostServerPatterns.length > 1
-            || hostServerPatterns[0] == URL_PATTERN_NON_EXISTENCE
-            || hostServerPatterns[0] == URL_PATTERN_ANY_MATCH) {
-            throw newIllegalArgumentException("sitePaths");
-          }
-          this.domain.sitePaths = sitePaths;
-        }
-        if (commentHostServerPatterns != undefined) {
-          this.domain.commentHostServerPatterns = commentHostServerPatterns;
-        }
-        if (commentSitePaths != undefined
-          && commentSitePaths.length > 0 && commentSitePaths[0] != "") {
-          this.domain.commentSitePaths = commentSitePaths;
-        }
-        var sites = new Array();
-        var hostRegexpString = "^";
-        if (hostServerPatterns.length > 1) {
-          if (hostServerPatterns[0] != URL_PATTERN_NON_EXISTENCE) {
-            // Add the news site of host servers specified for the domain.
-            for (let i = 0; i < hostServerPatterns.length; i++) {
-              sites.push(new NewsSite({
-                  hostServer: hostServerPatterns[i],
-                  hostDomain: hostDomain
-                }));
-            }
-            hostRegexpString += "(";
-            for (let i = 0; i < hostServerPatterns.length; i++) {
-              if (i > 0) {
-                hostRegexpString += "|";
-              }
-              hostRegexpString += hostServerPatterns[i];
-            }
-            hostRegexpString += ")\\" + URL_DOMAIN_LABEL_SEPARATOR;
-          } else { // No host server for the domain top like "slashdot.org"
-            sites.push(new NewsSite({ hostDomain: hostDomain }));
-            hostRegexpString +=
-              "(?:|" + URL_DOMAIN_LABEL_REGULAR_EXPRESSION + "\\"
-              + URL_DOMAIN_LABEL_SEPARATOR + ")";
-          }
-        } else if (hostServerPatterns[0] != URL_PATTERN_NON_EXISTENCE) {
-          hostRegexpString += "(";
-          if (hostServerPatterns[0] != URL_PATTERN_ANY_MATCH) {
-            if (sitePaths.length > 0 && sitePaths[0] != "") {
-              // Add the news site of a host server and directory paths
-              // specified for the domain.
-              sitePaths.forEach((path) => {
-                  sites.push(new NewsSite({
-                      hostServer: hostServerPatterns[0],
-                      hostDomain: hostDomain,
-                      path: path
-                    }));
-                });
-            } else { // A host server specified for the domain
-              sites.push(new NewsSite({
-                  hostServer: hostServerPatterns[0],
-                  hostDomain: hostDomain
-                }));
-            }
-            hostRegexpString += hostServerPatterns[0];
-          } else { // Any host server on the domain
-            sites.push(new NewsSite({
-                hostServer: URL_DEFAULT_HOST_SERVER,
-                hostDomain: hostDomain
-              }));
-            hostRegexpString += URL_DOMAIN_LABEL_REGULAR_EXPRESSION;
-          }
-          hostRegexpString += ")\\" + URL_DOMAIN_LABEL_SEPARATOR;
-        } else { // No host server on the domain
-          sites.push(new NewsSite({ hostDomain: hostDomain }));
-        }
-        hostRegexpString +=
-          hostDomain.replaceAll(URL_DOMAIN_LABEL_SEPARATOR, "\\$&")
-          + "(?:/|$)";
-        this.domain.hostRegexp = new RegExp(hostRegexpString);
-        this.domain.sites = sites;
-      }
-
-      get id() {
-        return _createNewsDomainId(this.domain.hostDomain);
-      }
-
-      get name() {
-        return this.domain.name;
-      }
-
-      get language() {
-        return this.domain.language;
-      }
-
-      get hostServerPatterns() {
-        return this.domain.hostServerPatterns;
-      }
-
-      get hostDomain() {
-        return this.domain.hostDomain;
-      }
-
-      isAlwaysHostServerSpecified() {
-        return this.domain.hostServerPatterns[0] != URL_PATTERN_NON_EXISTENCE;
-      }
-
-      getSite(siteId) {
-        for (const site of this.domain.sites) {
-          if (siteId == site.id) {
-            return site;
-          }
-        }
-        return undefined;
-      }
-
-      addSite(site) {
-        this.domain.sites.push(site);
-      }
-
-      forEachSite(callback) {
-        this.domain.sites.forEach(callback);
-      }
-
-      forEachUrlPattern(callback) {
-        this.domain.hostServerPatterns.forEach((hostServerPattern) => {
-            _forEachHostServerUrlPatterns(
-              callback, hostServerPattern, this.domain.hostDomain,
-              this.domain.sitePaths);
-          });
-      }
-
-      forEachCommentSiteUrlPattern(callback) {
-        if (this.domain.commentHostServerPatterns == undefined) {
-          return;
-        }
-        this.domain.commentHostServerPatterns.forEach((hostServerPattern) => {
-            _forEachHostServerUrlPatterns(
-              callback, hostServerPattern, this.domain.hostDomain,
-              this.domain.commentSitePaths);
-          });
-      }
-
-      match(url) {
-        if (url != undefined) {
-          if ((typeof url) != "string") {
-            throw newIllegalArgumentException("url");
-          } else if (url.startsWith(URL_HTTPS_SCHEME)) {
-            var urlHostPath = url.substring(URL_HTTPS_SCHEME.length);
-            var urlHostMatch = urlHostPath.match(this.domain.hostRegexp);
-            if (urlHostMatch != null) {
-              var siteData = {
-                  hostDomain: this.domain.hostDomain
-                };
-              if (urlHostMatch.length >= 1) {
-                siteData.hostServer = urlHostMatch[1];
-              }
-              if (this.domain.sitePaths == null) {
-                return siteData;
-              }
-              var urlPath =
-                urlHostPath.substring(urlHostPath.indexOf(URL_PATH_SEPARATOR));
-              for (const sitePath of this.domain.sitePaths) {
-                if (urlPath.startsWith(sitePath)
-                  && (urlPath.length == sitePath.length
-                    || urlPath.codePointAt(sitePath.length)
-                      == URL_PATH_SEPARATOR_CODE_POINT)) {
-                  siteData.path = sitePath;
-                  return siteData;
-                }
-              }
-            }
-          }
-        }
-        return null;
-      }
-    }
-
-    // Map of news domains registered in the current context
-    var newsDomainMap = new Map();
-
-    function _createNewsSiteId(domainId, siteData) {
-      var siteId = domainId;
-      var newsDomain = newsDomainMap.get(domainId);
-      if (newsDomain != undefined) {
-        if (newsDomain.isAlwaysHostServerSpecified()
-          && siteData.hostServer != undefined
-          && siteData.hostServer != URL_DEFAULT_HOST_SERVER) {
-          siteId += _capitalizeString(siteData.hostServer);
-        }
-        if (siteData.path != undefined) {
-          var pathSegments =
-            siteData.path.substring(1).split(URL_PATH_SEPARATOR);
-          pathSegments.forEach((pathSegment) => {
-              siteId += _capitalizeString(pathSegment);
-            });
-        }
-      }
-      return siteId;
     }
 
     /*
      * The information of a news site.
      */
-    class NewsSite {
-      constructor(siteData) {
-        if (siteData == undefined) {
-          throw newNullPointerException("siteData");
+    class SiteData {
+      constructor(domainId, siteId, siteDataObject) {
+        _checkDomainId(domainId);
+        if (siteId == undefined) {
+          throw newNullPointerException("siteId");
+        } else if ((typeof siteId) != "string") {
+          throw newIllegalArgumentException("siteId");
+        } else if (siteId == "") {
+          throw newEmptyStringException("siteId");
+        } else if (siteDataObject == undefined) {
+          throw newNullPointerException("siteDataObject");
         }
-        this.site = {
-            domainId: _createNewsDomainId(siteData.hostDomain),
-            hostDomain: siteData.hostDomain
-          };
-        if (siteData.hostServer != undefined) {
-          this.site.hostServer = siteData.hostServer;
-        }
-        if (siteData.path != undefined) {
-          this.site.path = siteData.path;
-        }
+        this.siteDomainId = domainId;
+        this.siteId = siteId;
+        this.siteDataObject = siteDataObject;
       }
 
       get domainId() {
-        return this.site.domainId;
+        return this.siteDomainId;
       }
 
       get id() {
-        return _createNewsSiteId(this.site.domainId, this.site);
+        return this.siteId;
       }
 
       get hostServer() {
-        if (this.site.hostServer != undefined) {
-          return this.site.hostServer;
+        if (this.siteDataObject.hostServer != undefined) {
+          return this.siteDataObject.hostServer;
         }
         return "";
       }
 
       get hostDomain() {
-        return this.site.hostDomain;
+        return this.siteDataObject.hostDomain;
       }
 
       get path() {
-        if (this.site.path != undefined) {
-          return this.site.path;
+        if (this.siteDataObject.path != undefined) {
+          return this.siteDataObject.path;
         }
         return "";
       }
 
+      get accessCount() {
+        return this.siteDataObject.accessCount;
+      }
+
+      incrementAccessCount() {
+        this.siteDataObject.accessCount++;
+      }
+
+      modifyAccessCount(multiplier) {
+        if ((typeof multiplier) != "number") {
+          throw newIllegalArgumentException("multiplier");
+        }
+        this.siteDataObject.accessCount =
+          Math.floor(this.siteDataObject.accessCount * multiplier);
+      }
+
       get url() {
         var url = URL_HTTPS_SCHEME;
-        if (this.site.hostServer != undefined) {
-          url += this.site.hostServer + URL_DOMAIN_LABEL_SEPARATOR;
+        if (this.siteDataObject.hostServer != undefined) {
+          url += this.siteDataObject.hostServer + URL_DOMAIN_LABEL_SEPARATOR;
         }
-        url += this.site.hostDomain;
-        if (this.site.path != undefined) {
-          url += this.site.path + URL_PATH_SEPARATOR;
+        url += this.siteDataObject.hostDomain;
+        if (this.siteDataObject.path != undefined) {
+          url += this.siteDataObject.path + URL_PATH_SEPARATOR;
         }
         return url;
       }
+
+      toObject() {
+        return this.siteDataObject;
+      }
     }
 
-    // Sets domains and sites read from the message for the specified language
-    // to the current context.
+    function _createSiteId(domainData, hostServer, path) {
+      var siteId = domainData.id;
+      if (hostServer != undefined) {
+        if (hostServer != URL_DEFAULT_HOST_SERVER
+          && domainData.hostServerPatterns[0] != URL_PATTERN_NON_EXISTENCE) {
+          siteId += getCapitalizedString(hostServer);
+        }
+      }
+      if (path != undefined) {
+        path.substring(1).split(URL_PATH_SEPARATOR).forEach((pathSegment) => {
+            siteId += getCapitalizedString(pathSegment);
+          });
+      }
+      return siteId;
+    }
 
-    function _setLocalizedNewsSites(language) {
-      splitLocalizedString(language + "SitePrefixes").forEach((sitePrefix) => {
-          var hostDomain = getLocalizedString(sitePrefix + "Domain");
-          var commentHostServerPatterns = undefined;
-          var commentHostServerPatternsString =
-            getLocalizedString(sitePrefix + "CommentHostServerPatterns");
-          if (commentHostServerPatternsString != "") {
-            commentHostServerPatterns =
-              commentHostServerPatternsString.split(",");
+    this.SiteData = SiteData;
+
+    /*
+     * The information of a news domain.
+     */
+    class DomainData {
+      constructor(domainId, domainDataObject) {
+        _checkDomainId(domainId);
+        if (domainDataObject == undefined) {
+          throw newNullPointerException("domainDataObject");
+        } else if (domainDataObject.paths != undefined
+          && domainDataObject.paths[0] != "") {
+          var hostServerPatterns = domainDataObject.hostServerPatterns;
+          if (hostServerPatterns.length > 1
+            || hostServerPatterns[0] == URL_PATTERN_NON_EXISTENCE
+            || hostServerPatterns[0] == URL_PATTERN_ANY_MATCH) {
+            throw newIllegalArgumentException("domainData");
           }
-          newsDomainMap.set(
-            _createNewsDomainId(hostDomain),
-            new NewsDomain(
-              getLocalizedString(sitePrefix + "Name"), language,
-              splitLocalizedString(sitePrefix + "HostServerPatterns"),
-              hostDomain, splitLocalizedString(sitePrefix + "SitePaths"),
-              commentHostServerPatterns,
-              splitLocalizedString(sitePrefix + "CommentSitePaths")));
+        }
+        this.domainId = domainId;
+        this.domainDataObject = domainDataObject;
+      }
+
+      get id() {
+        return this.domainId;
+      }
+
+      get name() {
+        return this.domainDataObject.name;
+      }
+
+      get language() {
+        return this.domainDataObject.language;
+      }
+
+      get hostServerPatterns() {
+        return this.domainDataObject.hostServerPatterns;
+      }
+
+      get hostDomain() {
+        return this.domainDataObject.hostDomain;
+      }
+
+      get paths() {
+        return this.domainDataObject.paths;
+      }
+
+      get commentServerPatterns() {
+        return this.domainDataObject.commentServerPatterns;
+      }
+
+      get commentPaths() {
+        return this.domainDataObject.commentPaths;
+      }
+
+      toObject() {
+        return this.domainDataObject;
+      }
+    }
+
+    function _createDomainId(hostDomain) {
+      var domainId = "";
+      var domainLabels = hostDomain.split(URL_DOMAIN_LABEL_SEPARATOR);
+      domainLabels.forEach((domainLabel) => {
+          domainId += getCapitalizedString(domainLabel);
         });
+      return domainId;
     }
 
-    splitLocalizedString("SiteLanguages").forEach(_setLocalizedNewsSites);
+    this.DomainData = DomainData;
 
     /*
-     * Calls the specified function with the ID, URL, and domain enabled flag
-     * for each news site set in the current context.
+     * The map of site data for each domain.
      */
-    function forEachNewsSite(callback) {
-      for (const newsDomain of newsDomainMap.values()) {
-        newsDomain.forEachSite((site) => {
-            callback(site.id, site.url, isDomainEnabled(site.domainId));
+    class DomainSiteDataMap {
+      constructor() {
+        this.domainRegExpMap = new Map();
+        this.siteDataArrayMap = new Map();
+      }
+
+      hasDomain(domainId) {
+        return this.domainRegExpMap.has(domainId);
+      }
+
+      setDomain(domainData) {
+        var domainRegexpString = "^";
+        var hostServerPatterns = domainData.hostServerPatterns;
+        if (hostServerPatterns.length > 1) {
+          if (hostServerPatterns[0] != URL_PATTERN_NON_EXISTENCE) {
+            domainRegexpString += "(";
+            for (let i = 0; i < hostServerPatterns.length; i++) {
+              if (i > 0) {
+                domainRegexpString += "|";
+              }
+              domainRegexpString += hostServerPatterns[i];
+            }
+            domainRegexpString += ")\\" + URL_DOMAIN_LABEL_SEPARATOR;
+          } else { // No host server for the domain top like "slashdot.org"
+            domainRegexpString +=
+              "(?:|" + URL_DOMAIN_LABEL_REGULAR_EXPRESSION + "\\"
+              + URL_DOMAIN_LABEL_SEPARATOR + ")";
+          }
+        } else if (hostServerPatterns[0] != URL_PATTERN_NON_EXISTENCE) {
+          domainRegexpString += "(";
+          if (hostServerPatterns[0] != URL_PATTERN_ANY_MATCH) {
+            domainRegexpString += hostServerPatterns[0];
+          } else { // Any host server on the domain
+            domainRegexpString += URL_DOMAIN_LABEL_REGULAR_EXPRESSION;
+          }
+          domainRegexpString += ")\\" + URL_DOMAIN_LABEL_SEPARATOR;
+        }
+        domainRegexpString +=
+          domainData.hostDomain.replaceAll(URL_DOMAIN_LABEL_SEPARATOR, "\\$&")
+          + "(?:/|$)";
+        this.domainRegExpMap.set(
+          domainData.id, new RegExp(domainRegexpString));
+        this.siteDataArrayMap.set(domainData.id, new Array());
+      }
+
+      deleteDomain(domainId) {
+        this.domainRegExpMap.delete(domainId);
+        this.siteDataArrayMap.delete(domainId);
+      }
+
+      getDomainRegExp(domainId) {
+        return this.domainRegExpMap.get(domainId);
+      }
+
+      addSite(domainData, siteDataObject) {
+        var siteId =
+          _createSiteId(
+            domainData, siteDataObject.hostServer, siteDataObject.paths);
+        var siteDataArray = this.siteDataArrayMap.get(domainData.id);
+        var siteData;
+        for (let i = 0; i < siteDataArray.length; i++) {
+          siteData = siteDataArray[i];
+          if (siteId == siteData.id) {
+            if (siteDataObject.accessCount != undefined) {
+              siteData.toObject().accessCount = siteDataObject.accessCount;
+            //} else {
+            // Not overwrite existing count if this is called by getSite().
+            }
+            return siteData;
+          }
+        }
+        if (siteDataObject.accessCount == undefined) {
+          // Clear the accessed count only when this is called by getSite().
+          siteDataObject.accessCount = 0;
+        }
+        siteData = new SiteData(domainData.id, siteId, siteDataObject);
+        siteDataArray.push(siteData);
+        return siteData;
+      }
+
+      deleteSite(siteData) {
+        var siteDataArray = this.siteDataArrayMap.get(siteData.domainId);
+        for (let i = 0; i < siteDataArray.length; i++) {
+          if (siteData.id == siteDataArray[i].id) {
+            siteDataArray.splice(i, 1);
+            break;
+          }
+        }
+      }
+
+      deleteSiteAll() {
+        for (const domainId of this.siteDataArrayMap.keys()) {
+          this.siteDataArrayMap.set(domainId, new Array());
+        }
+      }
+
+      forEachSite(callback) {
+        this.siteDataArrayMap.forEach((siteDataArray) => {
+            siteDataArray.forEach(callback);
           });
       }
     }
 
-    /*
-     * Returns the news site which contains the specified URL if set
-     * in the current context, otherwise, undefined.
-     */
-    function getNewsSite(url) {
-      if (url != undefined) {
-        if ((typeof url) != "string") {
-          throw newIllegalArgumentException("url");
-        }
-        for (const newsDomain of newsDomainMap.values()) {
-          var siteData = newsDomain.match(url);
-          if (siteData != null) {
-            var newsSite =
-              newsDomain.getSite(_createNewsSiteId(newsDomain.id, siteData));
-            if (newsSite != undefined) {
-              return newsSite;
-            }
-            return new NewsSite(siteData);
-          }
-        }
-      }
-      return undefined;
-    }
+    // Array of domain data registered in the current context
+    var domainDataArray = new Array();
 
-    /*
-     * Sets the specified news site into the array of news sites set
-     * in the current context if not exist.
-     */
-    function setNewsSite(newsSite) {
-      if (newsSite == undefined) {
-        throw newNullPointerException("newsSite");
-      }
-      for (const newsDomain of newsDomainMap.values()) {
-        if (newsSite.domainId == newsDomain.id) {
-          if (newsDomain.getSite(newsSite.id) == undefined) {
-            newsDomain.addSite(newsSite);
-          }
-          return;
-        }
-      }
-    }
+    // Map of the site data registered for each domain in the current context
+    var domainSiteDataMap = new DomainSiteDataMap();
 
-    /*
-     * Reads the enabled news site for the specified URL from the storage
-     * and returns the promise fulfilled with it if exists.
-     */
-    function readEnabledNewsSite(url) {
-      var newsSite = getNewsSite(url);
-      if (newsSite != undefined) {
-        var domainEnabledKey = newsSite.domainId + _ExtractNews.ENABLED_KEY;
-        return ExtractNews.readStorage(domainEnabledKey).then((items) => {
-            var enabled = items[domainEnabledKey];
-            if (enabled | enabled == undefined) {
-              return Promise.resolve(newsSite);
-            }
-          });
-      }
-      return Promise.resolve();
-    }
-
-    _ExtractNews.NewsSite = NewsSite;
-    _ExtractNews.forEachNewsSite = forEachNewsSite;
-    _ExtractNews.getNewsSite = getNewsSite;
-    _ExtractNews.setNewsSite = setNewsSite;
-    _ExtractNews.readEnabledNewsSite = readEnabledNewsSite;
-
-    /*
-     * Calls the specified function with the ID, name, language, and host
-     * server patterns or domain for each domain set in the current context.
-     */
-    function forEachDomain(callback) {
-      for (const newsDomain of newsDomainMap.values()) {
-        callback(
-          newsDomain.id, newsDomain.name, newsDomain.language,
-          newsDomain.hostServerPatterns, newsDomain.hostDomain);
-      }
-    }
-
-    // IDs whose the domain is enabled in the current context
+    // Set of IDs for which the domain is enabled in the current context
     var enabledDomainIdSet = new Set();
 
     /*
-     * Returns true if the domain of the specified ID is set and enabled
+     * Returns true if the domain of the specified ID is registered and enabled
      * in the current context.
      */
     function isDomainEnabled(domainId) {
-      if (domainId != undefined) {
-        return enabledDomainIdSet.has(domainId);
-      }
-      return false;
+      _checkDomainId(domainId);
+      return enabledDomainIdSet.has(domainId);
     }
 
     /*
-     * Returns the language by which the domain of the specified ID set
+     * Returns the language by which the domain of the specified ID registered
      * in the current context is localized.
      */
     function getDomainLanguage(domainId) {
-      if (domainId != undefined) {
-        for (const newsDomain of newsDomainMap.values()) {
-          if (domainId == newsDomain.id) {
-            return newsDomain.language;
-          }
+      _checkDomainId(domainId);
+      for (const domainData of domainDataArray) {
+        if (domainId == domainData.id) {
+          return domainData.language;
         }
       }
       return _ExtractNews.SITE_ENGLISH;
     }
 
     /*
-     * Sets the domain of the specified data to the current context.
+     * Registers the domain of the specified object to the current context.
      */
-    function setDomain(domainData) {
-      if (domainData == undefined) {
-        throw newNullPointerException("domainData");
+    function setDomain(domainDataObject) {
+      if (domainDataObject == undefined) {
+        throw newNullPointerException("domainDataObject");
       }
-      var domainId = domainData.id;
-      if (domainId == undefined) {
-        newsDomainMap.set(
-          _createNewsDomainId(hostDomain),
-          new NewsDomain(
-            domainData.name, domainData.language,
-            domainData.hostServerPatterns, domainData.hostDomain));
+      var domainId = _createDomainId(domainDataObject.hostDomain);
+      if (! domainSiteDataMap.hasDomain(domainId)) {
+        var domainData = new DomainData(domainId, domainDataObject);
+        domainDataArray.push(domainData);
+        domainSiteDataMap.setDomain(domainData);
       }
-      if (domainData.enabled) {
+      if (domainDataObject.enabled) {
         enabledDomainIdSet.add(domainId);
+        if (Debug.isLoggingOn()) {
+          Debug.dump(
+            "\t", domainDataObject.language,
+            domainDataObject.hostServerPatterns.join(","),
+            domainDataObject.hostDomain);
+        }
       } else if (enabledDomainIdSet.has(domainId)) {
         enabledDomainIdSet.delete(domainId);
       }
@@ -646,28 +622,290 @@ const ExtractNews = (() => {
      * Removes the domain of the specified ID from the current context.
      */
     function removeDomain(domainId) {
-      if (domainId != undefined && newsDomainMap.has(domainId)) {
-        newsDomainMap.delete(domainId);
+      _checkDomainId(domainId);
+      if (domainSiteDataMap.hasDomain(domainId)) {
+        for (let i = 0; i < domainDataArray.length; i++) {
+          if (domainId == domainDataArray[i].id) {
+            domainDataArray.splice(i, 1);
+            break;
+          }
+        }
+        domainSiteDataMap.deleteDomain(domainId);
       }
     }
 
-    _ExtractNews.forEachDomain = forEachDomain;
+    /*
+     * Calls the specified function with each domain data registered in
+     * the current context.
+     */
+    function forEachDomain(callback) {
+      domainDataArray.forEach(callback);
+    }
+
     _ExtractNews.isDomainEnabled = isDomainEnabled;
     _ExtractNews.getDomainLanguage = getDomainLanguage;
     _ExtractNews.setDomain = setDomain;
     _ExtractNews.removeDomain = removeDomain;
+    _ExtractNews.forEachDomain = forEachDomain;
+
+    // Registers domain data read from the message for the specified language
+    // to the current context.
+
+    function _setLocalizedDomains(language, index) {
+      splitLocalizedString(language + "SitePrefixes").forEach((sitePrefix) => {
+          var paths = splitLocalizedString(sitePrefix + "Paths");
+          var commentServerPatterns =
+            splitLocalizedString(sitePrefix + "CommentServerPatterns");
+          var commentPaths = splitLocalizedString(sitePrefix + "CommentPaths");
+          var domainDataObject = {
+              name: getLocalizedString(sitePrefix + "Name"),
+              language: language,
+              hostServerPatterns:
+                splitLocalizedString(sitePrefix + "HostServerPatterns"),
+              hostDomain: getLocalizedString(sitePrefix + "Domain"),
+              enabled: false
+            };
+          if (paths[0] != "" || paths.length > 1) {
+            domainDataObject.paths = paths;
+          }
+          if (commentServerPatterns[0] != ""
+            || commentServerPatterns.length > 1) {
+            domainDataObject.commentServerPatterns = commentServerPatterns;
+          }
+          if (commentPaths[0] != "" || commentPaths.length > 1) {
+            domainDataObject.commentPaths = commentPaths;
+          }
+          if (index == 0) {
+            // Set the flag whether the domain is enabled to true initially
+            // only for the first language.
+            domainDataObject.enabled = true;
+          }
+          setDomain(domainDataObject);
+        });
+    }
+
+    splitLocalizedString("SiteLanguages").forEach(_setLocalizedDomains);
+
+    function _getDomainSiteDataObject(domainData, url) {
+      var urlHostPath = url.substring(URL_HTTPS_SCHEME.length);
+      var urlHostMatch =
+        urlHostPath.match(domainSiteDataMap.getDomainRegExp(domainData.id));
+      if (urlHostMatch != null) {
+        var siteDataObject = {
+            hostDomain: domainData.hostDomain
+          };
+        if (urlHostMatch.length >= 1) {
+          siteDataObject.hostServer = urlHostMatch[1];
+        }
+        if (domainData.paths == undefined) {
+          return siteDataObject;
+        }
+        var urlPath =
+          urlHostPath.substring(urlHostPath.indexOf(URL_PATH_SEPARATOR));
+        for (const path of domainData.paths) {
+          if (urlPath.startsWith(path)
+            && (urlPath.length == path.length
+              || urlPath.codePointAt(path.length)
+                == URL_PATH_SEPARATOR.codePointAt(0))) {
+            siteDataObject.path = path;
+            return siteDataObject;
+          }
+        }
+      }
+      return undefined;
+    }
+
+    /*
+     * Returns the site data for the specified URL contained in a domain
+     * if it's registered in the current context, otherwise, undefined.
+     */
+    function getSite(url) {
+      if (url != undefined) {
+        if ((typeof url) != "string") {
+          throw newIllegalArgumentException("url");
+        } else if (url.startsWith(URL_HTTPS_SCHEME)) {
+          for (const domainData of domainDataArray) {
+            var siteDataObject = _getDomainSiteDataObject(domainData, url);
+            if (siteDataObject != undefined) {
+              return domainSiteDataMap.addSite(domainData, siteDataObject);
+            }
+          }
+        }
+      }
+      return undefined;
+    }
+
+    /*
+     * Registers the site of the specified data object to the current context
+     * and returns its data.
+     */
+    function addSite(siteDataObject) {
+      if (siteDataObject == undefined) {
+        throw newNullPointerException("siteDataObject");
+      }
+      var domainId = _createDomainId(siteDataObject.hostDomain);
+      for (const domainData of domainDataArray) {
+        if (domainId == domainData.id) {
+          var siteData = domainSiteDataMap.addSite(domainData, siteDataObject);
+          if (Debug.isLoggingOn()) {
+            Debug.dump("\t", siteData.accessCount, siteData.url);
+          }
+          return siteData;
+        }
+      }
+      return undefined;
+    }
+
+    /*
+     * Deletes the site of the specified data from the current context.
+     */
+    function deleteSite(siteData) {
+      if (siteData == undefined) {
+        throw newNullPointerException("siteData");
+      } else if (domainSiteDataMap.hasDomain(siteData.domainId)) {
+        domainSiteDataMap.deleteSite(siteData);
+      }
+    }
+
+    /*
+     * Calls the specified function with each site data registered in
+     * the current context.
+     */
+    function forEachSite(callback) {
+      domainSiteDataMap.forEachSite(callback);
+    }
+
+    _ExtractNews.getSite = getSite;
+    _ExtractNews.addSite = addSite;
+    _ExtractNews.deleteSite = deleteSite;
+    _ExtractNews.forEachSite = forEachSite;
+
+    /*
+     * Registers the site data for each domain to the current context.
+     */
+    function setDomainSites() {
+      domainDataArray.forEach((domainData) => {
+          var siteDataObjects = new Array();
+          var hostServerPatterns = domainData.hostServerPatterns;
+          if (hostServerPatterns.length > 1) {
+            if (hostServerPatterns[0] != URL_PATTERN_NON_EXISTENCE) {
+              // Add the site data of host servers specified for the domain.
+              for (let i = 0; i < hostServerPatterns.length; i++) {
+                siteDataObjects.push({
+                    hostServer: hostServerPatterns[i],
+                    hostDomain: domainData.hostDomain
+                  });
+              }
+            } else { // No host server for the domain top like "slashdot.org"
+              siteDataObjects.push({
+                  hostDomain: domainData.hostDomain
+                });
+            }
+          } else if (hostServerPatterns[0] != URL_PATTERN_NON_EXISTENCE) {
+            if (hostServerPatterns[0] != URL_PATTERN_ANY_MATCH) {
+              if (domainData.paths != undefined) {
+                // Add the site data of a host server and directory paths
+                // specified for the domain.
+                domainData.paths.forEach((path) => {
+                    siteDataObjects.push({
+                        hostServer: hostServerPatterns[0],
+                        hostDomain: domainData.hostDomain,
+                        path: path
+                      });
+                  });
+              } else { // A host server specified for the domain
+                siteDataObjects.push({
+                    hostServer: hostServerPatterns[0],
+                    hostDomain: domainData.hostDomain
+                  });
+              }
+            } else { // Any host server on the domain
+              siteDataObjects.push({
+                  hostServer: URL_DEFAULT_HOST_SERVER,
+                  hostDomain: domainData.hostDomain
+                });
+            }
+          } else { // No host server on the domain
+            siteDataObjects.push({
+                hostDomain: domainData.hostDomain
+              });
+          }
+          // Never print the debug message for default sites on each domain
+          var debugOn = Debug.isLoggingOn();
+          ExtractNews.setDebugMode(false);
+          siteDataObjects.forEach((siteDataObject) => {
+              siteDataObject.accessCount = 0;
+              addSite(siteDataObject);
+            });
+          ExtractNews.setDebugMode(debugOn);
+        });
+    }
+
+    /*
+     * Clears the site data for each domain from the current context.
+     */
+    function clearDomainSites() {
+      domainSiteDataMap.deleteSiteAll();
+    }
+
+    _ExtractNews.setDomainSites = setDomainSites;
+    _ExtractNews.clearDomainSites = clearDomainSites;
+
+    /*
+     * Reads the enabled site which contains the specified URL from the storage
+     * and returns the promise fulfilled with it if exists.
+     */
+    function readEnabledSite(url) {
+      var siteData = getSite(url);
+      if (siteData != undefined) {
+        var domainEnabledKey =
+          _createDomainId(siteData.hostDomain) + _ExtractNews.ENABLED_KEY;
+        return readStorage(domainEnabledKey).then((items) => {
+            var enabled = items[domainEnabledKey];
+            if (enabled | enabled == undefined) {
+              return Promise.resolve(siteData);
+            }
+          });
+      }
+      return Promise.resolve();
+    }
+
+    _ExtractNews.readEnabledSite = readEnabledSite;
+
+
+    function _forEachHostServerUrlPatterns(
+      callback, hostServerPattern, hostDomain, paths) {
+      var urlHost = URL_HTTPS_SCHEME;
+      if (hostServerPattern != URL_PATTERN_NON_EXISTENCE) {
+        urlHost += hostServerPattern + URL_DOMAIN_LABEL_SEPARATOR;
+      }
+      urlHost += hostDomain;
+      if (paths != undefined) {
+        paths.forEach((path) => {
+            callback(
+              urlHost + path + URL_PATH_SEPARATOR + URL_PATTERN_ANY_MATCH);
+          });
+      } else {
+        callback(urlHost + URL_PATH_SEPARATOR + URL_PATTERN_ANY_MATCH);
+      }
+    }
 
     /*
      * Returns the array of URL patterns whose news sites are contained
      * in the domain set and enabled in the current context.
      */
-    function getEnabledNewsSiteUrlPatterns() {
+    function getEnabledSiteUrlPatterns() {
       var enabledSiteUrlPatterns = new Array();
-      enabledDomainIdSet.forEach((domainId) => {
-          var newsDomain = newsDomainMap.get(domainId);
-          newsDomain.forEachUrlPattern((urlPattern) => {
-              enabledSiteUrlPatterns.push(urlPattern);
-            });
+      domainDataArray.forEach((domainData) => {
+          if (enabledDomainIdSet.has(domainData.id)) {
+            domainData.hostServerPatterns.forEach((hostServerPattern) => {
+                _forEachHostServerUrlPatterns((urlPattern) => {
+                    enabledSiteUrlPatterns.push(urlPattern);
+                  },
+                  hostServerPattern, domainData.hostDomain,
+                  domainData.paths);
+              });
+          }
         });
       return enabledSiteUrlPatterns;
     }
@@ -678,16 +916,24 @@ const ExtractNews = (() => {
      */
     function getEnabledCommentSiteUrlPatterns() {
       var enabledCommentSiteUrlPatterns = new Array();
-      enabledDomainIdSet.forEach((domainId) => {
-          var newsDomain = newsDomainMap.get(domainId);
-          newsDomain.forEachCommentSiteUrlPattern((urlPattern) => {
-              enabledCommentSiteUrlPatterns.push(urlPattern);
-            });
+      domainDataArray.forEach((domainData) => {
+          if (enabledDomainIdSet.has(domainData.id)) {
+            var commentServerPatterns = domainData.commentServerPatterns;
+            if (commentServerPatterns != undefined) {
+              commentServerPatterns.forEach((commentServerPattern) => {
+                  _forEachHostServerUrlPatterns((urlPattern) => {
+                      enabledCommentSiteUrlPatterns.push(urlPattern);
+                    },
+                    commentServerPattern, domainData.hostDomain,
+                    domainData.commentPaths);
+                });
+            }
+          }
         });
       return enabledCommentSiteUrlPatterns;
     }
 
-    _ExtractNews.getEnabledNewsSiteUrlPatterns = getEnabledNewsSiteUrlPatterns;
+    _ExtractNews.getEnabledSiteUrlPatterns = getEnabledSiteUrlPatterns;
     _ExtractNews.getEnabledCommentSiteUrlPatterns =
       getEnabledCommentSiteUrlPatterns;
 
@@ -833,19 +1079,21 @@ const ExtractNews = (() => {
         if (filtering == undefined) {
           throw newNullPointerException("filtering");
         }
-        this._categoryName = filtering.categoryName;
-        this._categoryTopics = filtering.categoryTopics;
-        this.policyTargetName = filtering.policyTargetName;
-        this._targets = new Array();
+        this.filtering = {
+            categoryName: filtering.categoryName,
+            categoryTopics: filtering.categoryTopics,
+            policyTargetName: filtering.policyTargetName,
+            targets: new Array()
+          };
         if (filtering.targetObjects != undefined) {
           filtering.targetObjects.forEach((targetObject) => {
-              this._targets.push(new FilteringTarget(targetObject));
+              this.filtering.targets.push(new FilteringTarget(targetObject));
             });
         }
       }
 
       get categoryName() {
-        return this._categoryName;
+        return this.filtering.categoryName;
       }
 
       setCategoryName(categoryName) {
@@ -854,52 +1102,57 @@ const ExtractNews = (() => {
         } else if ((typeof categoryName) != "string") {
           throw newIllegalArgumentException("categoryName");
         }
-        return this._categoryName = categoryName;
+        return this.filtering.categoryName = categoryName;
       }
 
       get categoryTopics() {
-        return this._categoryTopics;
+        return this.filtering.categoryTopics;
       }
 
       setCategoryTopics(categoryTopics) {
         if (! Array.isArray(categoryTopics)) {
           throw newIllegalArgumentException("categoryTopics");
         }
-        this._categoryTopics = categoryTopics;
+        this.filtering.categoryTopics = categoryTopics;
       }
 
       get policyTarget() {
-        return newFilteringTarget(this.policyTargetName);
+        return newFilteringTarget(this.filtering.policyTargetName);
       }
 
       setPolicyTarget(targetName) {
         var policyTargetName = targetName.toUpperCase();
         _checkTargetName(policyTargetName);
-        this.policyTargetName = policyTargetName;
+        this.filtering.policyTargetName = policyTargetName;
       }
 
       get targets() {
-        return this._targets;
+        if (this.filtering.targets != undefined) {
+          return this.filtering.targets;
+        }
+        return new Array();
       }
 
       setTargets(targets) {
         if (! Array.isArray(targets)) {
           throw newIllegalArgumentException("targets");
         }
-        this._targets = targets;
+        this.filtering.targets = targets;
       }
 
       toObject() {
-        var targetObjects = new Array();
-        this.targets.forEach((target) => {
-            targetObjects.push(target.toObject());
-          });
-        return {
-            categoryName: this._categoryName,
-            categoryTopics: this._categoryTopics,
-            policyTargetName: this.policyTargetName,
-            targetObjects: targetObjects
+        var filteringObject = {
+            categoryName: this.filtering.categoryName,
+            categoryTopics: this.filtering.categoryTopics,
+            policyTargetName: this.filtering.policyTargetName,
+            targetObjects: new Array()
           };
+        if (this.filtering.targets != undefined) {
+          this.filtering.targets.forEach((target) => {
+              filteringObject.targetObjects.push(target.toObject());
+            });
+        }
+        return filteringObject;
       }
     }
 
@@ -919,18 +1172,18 @@ const ExtractNews = (() => {
 
 
     /*
-     * The setting to select news topics and/or senders.
+     * The selection to display news topics and/or senders.
      */
     class Selection {
-      constructor(setting) {
-        if (setting == undefined) {
-          throw newNullPointerException("setting");
+      constructor(selection) {
+        if (selection == undefined) {
+          throw newNullPointerException("selection");
         }
-        this.setting = setting;
+        this.selection = selection;
       }
 
       get settingName() {
-        return this.setting.name;
+        return this.selection.settingName;
       }
 
       set settingName(name) {
@@ -939,29 +1192,29 @@ const ExtractNews = (() => {
         } else if ((typeof name) != "string") {
           throw newIllegalArgumentException("name");
         }
-        return this.setting.name = name;
+        return this.selection.settingName = name;
       }
 
       get topicRegularExpression() {
-        return this.setting.topicRegularExpression;
+        return this.selection.topicRegularExpression;
       }
 
       set topicRegularExpression(regexpString) {
         _checkRegularExpression(regexpString);
-        this.setting.topicRegularExpression = regexpString;
+        this.selection.topicRegularExpression = regexpString;
       }
 
       get senderRegularExpression() {
-        return this.setting.senderRegularExpression;
+        return this.selection.senderRegularExpression;
       }
 
       set senderRegularExpression(regexpString) {
         _checkRegularExpression(regexpString);
-        this.setting.senderRegularExpression = regexpString;
+        this.selection.senderRegularExpression = regexpString;
       }
 
       get openedUrl() {
-        return this.setting.openedUrl;
+        return this.selection.openedUrl;
       }
 
       set openedUrl(url) {
@@ -972,11 +1225,11 @@ const ExtractNews = (() => {
         } else if (url == "") {
           throw newEmptyStringException("url");
         }
-        return this.setting.openedUrl = url;
+        return this.selection.openedUrl = url;
       }
 
       toObject() {
-        return this.setting;
+        return this.selection;
       }
     }
 
@@ -985,7 +1238,7 @@ const ExtractNews = (() => {
      */
     function newSelection() {
       return new Selection({
-          name: "",
+          settingName: "",
           topicRegularExpression: "",
           senderRegularExpression: "",
           openedUrl: ""
@@ -994,91 +1247,6 @@ const ExtractNews = (() => {
 
     _ExtractNews.Selection = Selection;
     _ExtractNews.newSelection = newSelection;
-
-
-    /*
-     * Debug object in this extension.
-     */
-    class DebugLogger extends Logger {
-      constructor() {
-        super();
-        this._debugOn = false;
-      }
-
-      get debugOn() {
-        return this._debugOn;
-      }
-
-      set debugOn(debugOn) {
-        return this._debugOn = debugOn;
-      }
-
-      isLoggingOn() {
-        return this.debugOn;
-      }
-    }
-
-    const Debug = new DebugLogger();
-    const DEBUG_KEY = "Debug";
-
-    /*
-     * Reads the debug mode on this extension from the local storage
-     * and returns the promise fulfilled with its value or rejected.
-     */
-    function getDebugMode() {
-      return readStorage(DEBUG_KEY).then((items) => {
-          var debugOn = items[DEBUG_KEY];
-          if (debugOn == undefined) {
-            debugOn = false;
-          }
-          Debug.debugOn = debugOn;
-          return Promise.resolve(debugOn);
-        });
-    }
-
-    /*
-     * Writes the specified debug mode on this extension into the local
-     * storage and returns the promise.
-     */
-    function setDebugMode(debugOn) {
-      if ((typeof debugOn) != "boolean") {
-        throw newIllegalArgumentException("debugOn");
-      }
-      Debug.debugOn = debugOn;
-      return writeStorage({
-          [DEBUG_KEY]: debugOn
-        });
-    }
-
-    _ExtractNews.Debug = Debug;
-    _ExtractNews.getDebugMode = getDebugMode;
-    _ExtractNews.setDebugMode = setDebugMode;
-
-
-     /*
-      * Sends the specified messeage of a command to the background script
-      * and returns the promise.
-      */
-    function sendRuntimeMessage(message, senderOnTab = "") {
-      if (message == undefined) {
-        throw newNullPointerException("message");
-      } else if (message.command == undefined
-        || (typeof message.command) != "string") {
-        throw newIllegalArgumentException("message");
-      }
-      return callAsynchronousAPI(
-        browser.runtime.sendMessage, message).then(() => {
-          if (browser.runtime.lastError != undefined) {
-            Debug.printProperty(
-              "runtime.sendMessage()", browser.runtime.lastError.message);
-          }
-          Debug.printMessage(
-            "Send the command " + message.command.toUpperCase()
-            + senderOnTab + ".");
-        });
-    }
-
-    _ExtractNews.sendRuntimeMessage = sendRuntimeMessage;
 
     return _ExtractNews;
   })();

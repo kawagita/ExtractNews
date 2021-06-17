@@ -19,18 +19,16 @@
 
 "use strict";
 
-ExtractNews.readEnabledNewsSite(document.URL).then((newsSite) => {
-    if (newsSite == undefined) {
-      Site.displayNewsDesigns();
-      return;
+ExtractNews.readEnabledSite(document.URL).then((siteData) => {
+    if (siteData != undefined) {
+      var newsSiteUrlData = getSiteUrlData(siteData, document.URL);
+      var newsSiteUrlParser = new SiteUrlParser(newsSiteUrlData);
+
+      Site.setNewsOpenedUrl(newsSiteUrlParser.toString());
+      Site.setNewsSelector(
+        new Selector(ExtractNews.getDomainLanguage(siteData.domainId)));
     }
-
-    var newsSiteUrlData = getNewsSiteUrlData(newsSite, document.URL);
-    var newsSiteUrlParser = new NewsSiteUrlParser(newsSiteUrlData);
-
-    Site.displayNewsDesigns(
-      newsSiteUrlParser.toString(),
-      new NewsSelector(ExtractNews.getDomainLanguage(newsSite.domainId)));
+    Site.displayNewsDesigns();
   }).catch((error) => {
     Debug.printStackTrace(error);
   });
