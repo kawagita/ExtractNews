@@ -103,7 +103,7 @@ ExtractNews.Storage = (() => {
     /*
      * Reads the data object for each site from the storage and returns
      * the promise fulfilled with the array of site data registered to
-     * the current contenxt or rejected.
+     * the current context or rejected.
      */
     function readSiteData(siteDebugOn = Debug.isLoggingOn()) {
       return readStorage(SITE_DATA_KEY).then((items) => {
@@ -232,66 +232,35 @@ ExtractNews.Storage = (() => {
     _Storage.writeCommentMode = writeCommentMode;
 
 
-    // Key to read and write the flag whether the filtering is disabled
-    const FILTERING_DISABLED_KEY = "FilteringDisabled";
-
-    /*
-     * Reads the flag to disable the filtering from the storage and returns
-     * the promise fulfilled with its value or rejected.
-     */
-    function readFilteringDisabled() {
-      return readStorage(FILTERING_DISABLED_KEY).then((items) => {
-          var filteringDisabled = items[FILTERING_DISABLED_KEY];
-          if (filteringDisabled == undefined) {
-            filteringDisabled = false;
-          }
-          return Promise.resolve(filteringDisabled);
-        });
-    }
-
-    /*
-     * Writes the specified flag to disable the filtering into the storage
-     * and returns the promise.
-     */
-    function writeFilteringDisabled(filteringDisabled) {
-      if ((typeof filteringDisabled) != "boolean") {
-        throw newIllegalArgumentException("filteringDisabled");
-      }
-      return writeStorage({
-          [FILTERING_DISABLED_KEY]: filteringDisabled
-        });
-    }
-
-    _Storage.readFilteringDisabled = readFilteringDisabled;
-    _Storage.writeFilteringDisabled = writeFilteringDisabled;
-
-    // Key to read and write filtering IDs, or filterings by suffixing with its
+    // Key to read and write filtering IDs or data, and disabled flag
     const FILTERING_KEY = "Filtering";
 
+    const NO_FILTERING_IDS = new Array();
+
     /*
-     * Reads IDs of filterings on news site from the storage and returns
-     * the promise fulfilled with the array of its or rejected.
+     * Reads filtering IDs from the storage and returns the promise
+     * fulfilled with the array of its or rejected.
      */
     function readFilteringIds() {
       return readStorage(FILTERING_KEY).then((items) => {
-          var filteringIdsString = items[FILTERING_KEY];
-          if (filteringIdsString == undefined) {
-            filteringIdsString = getLocalizedString("FilteringIds");
+          var filteringIds = NO_FILTERING_IDS;
+          if (items[FILTERING_KEY] != undefined) {
+            filteringIds = items[FILTERING_KEY].split(WORD_SEPARATOR);
           }
-          return Promise.resolve(filteringIdsString.split(","));
+          return Promise.resolve(filteringIds);
         });
     }
 
     /*
-     * Writes the specified IDs of filtering on news site into the storage
-     * and returns the promise.
+     * Writes the specified filtering IDs into the storage and returns
+     * the promise.
      */
     function writeFilteringIds(filteringIds) {
       if (! Array.isArray(filteringIds)) {
         throw newIllegalArgumentException("filteringIds");
       } else if (filteringIds.length > 0) {
         return writeStorage({
-            [FILTERING_KEY]: filteringIds.join(",")
+            [FILTERING_KEY]: filteringIds.join(WORD_SEPARATOR)
           });
       }
       return Promise.resolve();
@@ -301,9 +270,8 @@ ExtractNews.Storage = (() => {
     _Storage.writeFilteringIds = writeFilteringIds;
 
     /*
-     * Reads filterings on news site for IDs in the specified array from
-     * the storage and returns the promise fulfilled with the map of its
-     * or rejected.
+     * Reads filterings for IDs in the specified array from the storage and
+     * returns the promise fulfilled with the map of its or rejected.
      */
     function readFilterings(filteringIds) {
       if (! Array.isArray(filteringIds)) {
@@ -314,31 +282,37 @@ ExtractNews.Storage = (() => {
       filteringIds.forEach((filteringId) => {
           var filteringKey = FILTERING_KEY + filteringId;
           readingPromises.push(readStorage(filteringKey).then((items) => {
-                var filtering;
-                if (items[filteringKey] != undefined) {
-                  filtering = new ExtractNews.Filtering(items[filteringKey]);
-                } else { // Initial setting for each category
-                  filtering = ExtractNews.newFiltering();
-                  if (filteringId == ExtractNews.FILTERING_FOR_ALL) {
-                    filtering.setCategoryName(
-                      getLocalizedString(
-                        "Filtering" + filteringId + "CategoryName"));
-                  } else {
-                    filtering.setCategoryName(filteringId);
-                  }
-                  filtering.setPolicyTarget(ExtractNews.TARGET_ACCEPT);
-                }
-                filteringMap.set(filteringId, filtering);
-              }));
+              if (items[filteringKey] != undefined) {
+                filteringMap.set(
+                  filteringId, new ExtractNews.Filtering(items[filteringKey]));
+              }
+            }));
         });
+      if (filteringIds.length <= 0) {
+        // Set the filtering data to drop offensive words for all topics
+        // initially to the map.
+        var wordBeginningMatched =
+          browser.i18n.getUILanguage().startsWith(LANGUAGE_CODE_EN);
+        var filtering = ExtractNews.newFiltering();
+        filtering.setCategoryName(
+          getLocalizedString("FilteringAllCategoryName"));
+        filtering.setTargets(
+          Array.of(
+            ExtractNews.newFilteringTarget(
+              ExtractNews.TARGET_DROP,
+              new Set(splitLocalizedString("FilteringOffensiveWords")),
+              wordBeginningMatched, false, false)));
+        filtering.setPolicyTarget(ExtractNews.TARGET_ACCEPT);
+        filteringMap.set(getLocalizedString("FilteringAllId"), filtering);
+      }
       return Promise.all(readingPromises).then(() => {
           return Promise.resolve(filteringMap);
         });
     }
 
     /*
-     * Writes filterings on news site in the specified map into the storage
-     * and returns the promise.
+     * Writes filterings in the specified map into the storage and returns
+     * the promise.
      */
     function writeFilterings(filteringMap) {
       if (filteringMap == undefined) {
@@ -358,8 +332,8 @@ ExtractNews.Storage = (() => {
     }
 
     /*
-     * Removes filterings on news site for IDs in the specified array from
-     * the storage and returns the promise.
+     * Removes filterings for IDs in the specified array from the storage
+     * and returns the promise.
      */
     function removeFilterings(filteringIds) {
       if (! Array.isArray(filteringIds)) {
@@ -378,6 +352,28 @@ ExtractNews.Storage = (() => {
     _Storage.readFilterings = readFilterings;
     _Storage.writeFilterings = writeFilterings;
     _Storage.removeFilterings = removeFilterings;
+
+    /*
+     * Reads the flag to disable the filtering from the storage and returns
+     * the promise fulfilled with its value or rejected.
+     */
+    function readFilteringDisabled() {
+      return readStorageDisabled(FILTERING_KEY);
+    }
+
+    /*
+     * Writes the specified flag to disable the filtering into the storage
+     * and returns the promise.
+     */
+    function writeFilteringDisabled(filteringDisabled) {
+      if ((typeof filteringDisabled) != "boolean") {
+        throw newIllegalArgumentException("filteringDisabled");
+      }
+      return writeStorageDisabled(FILTERING_KEY, filteringDisabled);
+    }
+
+    _Storage.readFilteringDisabled = readFilteringDisabled;
+    _Storage.writeFilteringDisabled = writeFilteringDisabled;
 
 
     // Key to read and write the count of news selections
@@ -441,11 +437,8 @@ ExtractNews.Storage = (() => {
           }).then((items) => {
             var selections = new Array();
             for (let i = 0; i < indexStrings.length; i++) {
-              var indexString = indexStrings[i];
-              var selectionObject = items[indexString];
-              if (selectionObject != undefined) {
-                selections.push(new ExtractNews.Selection(selectionObject));
-              }
+              selections.push(
+                new ExtractNews.Selection(items[indexStrings[i]]));
             }
             return Promise.resolve(selections);
           });
@@ -453,8 +446,33 @@ ExtractNews.Storage = (() => {
       return Promise.resolve(new Array());
     }
 
+    /*
+     * Reads all news selections from the storage and returns the promise
+     * fulfilled with the array of its or rejected.
+     */
+    function readSelectionAll() {
+      return readSelectionCount().then((selectionCount) => {
+          var selections = new Array();
+          if (selectionCount > 0) {
+            var indexStrings = new Array();
+            for (let i = 0; i < selectionCount; i++) {
+              indexStrings[i] = String(i);
+            }
+            return readStorage(indexStrings).then((items) => {
+                for (let i = 0; i < indexStrings.length; i++) {
+                  selections.push(
+                    new ExtractNews.Selection(items[indexStrings[i]]));
+                }
+                return Promise.resolve(selections);
+              });
+          }
+          return Promise.resolve(selections);
+        });
+    }
+
     _Storage.readSelection = readSelection;
     _Storage.readSelections = readSelections;
+    _Storage.readSelectionAll = readSelectionAll;
 
     /*
      * Writes the specified news selection for the specified index into
@@ -507,10 +525,9 @@ ExtractNews.Storage = (() => {
         throw newIllegalArgumentException("indexStrings");
       } else if (! Array.isArray(selections)) {
         throw newIllegalArgumentException("selections");
-      } else if (indexStrings.length > selections.length) {
-        throw newIndexOutOfBoundsException(
-          "news selections", indexStrings.length);
-      } else if (indexStrings.length > 0) {
+      } else if (selections.length < indexStrings.length) {
+        throw newIndexOutOfBoundsException("selections", indexStrings.length);
+      } else if (selections.length > 0) {
         return readSelectionCount().then((selectionCount) => {
             var selectionObjects = new Array();
             for (let i = 0; i < indexStrings.length; i++) {
@@ -531,8 +548,49 @@ ExtractNews.Storage = (() => {
       return Promise.resolve();
     }
 
+    /*
+     * Replaces news selections in the storage by all in the specified arrray
+     * and returns the promise.
+     */
+    function writeSelectionAll(selections) {
+      if (! Array.isArray(selections)) {
+        throw newIllegalArgumentException("selections");
+      }
+      var indexStrings = new Array();
+      return readSelectionCount().then((selectionCount) => {
+          // Removes all news selections from the storage firstly.
+          for (let i = 0; i < selectionCount; i++) {
+            indexStrings.push(String(i));
+          }
+          return removeStorage(indexStrings);
+        }).then(() => {
+          if (selections.length > 0) {
+            var selectionObjects = new Array();
+            for (let i = 0; i < selections.length; i++) {
+              if (i >= indexStrings.length) {
+                // Add the string of an index greater than the removed count.
+                indexStrings.push(String(i));
+              }
+              selectionObjects.push(selections[i].toObject());
+            }
+            if (selections.length < indexStrings.length) {
+              // Truncate the array of index strings if the count of selections
+              // is less than removed count.
+              indexStrings.splice(selections.length);
+            }
+            return _writeSelectionObjects(indexStrings, selectionObjects);
+          }
+          return Promise.resolve();
+        }).then(() => {
+          writeStorage({
+              [SELECTION_COUNT_KEY]: selections.length
+            });
+        });
+    }
+
     _Storage.writeSelection = writeSelection;
     _Storage.writeSelections = writeSelections;
+    _Storage.writeSelectionAll = writeSelectionAll;
 
     /*
      * Removes a news selection for the specified index from the storage
@@ -649,6 +707,32 @@ ExtractNews.Storage = (() => {
     _Storage.removeSelection = removeSelection;
     _Storage.removeSelections = removeSelections;
     _Storage.removeSelectionAll = removeSelectionAll;
+
+
+    // Key to read and write the context menu disabled flag
+    const CONTEXT_MENU_KEY = "ContextMenu";
+
+    /*
+     * Reads the flag to disable the context menu from the storage and returns
+     * the promise fulfilled with its value or rejected.
+     */
+    function readContextMenuDisabled() {
+      return readStorageDisabled(CONTEXT_MENU_KEY);
+    }
+
+    /*
+     * Writes the specified flag to disable the context menu into the storage
+     * and returns the promise.
+     */
+    function writeContextMenuDisabled(contextMenuDisabled) {
+      if ((typeof contextMenuDisabled) != "boolean") {
+        throw newIllegalArgumentException("contextMenuDisabled");
+      }
+      return writeStorageDisabled(CONTEXT_MENU_KEY, contextMenuDisabled);
+    }
+
+    _Storage.readContextMenuDisabled = readContextMenuDisabled;
+    _Storage.writeContextMenuDisabled = writeContextMenuDisabled;
 
     return _Storage;
   })();

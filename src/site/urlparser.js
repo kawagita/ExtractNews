@@ -23,7 +23,7 @@
  * Returns the data object of the specified URL on the specified site data,
  * otherwise, undefined;
  */
-function getSiteUrlData(siteData, url) {
+function getUrlData(siteData, url) {
   var urlData = {
       hostServer: "",
       hostDomain: siteData.hostDomain,
@@ -65,7 +65,7 @@ const PATH_DIRECTORY_REGEXP = new RegExp(/^\/(?:index.html?)?$/);
  * The object to parse the URL into the path and query sequentially.
  * for a news site.
  */
-class SiteUrlParser {
+class UrlParser {
   constructor(urlData) {
     if (urlData == undefined) {
       throw newNullPointerException("urlData");
@@ -160,7 +160,7 @@ class SiteUrlParser {
       throw newIllegalArgumentException("pathId");
     }
     if (pathId.endsWith("Paths")) {
-      for (let path of this.getPathString(pathId).split(",")) {
+      for (let path of this.getPathString(pathId).split(WORD_SEPARATOR)) {
         if (this.parsePath(path)) {
           return true;
         }

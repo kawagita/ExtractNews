@@ -26,12 +26,6 @@ const SELECTION_DEFAULT_FAVICON = {
   };
 const SELECTION_FAVICON = "favicon";
 
-const SELECTION_INDEX_STRINGS = new Array();
-
-for (let i = 0; i < ExtractNews.SELECTION_MAX_COUNT; i++) {
-  SELECTION_INDEX_STRINGS.push(String(i));
-}
-
 /*
  * Reads the site data specified for news selections from the storage
  * and returns the promise.
@@ -74,9 +68,9 @@ function readSelectionSiteData() {
  */
 function setSelectionOpenedUrl(selectionData, openedUrl) {
   if (openedUrl != URL_ABOUT_BLANK) {
-    var siteData = ExtractNews.getSite(openedUrl);
-    if (siteData != undefined) {
-      selectionData.openedSiteId = siteData.id;
+    var urlSite = ExtractNews.getUrlSite(openedUrl);
+    if (urlSite != undefined) {
+      selectionData.openedSiteId = urlSite.data.id;
     } else {
       selectionData.openedSiteId = "";
     }
@@ -122,18 +116,7 @@ function _newSelection(selectionData) {
  */
 class SelectionData {
   constructor() {
-    this.dataIndexStrings = new Array();
     this.dataArray = new Array();
-  }
-
-  _setDataIndexStrings(indexSize) {
-    if (indexSize >= this.dataIndexStrings.length) {
-      for (let i = this.dataIndexStrings.length; i < indexSize; i++) {
-        this.dataIndexStrings.push(SELECTION_INDEX_STRINGS[i]);
-      }
-    } else {
-      this.dataIndexStrings.splice(indexSize);
-    }
   }
 
   get dataSize() {
@@ -163,14 +146,12 @@ class SelectionData {
       throw newNullPointerException("selectionData");
     }
     this.dataArray.splice(dataIndex, 0, selectionData);
-    this._setDataIndexStrings(this.dataArray.length);
   }
 
   removeData(dataIndex) {
     if (dataIndex < 0 || dataIndex >= this.dataArray.length) {
       throw newIndexOutOfBoundsException("selection data", dataIndex);
     }
-    this._setDataIndexStrings(this.dataArray.length - 1);
     return this.dataArray.splice(dataIndex, 1)[0];
   }
 
@@ -179,7 +160,6 @@ class SelectionData {
    */
   replace(newsSelections) {
     this.dataArray = new Array();
-    this._setDataIndexStrings(newsSelections.length);
     newsSelections.forEach((newsSelection) => {
         this.dataArray.push(createSelectionData(newsSelection));
       });
@@ -191,10 +171,7 @@ class SelectionData {
    * Reads selection data from the storage and return the promise.
    */
   read() {
-    return _Storage.readSelectionCount().then((newsSelectionCount) => {
-        this._setDataIndexStrings(newsSelectionCount);
-        return _Storage.readSelections(this.dataIndexStrings);
-      }).then((newsSelections) => {
+    return _Storage.readSelectionAll().then((newsSelections) => {
         this.replace(newsSelections);
       });
   }
@@ -203,15 +180,12 @@ class SelectionData {
    * Writes selection data into the storage and return the promise.
    */
   write() {
-    return _Storage.removeSelectionAll().then(() => {
-        return _Storage.writeSelections(this.dataIndexStrings, this.toArray());
-      }).then(() => {
+    return _Storage.writeSelectionAll(this.toArray()).then(() => {
         if (this.dataArray.length > 0) {
           Debug.printMessage(
-            "Write the news selection of " + this.dataIndexStrings[0]
+            "Write the news selection of 0"
             + (this.dataArray.length > 1 ?
-              " ... " + this.dataIndexStrings[this.dataArray.length - 1] : "")
-            + ".");
+              " ... " + String(this.dataArray.length - 1) : "") + ".");
         }
       });
   }
@@ -318,7 +292,7 @@ function _getSelectionFaviconNode(selectionNode) {
 class SelectionEditPane {
   constructor(selectionPane, editPointedGroup) {
     this.selectionPane = selectionPane;
-    this.editPane = _Popup.getSelectionEditPane(".edit_header span");
+    this.editPane = _Popup.getSelectionEditPane(".edit_header label");
     this.editOkButton = getOptionButton("OK");
     this.editCloseButton = document.querySelector(".edit_header .close");
     this.editCloseButton.addEventListener(_Event.CLICK, (event) => {
@@ -492,7 +466,7 @@ class SelectionPane extends FocusedOptionPane {
         deleteCheckbox: document.querySelector(".page_header input"),
         deleteButton: getOptionButton("Delete"),
         editPane: undefined,
-        editPointedGroup: new _Event.PointedGroup()
+        editFocusedGroup: new _Event.FocusedGroup()
       };
     _setSelectionPageNumberList(
       this.pane.pageNumberList, this.pane.deleteButton.tabIndex + 1);
@@ -507,7 +481,7 @@ class SelectionPane extends FocusedOptionPane {
       });
     this.pane.deleteButton.disabled = true;
     this.pane.editPane =
-      new SelectionEditPane(this, this.pane.editPointedGroup);
+      new SelectionEditPane(this, this.pane.editFocusedGroup);
     this.faviconList = undefined;
     this.faviconFocusedIndex = -1;
     this.faviconElements = new Array();
@@ -758,11 +732,11 @@ class SelectionPane extends FocusedOptionPane {
     this.pane.deleteButton.disabled = true;
   }
 
-  setEventRelation(eventGroup) {
-    super.setEventRelation(eventGroup);
+  setEventRelativeGroup(eventGroup) {
+    super.setEventRelativeGroup(eventGroup);
     eventGroup.addElements(this.pageNumberArray);
     eventGroup.addElements(
       Array.of(this.pane.deleteCheckbox, this.pane.deleteButton));
-    eventGroup.setEventRelation(this.pane.editPointedGroup);
+    eventGroup.setEventRelativeGroup(this.pane.editFocusedGroup);
   }
 }

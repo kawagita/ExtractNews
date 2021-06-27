@@ -82,6 +82,47 @@ function removeStorage(key) {
     });
 }
 
+function _readStorageFlag(key, initialFlag = false) {
+  return readStorage(key).then((items) => {
+      var flag = items[key];
+      if (flag == undefined) {
+        flag = initialFlag;
+      }
+      return Promise.resolve(flag);
+    });
+}
+
+function _writeStorageFlag(key, flag) {
+  return writeStorage({ [key]: flag });
+}
+
+// Key to read and write the flag whether a setting is disabled
+const DISABLED_KEY = "Disabled";
+
+/*
+ * Reads the flag to disable a setting for the specified key from the storage
+ * and returns the promise fulfilled with its value or rejected.
+ */
+function readStorageDisabled(keyPrefix) {
+  return _readStorageFlag(keyPrefix + DISABLED_KEY);
+}
+
+/*
+ * Writes the specified flag to disable a setting for the specified key into
+ * the storage and returns the promise.
+ */
+function writeStorageDisabled(keyPrefix, disabled) {
+  return _writeStorageFlag(keyPrefix + DISABLED_KEY, disabled);
+}
+
+// The separator of words used for the division of strings read from the file
+// "message.json" or input on the option page.
+const WORD_SEPARATOR = ",";
+
+// The addition of words used for matching with separators by the filtering
+// in the content script.
+const WORD_ADDITION = "+";
+
 /*
  * Returns the string localized for the specified ID prefixed with
  * "extractNews".
@@ -95,7 +136,7 @@ function getLocalizedString(id, substitutions) {
  * with "extractNews" and separated by commas.
  */
 function splitLocalizedString(id) {
-  return getLocalizedString(id).split(",");
+  return getLocalizedString(id).split(WORD_SEPARATOR);
 }
 
 /*
@@ -124,6 +165,12 @@ function getCapitalizedString(textString) {
   return "";
 }
 
+const LANGUAGE_ENGLISH = "English";
+const LANGUAGE_JAPANESE = "Japanese";
+
+const LANGUAGE_CODE_EN = "en";
+const LANGUAGE_CODE_JA = "ja";
+
 const URL_ABOUT_BLANK = "about:blank";
 
 const URL_HTTPS_SCHEME = "https://";
@@ -141,14 +188,12 @@ const URL_PATTERN_ANY_MATCH = "*";
  * Functions and constant variables to select and exclude news topics.
  */
 const ExtractNews = (() => {
+    // Target names to accept or drop a news topic by the filtering
+    const TARGET_ACCEPT = "ACCEPT";
+    const TARGET_DROP = "DROP";
+    const TARGET_BREAK = "BREAK";
+
     const _ExtractNews = {
-        // Languages of news site
-        SITE_ENGLISH: "English",
-        SITE_JAPANESE: "Japanese",
-
-        // Key to read and write the flag whether the site is enabled
-        ENABLED_KEY: "Enabled",
-
         // Maximum count of news selections or fitlerings
         SELECTION_MAX_COUNT: 100,
         FILTERING_MAX_COUNT: 100,
@@ -157,12 +202,13 @@ const ExtractNews = (() => {
         FILTERING_FOR_ALL: "All",
 
         // Names and word options of filtering target
-        TARGET_ACCEPT: "ACCEPT",
-        TARGET_DROP: "DROP",
-        TARGET_BREAK: "BREAK",
+        TARGET_ACCEPT: TARGET_ACCEPT,
+        TARGET_DROP: TARGET_DROP,
+        TARGET_BREAK: TARGET_BREAK,
         TARGET_WORD_BEGINNING: "Beginning",
         TARGET_WORD_END: "End",
         TARGET_WORDS_EXCLUDED: "Excluded",
+        TARGET_NAME_SET: new Set([ TARGET_ACCEPT, TARGET_DROP, TARGET_BREAK ]),
 
         // Commands sent by sendMessage() of browser.tabs or browser.runtime
         COMMAND_SETTING_REQUEST: "request",
@@ -200,11 +246,8 @@ const ExtractNews = (() => {
 
     const DEBUG_KEY = "Debug";
 
-    readStorage(DEBUG_KEY).then((items) => {
-        var debugOn = items[DEBUG_KEY];
-        if (debugOn != undefined) {
-          Debug.setDebugMode(debugOn);
-        }
+    _readStorageFlag(DEBUG_KEY).then((debugOn) => {
+        Debug.setDebugMode(debugOn);
       }).catch((error) => {
         Debug.printStackTrace(error);
       });
@@ -216,13 +259,7 @@ const ExtractNews = (() => {
      * fulfilled with its value or rejected.
      */
     function readDebugMode() {
-      return readStorage(DEBUG_KEY).then((items) => {
-          var debugOn = items[DEBUG_KEY];
-          if (debugOn == undefined) {
-            debugOn = false;
-          }
-          return Promise.resolve(debugOn);
-        });
+      return _readStorageFlag(DEBUG_KEY);
     }
 
     /*
@@ -233,9 +270,7 @@ const ExtractNews = (() => {
       if ((typeof debugOn) != "boolean") {
         throw newIllegalArgumentException("debugOn");
       }
-      return writeStorage({
-          [DEBUG_KEY]: debugOn
-        });
+      return _writeStorageFlag(DEBUG_KEY, debugOn);
     }
 
     /*
@@ -414,8 +449,8 @@ const ExtractNews = (() => {
         return this.domainDataObject.name;
       }
 
-      get language() {
-        return this.domainDataObject.language;
+      get languageCode() {
+        return this.domainDataObject.languageCode;
       }
 
       get hostServerPatterns() {
@@ -453,6 +488,9 @@ const ExtractNews = (() => {
     }
 
     this.DomainData = DomainData;
+
+    // Array of domain data registered in the current context
+    var domainDataArray = new Array();
 
     /*
      * The map of site data for each domain.
@@ -517,23 +555,29 @@ const ExtractNews = (() => {
             domainData, siteDataObject.hostServer, siteDataObject.paths);
         var siteDataArray = this.siteDataArrayMap.get(domainData.id);
         var siteData;
+        var siteDataIndex = siteDataArray.length;
         for (let i = 0; i < siteDataArray.length; i++) {
           siteData = siteDataArray[i];
           if (siteId == siteData.id) {
             if (siteDataObject.accessCount != undefined) {
               siteData.toObject().accessCount = siteDataObject.accessCount;
             //} else {
-            // Not overwrite existing count if this is called by getSite().
+            // Not overwrite existing count if this is called by getUrlSite().
             }
             return siteData;
+          } else if (siteId.localeCompare(siteData.id) < 0) {
+            // Add the site data to the array in the order of IDs for each
+            // domain whose URLs are listed in the edit pane of selections.
+            siteDataIndex = i;
+            break;
           }
         }
         if (siteDataObject.accessCount == undefined) {
-          // Clear the accessed count only when this is called by getSite().
+          // Clear the access count only when this is called by getUrlSite().
           siteDataObject.accessCount = 0;
         }
         siteData = new SiteData(domainData.id, siteId, siteDataObject);
-        siteDataArray.push(siteData);
+        siteDataArray.splice(siteDataIndex, 0, siteData);
         return siteData;
       }
 
@@ -560,14 +604,52 @@ const ExtractNews = (() => {
       }
     }
 
-    // Array of domain data registered in the current context
-    var domainDataArray = new Array();
-
     // Map of the site data registered for each domain in the current context
     var domainSiteDataMap = new DomainSiteDataMap();
 
     // Set of IDs for which the domain is enabled in the current context
     var enabledDomainIdSet = new Set();
+
+    // Key to read and write the language of a domain
+    const LANGUAGE_KEY = "Language";
+
+    /*
+     * Reads the language code of a domain for the specified ID from
+     * the storage and returns the promise fulfilled with the string of it
+     * or rejected.
+     */
+    function readDomainLanguage(domainId) {
+      var domainLanguageKey = domainId + LANGUAGE_KEY;
+      return readStorage(domainLanguageKey).then((items) => {
+          var languageCode = items[domainLanguageKey];
+          if (languageCode == undefined) {
+            languageCode = "";
+          }
+          return Promise.resolve(languageCode);
+        });
+    }
+
+    /*
+     * Writes the language code in the specified domain data into the storage
+     * and returns the promise.
+     */
+    function writeDomainLanguage(domainData) {
+      var domainLanguageKey = domainData.id + LANGUAGE_KEY;
+      return writeStorage({
+          [domainLanguageKey]: domainData.languageCode
+        });
+    }
+    /*
+     * Removes the language code of a domain for the specified ID from
+     * the storage and returns the promise.
+     */
+    function removeDomainLanguage(domainId) {
+      return removeStorage(domainId + LANGUAGE_KEY);
+    }
+
+    _ExtractNews.readDomainLanguage = readDomainLanguage;
+    _ExtractNews.writeDomainLanguage = writeDomainLanguage;
+    _ExtractNews.removeDomainLanguage = removeDomainLanguage;
 
     /*
      * Returns true if the domain of the specified ID is registered and enabled
@@ -576,20 +658,6 @@ const ExtractNews = (() => {
     function isDomainEnabled(domainId) {
       _checkDomainId(domainId);
       return enabledDomainIdSet.has(domainId);
-    }
-
-    /*
-     * Returns the language by which the domain of the specified ID registered
-     * in the current context is localized.
-     */
-    function getDomainLanguage(domainId) {
-      _checkDomainId(domainId);
-      for (const domainData of domainDataArray) {
-        if (domainId == domainData.id) {
-          return domainData.language;
-        }
-      }
-      return _ExtractNews.SITE_ENGLISH;
     }
 
     /*
@@ -609,8 +677,8 @@ const ExtractNews = (() => {
         enabledDomainIdSet.add(domainId);
         if (Debug.isLoggingOn()) {
           Debug.dump(
-            "\t", domainDataObject.language,
-            domainDataObject.hostServerPatterns.join(","),
+            "\t", domainDataObject.languageCode,
+            domainDataObject.hostServerPatterns.join(WORD_SEPARATOR),
             domainDataObject.hostDomain);
         }
       } else if (enabledDomainIdSet.has(domainId)) {
@@ -643,7 +711,6 @@ const ExtractNews = (() => {
     }
 
     _ExtractNews.isDomainEnabled = isDomainEnabled;
-    _ExtractNews.getDomainLanguage = getDomainLanguage;
     _ExtractNews.setDomain = setDomain;
     _ExtractNews.removeDomain = removeDomain;
     _ExtractNews.forEachDomain = forEachDomain;
@@ -659,12 +726,17 @@ const ExtractNews = (() => {
           var commentPaths = splitLocalizedString(sitePrefix + "CommentPaths");
           var domainDataObject = {
               name: getLocalizedString(sitePrefix + "Name"),
-              language: language,
+              languageCode: LANGUAGE_CODE_EN,
               hostServerPatterns:
                 splitLocalizedString(sitePrefix + "HostServerPatterns"),
               hostDomain: getLocalizedString(sitePrefix + "Domain"),
               enabled: false
             };
+          switch (language) {
+          case LANGUAGE_JAPANESE:
+            domainDataObject.languageCode = LANGUAGE_CODE_JA;
+            break;
+          }
           if (paths[0] != "" || paths.length > 1) {
             domainDataObject.paths = paths;
           }
@@ -685,55 +757,6 @@ const ExtractNews = (() => {
     }
 
     splitLocalizedString("SiteLanguages").forEach(_setLocalizedDomains);
-
-    function _getDomainSiteDataObject(domainData, url) {
-      var urlHostPath = url.substring(URL_HTTPS_SCHEME.length);
-      var urlHostMatch =
-        urlHostPath.match(domainSiteDataMap.getDomainRegExp(domainData.id));
-      if (urlHostMatch != null) {
-        var siteDataObject = {
-            hostDomain: domainData.hostDomain
-          };
-        if (urlHostMatch.length >= 1) {
-          siteDataObject.hostServer = urlHostMatch[1];
-        }
-        if (domainData.paths == undefined) {
-          return siteDataObject;
-        }
-        var urlPath =
-          urlHostPath.substring(urlHostPath.indexOf(URL_PATH_SEPARATOR));
-        for (const path of domainData.paths) {
-          if (urlPath.startsWith(path)
-            && (urlPath.length == path.length
-              || urlPath.codePointAt(path.length)
-                == URL_PATH_SEPARATOR.codePointAt(0))) {
-            siteDataObject.path = path;
-            return siteDataObject;
-          }
-        }
-      }
-      return undefined;
-    }
-
-    /*
-     * Returns the site data for the specified URL contained in a domain
-     * if it's registered in the current context, otherwise, undefined.
-     */
-    function getSite(url) {
-      if (url != undefined) {
-        if ((typeof url) != "string") {
-          throw newIllegalArgumentException("url");
-        } else if (url.startsWith(URL_HTTPS_SCHEME)) {
-          for (const domainData of domainDataArray) {
-            var siteDataObject = _getDomainSiteDataObject(domainData, url);
-            if (siteDataObject != undefined) {
-              return domainSiteDataMap.addSite(domainData, siteDataObject);
-            }
-          }
-        }
-      }
-      return undefined;
-    }
 
     /*
      * Registers the site of the specified data object to the current context
@@ -775,7 +798,6 @@ const ExtractNews = (() => {
       domainSiteDataMap.forEachSite(callback);
     }
 
-    _ExtractNews.getSite = getSite;
     _ExtractNews.addSite = addSite;
     _ExtractNews.deleteSite = deleteSite;
     _ExtractNews.forEachSite = forEachSite;
@@ -852,116 +874,152 @@ const ExtractNews = (() => {
     _ExtractNews.clearDomainSites = clearDomainSites;
 
     /*
-     * Reads the enabled site which contains the specified URL from the storage
-     * and returns the promise fulfilled with it if exists.
+     * The site information for a URL.
      */
-    function readEnabledSite(url) {
-      var siteData = getSite(url);
-      if (siteData != undefined) {
-        var domainEnabledKey =
-          _createDomainId(siteData.hostDomain) + _ExtractNews.ENABLED_KEY;
-        return readStorage(domainEnabledKey).then((items) => {
-            var enabled = items[domainEnabledKey];
-            if (enabled | enabled == undefined) {
-              return Promise.resolve(siteData);
+    class UrlSite {
+      constructor(domainData, dataObject, dataAdded = false) {
+        if (domainData == undefined) {
+          throw newNullPointerException("domainData");
+        } else if (dataObject == undefined) {
+          throw newNullPointerException("dataObject");
+        }
+        this.site = {
+            language: LANGUAGE_ENGLISH,
+            enabled: enabledDomainIdSet.has(domainData.id)
+          };
+        switch (domainData.languageCode) {
+        case LANGUAGE_CODE_JA:
+          this.site.language = LANGUAGE_JAPANESE;
+          break;
+        }
+        if (dataAdded) {
+          this.site.data = domainSiteDataMap.addSite(domainData, dataObject);
+          // Set the flag whether the site data is added firstly or again.
+          this.site.firstAccessed = dataObject == this.site.data.toObject();
+        } else {
+          var siteId =
+            _createSiteId(domainData, dataObject.hostServer, dataObject.paths);
+          this.site.data = new SiteData(domainData.id, siteId, dataObject);
+          this.site.firstAccessed = true;
+        }
+      }
+
+      get data() {
+        return this.site.data;
+      }
+
+      get language() {
+        return this.site.language;
+      }
+
+      isEnabled() {
+        return this.site.enabled;
+      }
+
+      isFirstAccessed() {
+        return this.site.firstAccessed;
+      }
+    }
+
+    function _getUrlSiteObject(url) {
+      if (url != undefined) {
+        if ((typeof url) != "string") {
+          throw newIllegalArgumentException("url");
+        } else if (url.startsWith(URL_HTTPS_SCHEME)) {
+          for (const domainData of domainDataArray) {
+            var urlHostPath = url.substring(URL_HTTPS_SCHEME.length);
+            var urlHostMatch =
+              urlHostPath.match(
+                domainSiteDataMap.getDomainRegExp(domainData.id));
+            if (urlHostMatch != null) {
+              var urlSiteObject = {
+                  domainData: domainData,
+                  dataObject: {
+                      hostDomain: domainData.hostDomain
+                    }
+                };
+              if (urlHostMatch.length >= 1) {
+                urlSiteObject.dataObject.hostServer = urlHostMatch[1];
+              }
+              if (domainData.paths == undefined) {
+                return urlSiteObject;
+              }
+              var urlPath =
+                urlHostPath.substring(urlHostPath.indexOf(URL_PATH_SEPARATOR));
+              for (const path of domainData.paths) {
+                if (urlPath.startsWith(path)
+                  && (urlPath.length == path.length
+                    || urlPath.codePointAt(path.length)
+                      == URL_PATH_SEPARATOR.codePointAt(0))) {
+                  urlSiteObject.dataObject.path = path;
+                  return urlSiteObject;
+                }
+              }
             }
+          }
+        }
+      }
+      return undefined;
+    }
+
+    /*
+     * Returns true if the site for the specified URL in a domain if registered
+     * and enabled in the current context.
+     */
+    function isUrlSiteEnabled(url) {
+      var urlSiteObject = _getUrlSiteObject(url);
+      if (urlSiteObject != undefined) {
+        return isDomainEnabled(urlSiteObject.domainData.id);
+      }
+      return false;
+    }
+
+    /*
+     * Returns the site information for the specified URL in a domain
+     * if registered in the current context, otherwise, undefined.
+     */
+    function getUrlSite(url) {
+      var urlSiteObject = _getUrlSiteObject(url);
+      if (urlSiteObject != undefined) {
+        return new UrlSite(
+          urlSiteObject.domainData, urlSiteObject.dataObject, true);
+      }
+      return undefined;
+    }
+
+    /*
+     * Reads the site information for the specified URL in a domain from
+     * the storage and returns the promise fulfilled with it if exists.
+     */
+    function readUrlSite(url) {
+      var urlSiteObject = _getUrlSiteObject(url);
+      if (urlSiteObject != undefined) {
+        var domainData = urlSiteObject.domainData;
+        return readDomainLanguage(domainData.id).then((languageCode) => {
+            Debug.printMessage(
+              "Read the domain data of " + domainData.id + ".");
+            var domainDataObject = domainData.toObject();
+            domainDataObject.enabled = languageCode != "";
+            setDomain(domainDataObject);
+            return Promise.resolve(
+              new UrlSite(domainData, urlSiteObject.dataObject));
           });
       }
       return Promise.resolve();
     }
 
-    _ExtractNews.readEnabledSite = readEnabledSite;
+    _ExtractNews.UrlSite = UrlSite;
+    _ExtractNews.isUrlSiteEnabled = isUrlSiteEnabled;
+    _ExtractNews.getUrlSite = getUrlSite;
+    _ExtractNews.readUrlSite = readUrlSite;
 
-
-    function _forEachHostServerUrlPatterns(
-      callback, hostServerPattern, hostDomain, paths) {
-      var urlHost = URL_HTTPS_SCHEME;
-      if (hostServerPattern != URL_PATTERN_NON_EXISTENCE) {
-        urlHost += hostServerPattern + URL_DOMAIN_LABEL_SEPARATOR;
-      }
-      urlHost += hostDomain;
-      if (paths != undefined) {
-        paths.forEach((path) => {
-            callback(
-              urlHost + path + URL_PATH_SEPARATOR + URL_PATTERN_ANY_MATCH);
-          });
-      } else {
-        callback(urlHost + URL_PATH_SEPARATOR + URL_PATTERN_ANY_MATCH);
-      }
-    }
-
-    /*
-     * Returns the array of URL patterns whose news sites are contained
-     * in the domain set and enabled in the current context.
-     */
-    function getEnabledSiteUrlPatterns() {
-      var enabledSiteUrlPatterns = new Array();
-      domainDataArray.forEach((domainData) => {
-          if (enabledDomainIdSet.has(domainData.id)) {
-            domainData.hostServerPatterns.forEach((hostServerPattern) => {
-                _forEachHostServerUrlPatterns((urlPattern) => {
-                    enabledSiteUrlPatterns.push(urlPattern);
-                  },
-                  hostServerPattern, domainData.hostDomain,
-                  domainData.paths);
-              });
-          }
-        });
-      return enabledSiteUrlPatterns;
-    }
-
-    /*
-     * Returns the array of URL patterns whose comment sites are contained
-     * in the domain set and enabled in the current context.
-     */
-    function getEnabledCommentSiteUrlPatterns() {
-      var enabledCommentSiteUrlPatterns = new Array();
-      domainDataArray.forEach((domainData) => {
-          if (enabledDomainIdSet.has(domainData.id)) {
-            var commentServerPatterns = domainData.commentServerPatterns;
-            if (commentServerPatterns != undefined) {
-              commentServerPatterns.forEach((commentServerPattern) => {
-                  _forEachHostServerUrlPatterns((urlPattern) => {
-                      enabledCommentSiteUrlPatterns.push(urlPattern);
-                    },
-                    commentServerPattern, domainData.hostDomain,
-                    domainData.commentPaths);
-                });
-            }
-          }
-        });
-      return enabledCommentSiteUrlPatterns;
-    }
-
-    _ExtractNews.getEnabledSiteUrlPatterns = getEnabledSiteUrlPatterns;
-    _ExtractNews.getEnabledCommentSiteUrlPatterns =
-      getEnabledCommentSiteUrlPatterns;
-
-
-    // Target names to accept or drop a news topic or sender by the filtering
-    const TARGET_NAME_SET = new Set([
-        _ExtractNews.TARGET_ACCEPT,
-        _ExtractNews.TARGET_DROP,
-        _ExtractNews.TARGET_BREAK
-      ]);
-
-    _ExtractNews.TARGET_NAME_SET = TARGET_NAME_SET;
-
-    /*
-     * Returns true if the specified string is a filtering target name.
-     */
-    function isFilteringTargetName(targetName) {
-      return TARGET_NAME_SET.has(targetName.toUpperCase());
-    }
-
-    _ExtractNews.isFilteringTargetName = isFilteringTargetName;
 
     function _checkTargetName(targetName) {
       if (targetName == undefined) {
         throw newNullPointerException("targetName");
       } else if ((typeof targetName) != "string") {
         throw newIllegalArgumentException("targetName");
-      } else if (! TARGET_NAME_SET.has(targetName)) {
+      } else if (! _ExtractNews.TARGET_NAME_SET.has(targetName)) {
         throw newInvalidParameterException(targetName);
       }
     }
@@ -1022,15 +1080,15 @@ const ExtractNews = (() => {
     }
 
     const FILTERING_ACCEPT = new FilteringTarget({
-        name: _ExtractNews.TARGET_ACCEPT,
+        name: TARGET_ACCEPT,
         terminatesBlock: true
       });
     const FILTERING_DROP = new FilteringTarget({
-        name: _ExtractNews.TARGET_DROP,
+        name: TARGET_DROP,
         terminatesBlock: true
       });
     const FILTERING_BREAK = new FilteringTarget({
-        name: _ExtractNews.TARGET_BREAK,
+        name: TARGET_BREAK,
         terminatesBlock: true
       });
 
@@ -1042,11 +1100,11 @@ const ExtractNews = (() => {
       name = name.toUpperCase();
       if (wordSet == undefined) {
         switch (name) {
-        case ExtractNews.TARGET_ACCEPT:
+        case TARGET_ACCEPT:
           return FILTERING_ACCEPT;
-        case ExtractNews.TARGET_DROP:
+        case TARGET_DROP:
           return FILTERING_DROP;
-        case ExtractNews.TARGET_BREAK:
+        case TARGET_BREAK:
           return FILTERING_BREAK;
         }
       }

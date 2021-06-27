@@ -15,6 +15,11 @@ li {
   list-style-type: none;
 }
 
+li.pointed {
+  color: #ffffff;
+  background-color: #549fe3;
+}
+
 .page_header {
   margin-top: 8px;
   padding: 0px 8px;
@@ -37,17 +42,6 @@ li {
 .page_header li:first-child,
 .page_header li:last-child {
   visibility: hidden;
-}
-
-.page_header li:first-child:hover,
-.page_header li:last-child:hover {
-  color: #ffffff;
-  background-color: #549fe3;
-}
-
-.pointed {
-  color: #ffffff;
-  background-color: #549fe3;
 }
 
 #NewsSelections {

@@ -32,7 +32,7 @@ ExtractNews.Popup = (() => {
     function _getQueryString(name, value) {
       var queryString = name + "=";
       if (Array.isArray(value)) {
-        queryString += value.join(",");
+        queryString += value.join(WORD_SEPARATOR);
       } else {
         queryString += String(value);
       }
@@ -63,7 +63,7 @@ ExtractNews.Popup = (() => {
             case _Popup.QUERY_SELECTION_INDEX_STRINGS:
               var queryArray;
               if (queryValue != "") {
-                queryArray = queryValue.split(",");
+                queryArray = queryValue.split(WORD_SEPARATOR);
               } else {
                 queryArray = new Array();
               }
@@ -204,7 +204,7 @@ ExtractNews.Popup = (() => {
                 }
               }
             });
-          if (editUILanguage.startsWith("ja")) {
+          if (editUILanguage.startsWith(LANGUAGE_CODE_JA)) {
             // Enable the button to localize a regular expression.
             var editLocalizedButton = editRegexpDiv.querySelector(".localize");
             editLocalizedButton.textContent = _getEditMessage("Localize");
@@ -273,16 +273,16 @@ ExtractNews.Popup = (() => {
 
     function _setEditUrlSelect(editPane, openedUrl, tabSelectionOpenedUrl) {
       var editUrlSelect = editPane.urlSelect;
-      var openedSiteId = undefined;
+      var openedUrlSiteId = undefined;
       var openedUrlAppended = false;
       if (openedUrl != "") {
         if (openedUrl != URL_ABOUT_BLANK) {
           if (openedUrl == tabSelectionOpenedUrl) {
-            tabSelectionOpenedUrl = undefined;
+            tabSelectionOpenedUrl = "";
           }
-          var openedSiteData = ExtractNews.getSite(openedUrl);
-          if (openedSiteData != undefined) {
-            openedSiteId = openedSiteData.id;
+          var openedUrlSite = ExtractNews.getUrlSite(openedUrl);
+          if (openedUrlSite != undefined) {
+            openedUrlSiteId = openedUrlSite.data.id;
           }
           openedUrlAppended = true;
         }
@@ -318,7 +318,7 @@ ExtractNews.Popup = (() => {
             if (siteUrl == openedUrl) { // Opened URL same as a news site
               selectedUrlOption = siteUrlOption;
               openedUrlAppended = false;
-            } else if (siteData.id == openedSiteId) {
+            } else if (siteData.id == openedUrlSiteId) {
               // Append the option element for the specified opened URL to
               // the next of a news site which contains it.
               selectedUrlOption = _addEditUrlOption(editUrlSelect, openedUrl);
@@ -463,7 +463,7 @@ ExtractNews.Popup = (() => {
       // Enabled site               Current URL   Opened URL
       // Disabled or no news site   Opened URL    Opened URL
       //
-      // Divide by the state of a site on the active tab, and apply news
+      // Consider the state of a site on the active tab, and apply news
       // selections to the current URL on enabled sites if open in this tab,
       // otherwise, update by the opened URL of its.
       if (tabOpen) {
@@ -477,12 +477,8 @@ ExtractNews.Popup = (() => {
       return tabGettingPromise.then((tab) => {
           var tabUpdated = true;
           if (! tabOpen) {
-            var siteData = ExtractNews.getSite(tab.url);
-            if (siteData != undefined) {
-              // Update the active tab by the opened URL of news selections
-              // if its site is not enabled.
-              tabUpdated = ! ExtractNews.isDomainEnabled(siteData.domainId);
-            }
+            // Update the active tab by the opened URL if not enabled.
+            tabUpdated = ! ExtractNews.isUrlSiteEnabled(tab.url);
             if (tabUpdated && newsSelections[0].openedUrl == URL_ABOUT_BLANK) {
               return Promise.resolve();
             }

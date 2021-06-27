@@ -143,6 +143,25 @@ hr {
   border-bottom: none;
 }
 
+.information:before {
+  position: absolute;
+  top: 8px;
+  left: -14px;
+  width: 0px;
+  height: 0px;
+  border: 6px solid transparent;
+  content: "";
+}
+
+.information {
+  position: absolute;
+  padding: 5px 12px;
+  border-radius: 5px;
+  font-size: 14px;
+  z-index: 1;
+  display: none;
+}
+
 .checked_option {
   margin: 2px 0px;
   align-items: center;
@@ -158,12 +177,12 @@ hr {
 }
 
 #OptionUpdate {
-  margin: 15px 20px;
+  margin: 10px 5px;
   display: block;
 }
 
 .narrow #OptionUpdate {
-  margin: 15px 10px;
+  margin: 10px;
 }
 
 .edit #OptionUpdate {
@@ -171,31 +190,34 @@ hr {
 }
 
 #OptionUpdate p {
-  padding: 10px;
+  margin: 10px 0px;
+  padding: 5px 10px;
   font-size: 16px;
   line-height: 24px;
   letter-spacing: 1px;
-  color: #ff0000;
+  color: #ffffff;
+  background-color: #ff8000;
+  display: none;
 }
 
-#OptionUpdate p.grayed_out {
-  color: #c0c0c0;
+#OptionUpdate p.notified {
+  display: block;
 }
 
 #OptionUpdate div {
-  margin: 5px;
+  margin: 5px 0px;
 }
 
 #OptionUpdate button {
   margin: 0px 1px;
   padding: 3px 0px;
   width: 96px;
-  border-width: 3px;
+  border-width: 2px;
   font-size: 13px;
 }
 
 section {
-  margin: 30px 0px 20px 0px;
+  margin: 20px 0px;
   padding: 0px 5px;
   display: none;
 }
@@ -218,13 +240,26 @@ section {
 }
 
 #GeneralPane > div {
-  margin: 15px 0px;
-  padding: 20px;
+  position: relative;
+  margin: 20px;
   flex-flow: column nowrap;
 }
 
 #GeneralPane h3 {
-  margin: 0px 5px 10px 5px;
+  margin: 10px 5px;
+  width: 270px;
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: flex-start;
+}
+
+#GeneralPane ul {
+  flex-flow: row wrap;
+  display: flex;
+}
+
+#GeneralPane li {
+  display: flex;
 }
 
 #GeneralPane input {
@@ -237,8 +272,23 @@ section {
   letter-spacing: 1px;
 }
 
-#Advanced > div {
+#Advanced > ul {
   width: 280px;
+}
+
+#Advanced.pointed span {
+  display: inline;
+}
+
+#Advanced .information:before {
+  border-right: 8px solid #ff0000;
+}
+
+#Advanced .information {
+  top: 5px;
+  left: 110px;
+  color: #ffffff;
+  background-color: #ff0000;
 }
 
 #Advanced .checked_option {
@@ -309,7 +359,7 @@ select {
   display: flex;
 }
 
-#FilteringCategoryAlways span {
+#FilteringCategoryAlways label {
   margin: 8px;
   padding: 5px 80px;
   width: 284px;
@@ -319,7 +369,7 @@ select {
   font-weight: bold;
 }
 
-.narrow #FilteringCategoryAlways span {
+.narrow #FilteringCategoryAlways label {
   padding: 5px 16px;
   width: 262px;
 }
@@ -576,7 +626,7 @@ select {
   align-items: center;
 }
 
-.edit_header span {
+.edit_header label {
   padding: 3px;
   font-weight: bold;
   font-size: 14px;
@@ -889,8 +939,8 @@ select {
   position: absolute;
   top: 10px;
   left: -14px;
-  width: 0;
-  height: 0;
+  width: 0px;
+  height: 0px;
   border: 6px solid transparent;
   border-right: 8px solid #ffffa0;
   content: "";

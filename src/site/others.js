@@ -19,14 +19,12 @@
 
 "use strict";
 
-ExtractNews.readEnabledSite(document.URL).then((siteData) => {
-    if (siteData != undefined) {
-      var newsSiteUrlData = getSiteUrlData(siteData, document.URL);
-      var newsSiteUrlParser = new SiteUrlParser(newsSiteUrlData);
+ExtractNews.readUrlSite(document.URL).then((urlSite) => {
+    if (urlSite == undefined || ! urlSite.isEnabled()) {
+      var urlParser = new UrlParser(getUrlData(urlSite.data, document.URL));
 
-      Site.setNewsOpenedUrl(newsSiteUrlParser.toString());
-      Site.setNewsSelector(
-        new Selector(ExtractNews.getDomainLanguage(siteData.domainId)));
+      Site.setNewsOpenedUrl(urlParser.toString());
+      Site.setNewsSelector(new Selector(urlSite.language));
     }
     Site.displayNewsDesigns();
   }).catch((error) => {

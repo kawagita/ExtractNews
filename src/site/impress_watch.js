@@ -19,8 +19,8 @@
 
 "use strict";
 
-ExtractNews.readEnabledSite(document.URL).then((siteData) => {
-    if (siteData == undefined) {
+ExtractNews.readUrlSite(document.URL).then((urlSite) => {
+    if (urlSite == undefined || ! urlSite.isEnabled()) {
       Site.displayNewsDesigns();
       return;
     }
@@ -511,20 +511,20 @@ s    }
     // Display news designs arranged by a selector which selects and excludes
     // topics or senders, waiting the settings from the background script.
 
-    const SITE_HOST_SERVERS = splitImpressWatchString("SiteHostServers");
+    var urlData = getUrlData(urlSite.data, document.URL);
+    var siteIndex =
+      splitImpressWatchString("SiteHostServers").indexOf(urlData.hostServer);
 
-    var newsSiteUrlData = getSiteUrlData(siteData, document.URL);
-    var newsSiteIndex = SITE_HOST_SERVERS.indexOf(newsSiteUrlData.hostServer);
-    if (newsSiteIndex >= 0) { // INTERNET Watch, PC Watch, ..., and Watch Video
+    if (siteIndex >= 0) { // INTERNET Watch, PC Watch, ..., and Watch Video
       Site.addNewsTopicWords(
-        splitImpressWatchString("SiteTopicWords")[newsSiteIndex].split(" "));
+        splitImpressWatchString("SiteTopicWords")[siteIndex].split(" "));
     } else { // Impress Watch
       Site.addNewsTopicWords(splitImpressWatchString("TopicWords"));
     }
 
-    class ImpressWatchUrlParser extends SiteUrlParser {
+    class ImpressWatchUrlParser extends UrlParser {
       constructor() {
-        super(newsSiteUrlData);
+        super(urlData);
       }
       getPathString(pathId) {
         return getImpressWatchString(pathId);
@@ -534,9 +534,10 @@ s    }
       }
     }
 
-    var newsSiteUrlParser = new ImpressWatchUrlParser();
-    if (newsSiteUrlParser.parseByRegExp("Article")) { // An article
-      Site.setNewsDesigns(
+    var urlParser = new ImpressWatchUrlParser();
+
+    if (urlParser.parseByRegExp("Article")) { // An article
+      Site.setNewsDesign(
         // Links to the previous or next article
         new Design.NewsDesign({
             parentProperties: Array.of({
@@ -562,49 +563,49 @@ s    }
         // TRENDING
         new ImpressWatchLateMainTopics("#chartbeat_recommend", 3, false));
     } else { // News topics listed in the main pane
-      if (newsSiteUrlParser.parseDirectory()) { // Impress site's top
-        if (newsSiteIndex >= 0) {
-          Site.setNewsDesigns(
+      if (urlParser.parseDirectory()) { // Impress site's top
+        if (siteIndex >= 0) {
+          Site.setNewsDesign(
             new ImpressWatchTopNewsPanels("top-news"),
             new ImpressWatchDailyBlocks(),
             // HOT TOPICS, Rensai, and Market Johou
             new ImpressWatchMainTopics("li.type-1"));
         } else {
-          Site.setNewsDesigns(
+          Site.setNewsDesign(
             new ImpressWatchTopNewsPanels("top-news2"),
             new ImpressWatchNewsLists());
         }
-      } else if (newsSiteUrlParser.parse("KodomoItPath")) { // Kodomo IT
+      } else if (urlParser.parse("KodomoItPath")) { // Kodomo IT
         Site.setNewsDesign(new ImpressWatchKodomoItLists());
         Site.addNewsTopicWords(splitImpressWatchString("KodomoItTopicWords"));
-      } else if (newsSiteUrlParser.parse("BackNumberPath")) { // Back numbers
-        if (newsSiteUrlParser.parse("BackNumberTopPath")) {
-          if (newsSiteIndex >= 0) {
+      } else if (urlParser.parse("BackNumberPath")) { // Back numbers
+        if (urlParser.parse("BackNumberTopPath")) {
+          if (siteIndex >= 0) {
             Site.setNewsDesign(new ImpressWatchNewsBlocks());
           } else { // "Kongetsu No Kiji" linked from Impress Watch top
             Site.setNewsDesign(new ImpressWatchNewsLists());
           }
         } else { // Chuko PC Hotline!
           Site.setNewsDesign(new ImpressWatchNewsLists());
-          newsSiteUrlParser.parseDirectoryHierarchy();
+          urlParser.parseDirectoryHierarchy();
         }
-      } else if (newsSiteUrlParser.parse("AccessRankingPath")) { // Ranking
-        newsSiteUrlParser.parseDirectory();
+      } else if (urlParser.parse("AccessRankingPath")) { // Ranking
+        urlParser.parseDirectory();
         Site.setNewsDesign(new ImpressWatchRanking("ranking-list"));
-      } else if (newsSiteUrlParser.parse("HeadlinePath")) { // News Headline
-        Site.setNewsDesigns(
+      } else if (urlParser.parse("HeadlinePath")) { // News Headline
+        Site.setNewsDesign(
           new ImpressWatchLateMainTopics("article", 80),
           // TRENDING
           new ImpressWatchLateMainTopics("#chartbeat_recommend", 3, false));
-      } else if (newsSiteUrlParser.parse("TrendingPath")) { // Trending
+      } else if (urlParser.parse("TrendingPath")) { // Trending
         Site.setNewsDesign(new ImpressWatchTrending());
-      } else if (newsSiteUrlParser.parse("LifeAtHomePath")) { // Zaitaku Work
+      } else if (urlParser.parse("LifeAtHomePath")) { // Zaitaku Work
         Site.setNewsDesign(new ImpressWatchLifeAtHome());
-      } else if (newsSiteUrlParser.parse("CategoryPath")) {
-        if (newsSiteUrlParser.parse("CategoryListHtml")) { // Category links
+      } else if (urlParser.parse("CategoryPath")) {
+        if (urlParser.parse("CategoryListHtml")) { // Category links
           Site.setNewsDesign(new ImpressWatchCategoryLinks());
         } else { // Impress site's news lists categorized by a topic
-          if (newsSiteIndex >= 0) {
+          if (siteIndex >= 0) {
             Site.setNewsDesign(
               // Shiborikomu displayed in the list header
               new Design.NewsDesign({
@@ -615,15 +616,15 @@ s    }
                 }));
           }
           Site.setNewsDesign(new ImpressWatchNewsLists());
-          newsSiteUrlParser.parseDirectoryHierarchy();
+          urlParser.parseDirectoryHierarchy();
         }
       } else { // Impress site's news lists which is not categorized by a topic
         Site.setNewsDesign(new ImpressWatchNewsBlocks());
-        newsSiteUrlParser.parseAll();
+        urlParser.parseAll();
       }
-      Site.setNewsOpenedUrl(newsSiteUrlParser.toString());
+      Site.setNewsOpenedUrl(urlParser.toString());
     }
-    Site.setNewsDesigns(
+    Site.setNewsDesign(
       // Osusume Kiji
       new ImpressWatchRecommendedList(),
       // Saishin Kiji
@@ -636,8 +637,7 @@ s    }
       new ImpressWatchRanking("ranking"),
       new ImpressWatchRanking("all-ranking"));
 
-    Site.setNewsSelector(
-      new Selector(ExtractNews.getDomainLanguage(siteData.domainId)));
+    Site.setNewsSelector(new Selector(urlSite.language));
     Site.displayNewsDesigns();
   }).catch((error) => {
     Debug.printStackTrace(error);

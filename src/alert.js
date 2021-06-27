@@ -101,7 +101,7 @@ ExtractNews.Alert = (() => {
 
     {
       var settingNameMaxWidth = _Alert.SETTING_NAME_MAX_WIDTH;
-      if (browser.i18n.getUILanguage().startsWith("ja")) {
+      if (browser.i18n.getUILanguage().startsWith(LANGUAGE_CODE_JA)) {
         settingNameMaxWidth /= 2;
       }
       WARNING_MAP.set(

@@ -34,7 +34,7 @@ function createFilteringTargetData(filteringTarget) {
     };
   if (filteringTarget != undefined) {
     targetData.name = filteringTarget.name;
-    targetData.wordsString = filteringTarget.words.join(",");
+    targetData.wordsString = filteringTarget.words.join(WORD_SEPARATOR);
     targetData.blockTerminated = filteringTarget.terminatesBlock();
     targetData.wordBeginningMatched = filteringTarget.isWordBeginningMatched();
     targetData.wordEndMatched = filteringTarget.isWordEndMatched();
@@ -53,7 +53,7 @@ function createFilteringCategoryData(filtering) {
       targetDataArray: new Array()
     };
   if (filtering.categoryTopics != undefined) {
-    categoryData.topicsString = filtering.categoryTopics.join(",");
+    categoryData.topicsString = filtering.categoryTopics.join(WORD_SEPARATOR);
   }
   filtering.targets.forEach((filteringTarget) => {
       categoryData.targetDataArray.push(
@@ -64,19 +64,60 @@ function createFilteringCategoryData(filtering) {
   return categoryData;
 }
 
+/*
+ * Returns true if the specified string is a filtering target name.
+ */
+function isFilteringTargetName(targetName) {
+  return ExtractNews.TARGET_NAME_SET.has(targetName.toUpperCase());
+}
+
+const WORD_EMPTY_SEQUENCE_REGEXP = new RegExp("\\" + WORD_ADDITION + "+", "g");
+
+/*
+ * Returns the set of words for a filtering target divided from the specified
+ * string.
+ */
+function getFilteringTargetWordSet(wordsString, localized = false) {
+  var targetWordSet = new Set();
+  wordsString.split(WORD_SEPARATOR).forEach((wordString) => {
+      wordString =
+        _Text.trimText(
+          _Text.removeTextZeroWidthSpaces(wordString)).replace(
+            WORD_EMPTY_SEQUENCE_REGEXP, WORD_ADDITION);
+      var wordStartIndex = 0;
+      var wordEndIndex = wordString.length;
+      if (wordString.startsWith(WORD_ADDITION)) {
+        wordStartIndex++;
+      }
+      if (wordString.endsWith(WORD_ADDITION)) {
+        wordEndIndex--;
+      }
+      var targetWord = wordString.substring(wordStartIndex, wordEndIndex);
+      if (targetWord != "") {
+        if (localized) {
+          var localizedContext =
+            _Text.getLocalizedContext(targetWord, (codePoint) => {
+                return codePoint == WORD_ADDITION.codePointAt(0);
+              });
+          targetWordSet.add(localizedContext.halfwidthText.textString);
+          if (localizedContext.hasDifferentWidth()) {
+            targetWordSet.add(localizedContext.fullwidthText.textString);
+          }
+        } else {
+          targetWordSet.add(targetWord);
+        }
+      }
+    });
+  return targetWordSet;
+}
+
 function _newFilteringTarget(targetData) {
   if (targetData.blockTerminated) {
     return ExtractNews.newFilteringTarget(targetData.name);
   }
   var targetWordSet = targetData.localizedWordSet;
   if (targetWordSet == undefined) {
-    targetWordSet = new Set();
-    targetData.wordsString.split(",").forEach((word) => {
-        var targetWord = _Text.trimText(_Text.removeTextZeroWidthSpaces(word));
-        if (targetWord != "") {
-          targetWordSet.add(targetWord);
-        }
-      });
+    targetWordSet = getFilteringTargetWordSet(targetData.wordsString);
   }
   return ExtractNews.newFilteringTarget(
     targetData.name, targetWordSet, targetData.wordBeginningMatched,
@@ -266,7 +307,8 @@ class FilteringData {
         var filtering = ExtractNews.newFiltering();
         filtering.setCategoryName(categoryData.name);
         if (categoryId != ExtractNews.FILTERING_FOR_ALL) {
-          filtering.setCategoryTopics(categoryData.topicsString.split(","));
+          filtering.setCategoryTopics(
+            categoryData.topicsString.split(WORD_SEPARATOR));
         }
         var filteringTargets = new Array();
         var targetDataArray = categoryData.targetDataArray;
@@ -282,11 +324,11 @@ class FilteringData {
   }
 }
 
+// Variables and functions for the node of filtering targets.
+
 function _getTargetMessage(id) {
   return getOptionMessage("Target" + id);
 }
-
-// Variables and functions for the node of filtering targets.
 
 const FILTERING_CATEGORY_FOR_ALL = "for_all";
 
@@ -408,7 +450,7 @@ function _createTargetNode(targetData, policyTargetCreated = false) {
     targetExcludeWordsDiv.appendChild(targetExcludeWordsCheckbox);
     targetExcludeWordsDiv.appendChild(targetExcludeWordsLabel);
     targetOperationDiv.firstElementChild.appendChild(targetExcludeWordsDiv);
-    if (browser.i18n.getUILanguage().startsWith("ja")) { // Zenhankaku button
+    if (browser.i18n.getUILanguage().startsWith(LANGUAGE_CODE_JA)) {
       var targetLocalizeButton = document.createElement("button");
       targetLocalizeButton.className = OPERATION_LOCALIZE;
       targetLocalizeButton.textContent = getOptionMessage("Localize");
@@ -664,8 +706,8 @@ class FilteringPane extends FocusedOptionPane {
     this.pane.filteringBlocks.appendChild(emptyBlock);
   }
 
-  setEventRelation(eventGroup) {
-    super.setEventRelation(eventGroup);
+  setEventRelativeGroup(eventGroup) {
+    super.setEventRelativeGroup(eventGroup);
     eventGroup.addElements(
       Array.of(
         this.pane.filteringCategorySelect,

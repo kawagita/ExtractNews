@@ -47,7 +47,7 @@ function getOptionMessage(id) {
  */
 function getOptionElement(id, tagName) {
   var element = document.getElementById(id);
-  var label = element.querySelector("h3, label, span");
+  var label = element.querySelector("h3, label");
   if (label != null) {
     label.textContent = getOptionMessage(id);
   }
@@ -93,8 +93,8 @@ function sendOpitonUpdateMessage(updatedObject = { }) {
     });
 }
 
-// Class name of the element grayed out on the option page
-const OPTION_GRAYED_OUT = "grayed_out";
+// Class name to notify the updated information on the option page
+const OPTION_NOTIFIED = "notified";
 
 const OPTION_TRUE = "true";
 const OPTION_FALSE = "false";
@@ -163,7 +163,7 @@ class OptionSettings {
 class OptionData {
   constructor(optionNode, readValue, writeValue, updatedPropertyName) {
     if (optionNode == undefined) {
-      throw newNullPointerException("optionData");
+      throw newNullPointerException("optionNode");
     } else if (readValue == undefined) {
       throw newNullPointerException("readValue");
     } else if (writeValue == undefined) {
@@ -273,17 +273,20 @@ class OptionData {
   }
 }
 
-function _createCheckedOptionDiv(optionId, optionText) {
-  var checkedOptionDiv = document.createElement("div");
+function _createCheckedOption(optionId, optionText) {
+  var checkedOption = document.createElement("li");
   var checkedOptionInput = document.createElement("input");
   var checkedOptionLabel = document.createElement("label");
-  checkedOptionDiv.className = "checked_option";
+  checkedOption.className = "checked_option";
   checkedOptionInput.type = "checkbox";
   checkedOptionInput.id = optionId;
+  if (optionText == undefined) {
+    optionText = getOptionMessage(optionId);
+  }
   checkedOptionLabel.textContent = optionText;
-  checkedOptionDiv.appendChild(checkedOptionInput);
-  checkedOptionDiv.appendChild(checkedOptionLabel);
-  return checkedOptionDiv;
+  checkedOption.appendChild(checkedOptionInput);
+  checkedOption.appendChild(checkedOptionLabel);
+  return checkedOption;
 }
 
 class _EnablingSiteData extends OptionData {
@@ -304,10 +307,10 @@ class _EnablingSiteData extends OptionData {
     ExtractNews.setDomain(domainDataObject);
   }
   write() {
-    var domainEnabledKey = this.domainData.id + ExtractNews.ENABLED_KEY;
-    return writeStorage({
-        [domainEnabledKey]: ExtractNews.isDomainEnabled(this.domainData.id)
-      });
+    if (this.getValue()) {
+      return ExtractNews.writeDomainLanguage(this.domainData);
+    }
+    return ExtractNews.removeDomainLanguage(this.domainData.id);
   }
   getUpdatedPropertyData() {
     return this.domainData.toObject();
@@ -315,16 +318,14 @@ class _EnablingSiteData extends OptionData {
 }
 
 class _AdvancedOption extends OptionData {
-  constructor(optionNode, read, write, updatedPropertyName) {
-    super(optionNode, read, write, updatedPropertyName);
+  constructor(advancedOption) {
+    super(advancedOption.optionNode, advancedOption.readValue,
+      advancedOption.writeValue, advancedOption.updatedPropertyName);
   }
   isAdvanced() {
     return true;
   }
 }
-
-const OPTION_DISABLE_FILTERING = "DisableFiltering";
-const OPTION_DEBUG_EXTENSIONS  = "DebugExtension";
 
 /*
  * The pane of genral settings on this option page.
@@ -333,43 +334,61 @@ class GeneralPane {
   constructor(optionSettings) {
     this.pane = {
         optionDataArray: new Array(),
-        optionNodeGroup: new _Event.PointedGroup()
+        optionNodeGroup: new _Event.FocusedGroup(),
+        advancedOptionInformationGroup: new _Event.PointedGroup("DIV")
       };
-    var enablingSiteNode = getOptionElement("EnablingSite", "div");
+    var enablingSiteOptionList = getOptionElement("EnablingSite", "ul");
     ExtractNews.forEachDomain((domainData) => {
-        var domainCheckedOptionDiv =
-          _createCheckedOptionDiv(domainData.id, domainData.name);
-        enablingSiteNode.appendChild(domainCheckedOptionDiv);
+        var domainCheckedOption =
+          _createCheckedOption(domainData.id, domainData.name);
+        var domainCheckbox = domainCheckedOption.querySelector("input");
         this.pane.optionDataArray.push(
-          new _EnablingSiteData(
-            optionSettings, domainCheckedOptionDiv.querySelector("input"),
-            domainData));
+          new _EnablingSiteData(optionSettings, domainCheckbox, domainData));
+        this.pane.optionNodeGroup.addElement(domainCheckbox);
+        enablingSiteOptionList.appendChild(domainCheckedOption);
       });
-    var advancedOptionsNode = getOptionElement("Advanced", "div");
-    var disableFilteringOptionDiv =
-      _createCheckedOptionDiv(
-        OPTION_DISABLE_FILTERING, getOptionMessage(OPTION_DISABLE_FILTERING));
-    var debugExtensionOptionDiv =
-      _createCheckedOptionDiv(
-        OPTION_DEBUG_EXTENSIONS, getOptionMessage(OPTION_DEBUG_EXTENSIONS));
-    advancedOptionsNode.appendChild(disableFilteringOptionDiv);
-    advancedOptionsNode.appendChild(debugExtensionOptionDiv);
-    this.pane.optionDataArray.push(
-      new _AdvancedOption(
-        disableFilteringOptionDiv.querySelector("input"),
-        _Storage.readFilteringDisabled, _Storage.writeFilteringDisabled,
-        "filteringDisabled"),
-      new _AdvancedOption(
-        debugExtensionOptionDiv.querySelector("input"),
-        ExtractNews.readDebugMode, ExtractNews.writeDebugMode, "debugOn"));
+    var advancedOptionsNode = getOptionElement("Advanced");
+    var advancedOptionInformation = advancedOptionsNode.querySelector("span");
+    var advancedOptionList = advancedOptionsNode.querySelector("ul");
+    var disableFilteringOption = _createCheckedOption("DisableFiltering");
+    var disableContextMenuOption = _createCheckedOption("DisableContextMenu");
+    var debugExtensionOption = _createCheckedOption("DebugExtension");
+    var advancedOptions =
+      Array.of({
+          element: disableFilteringOption,
+          optionNode: disableFilteringOption.querySelector("input"),
+          readValue: _Storage.readFilteringDisabled,
+          writeValue: _Storage.writeFilteringDisabled,
+          updatedPropertyName: "filteringDisabled"
+        }, {
+          element: disableContextMenuOption,
+          optionNode: disableContextMenuOption.querySelector("input"),
+          readValue: _Storage.readContextMenuDisabled,
+          writeValue: _Storage.writeContextMenuDisabled,
+          updatedPropertyName: "contextMenuDisabled"
+        }, {
+          element: debugExtensionOption,
+          optionNode: debugExtensionOption.querySelector("input"),
+          readValue: ExtractNews.readDebugMode,
+          writeValue: ExtractNews.writeDebugMode,
+          updatedPropertyName: "debugOn"
+        });
+    advancedOptions.forEach((advancedOption) => {
+        this.pane.optionDataArray.push(new _AdvancedOption(advancedOption));
+        this.pane.optionNodeGroup.addElement(advancedOption.optionNode);
+        advancedOptionList.appendChild(advancedOption.element);
+      });
+    advancedOptionInformation.textContent =
+      getOptionMessage("UpdateOptionImmediately");
+    this.pane.advancedOptionInformationGroup.addElement(advancedOptionsNode);
   }
 
   forEachOptionData(callback) {
     this.pane.optionDataArray.forEach(callback);
   }
 
-  setEventRelation(eventGroup) {
-    eventGroup.setEventRelation(this.pane.optionNodeGroup);
+  setEventRelativeGroup(eventGroup) {
+    eventGroup.setEventRelativeGroup(this.pane.optionNodeGroup);
   }
 }
 
@@ -381,7 +400,6 @@ const OPERATION_APPEND = "append";
 const OPERATION_EDIT = "edit";
 
 const OPERATION_LOCALIZE = "localize";
-
 const OPERATION_UP = "up";
 const OPERATION_DOWN = "down";
 const OPERATION_REMOVE = "remove";
@@ -447,8 +465,8 @@ class FocusedOptionPane {
     }
     this.nodes = new Array();
     this.focusedNodeGroup = focusedNodeGroup;
-    this.insertButtonGroup = new _Event.PointedGroup();
-    this.insertButtonGroup.setEventRelation(focusedNodeGroup);
+    this.insertButtonGroup = new _Event.FocusedGroup();
+    this.insertButtonGroup.setEventRelativeGroup(focusedNodeGroup);
   }
 
   get nodeSize() {
@@ -625,8 +643,8 @@ class FocusedOptionPane {
     return this.focusedNodeGroup;
   }
 
-  setEventRelation(eventGroup) {
-    eventGroup.setEventRelation(this.insertButtonGroup);
-    eventGroup.setEventRelation(this.focusedNodeGroup);
+  setEventRelativeGroup(eventGroup) {
+    eventGroup.setEventRelativeGroup(this.insertButtonGroup);
+    eventGroup.setEventRelativeGroup(this.focusedNodeGroup);
   }
 }

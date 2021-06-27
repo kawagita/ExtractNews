@@ -19,8 +19,8 @@
 
 "use strict";
 
-ExtractNews.readEnabledSite(document.URL).then((siteData) => {
-    if (siteData == undefined) {
+ExtractNews.readUrlSite(document.URL).then((urlSite) => {
+    if (urlSite == undefined || ! urlSite.isEnabled()) {
       Site.displayNewsDesigns();
       return;
     }
@@ -28,32 +28,31 @@ ExtractNews.readEnabledSite(document.URL).then((siteData) => {
     /*
      * Returns the string localized for the specified ID on Slashdot and Srad.
      */
-    function getSlashdotString(id, language = ExtractNews.SITE_ENGLISH) {
+    function getSlashdotString(id, language = LANGUAGE_ENGLISH) {
       return getLocalizedString(
-        (language == ExtractNews.SITE_ENGLISH ? "Slashdot": "Srad") + id);
+        (language == LANGUAGE_ENGLISH ? "Slashdot": "Srad") + id);
     }
 
     /*
      * Returns the array of strings separated by commas after localizing for
      * the specified ID on Slashdot and Srad.
      */
-    function splitSlashdotString(id, language = ExtractNews.SITE_ENGLISH) {
+    function splitSlashdotString(id, language = LANGUAGE_ENGLISH) {
       return splitLocalizedString(
-        (language == ExtractNews.SITE_ENGLISH ? "Slashdot": "Srad") + id);
+        (language == LANGUAGE_ENGLISH ? "Slashdot": "Srad") + id);
     }
 
     /*
      * Returns RegExp object created after localizing for the specified ID
      * suffixed with "RegularExpression" on Slashdot and Srad.
      */
-    function getSlashdotRegExp(id, language = ExtractNews.SITE_ENGLISH) {
+    function getSlashdotRegExp(id, language = LANGUAGE_ENGLISH) {
       return getLocalizedRegExp(
-        (language == ExtractNews.SITE_ENGLISH ? "Slashdot": "Srad") + id);
+        (language == LANGUAGE_ENGLISH ? "Slashdot": "Srad") + id);
     }
 
-    const SITE_LANGUAGE = ExtractNews.getDomainLanguage(siteData.domainId);
-
-    const STORY_TOPIC_REGEXP = getSlashdotRegExp("StoryTopic", SITE_LANGUAGE);
+    const STORY_TOPIC_REGEXP =
+      getSlashdotRegExp("StoryTopic", urlSite.language);
     const STORY_SOURCE_ENCLOSING_START =
       getSlashdotString("StorySourceEnclosingStart");
     const STORY_SOURCE_ENCLOSING_END =
@@ -62,7 +61,7 @@ ExtractNews.readEnabledSite(document.URL).then((siteData) => {
     const STORY_CLICKGEN = "clickgen";
 
     const STORY_BOX_NAME_SET =
-      new Set(splitSlashdotString("StoryBoxNames", SITE_LANGUAGE));
+      new Set(splitSlashdotString("StoryBoxNames", urlSite.language));
     const STORY_BOX_TITLE_FOR_COMMENTS =
       getSlashdotString("StoryBoxTitleForComments");
 
@@ -104,9 +103,9 @@ ExtractNews.readEnabledSite(document.URL).then((siteData) => {
                     tagName: "a"
                   }),
                 topicSearchFirst: true,
-                senderFollowing: SITE_LANGUAGE == ExtractNews.SITE_ENGLISH
+                senderFollowing: urlSite.language == LANGUAGE_ENGLISH
               },
-            observedProperties: SITE_LANGUAGE == ExtractNews.SITE_ENGLISH ?
+            observedProperties: urlSite.language == LANGUAGE_ENGLISH ?
               undefined : Design.ONESELF_QUERY_PROPERTIES,
             observedItemProperties: Array.of({
                 setNewsElement: (element, newsItems) => {
@@ -148,11 +147,12 @@ ExtractNews.readEnabledSite(document.URL).then((siteData) => {
     function _addStoryTopicWords(storyTopics) {
       for (const topicId of splitSlashdotString("TopicIds")) {
         var topicSet =
-          new Set(splitSlashdotString(topicId + "StoryTopics", SITE_LANGUAGE));
+          new Set(
+            splitSlashdotString(topicId + "StoryTopics", urlSite.language));
         for (const storyTopic of storyTopics) {
           if (topicSet.has(storyTopic)) {
             Site.addNewsTopicWords(
-              splitSlashdotString(topicId + "TopicWords", SITE_LANGUAGE));
+              splitSlashdotString(topicId + "TopicWords", urlSite.language));
             break;
           }
         }
@@ -190,7 +190,7 @@ ExtractNews.readEnabledSite(document.URL).then((siteData) => {
                     }
                     _addStoryTopicWords(Array.from(storyTopicSet));
                     var storyFooter;
-                    if (SITE_LANGUAGE == ExtractNews.SITE_ENGLISH) {
+                    if (urlSite.language == LANGUAGE_ENGLISH) {
                       storyFooter = element.querySelector("#newa2footerv2");
                     } else {
                       storyFooter =
@@ -243,7 +243,7 @@ ExtractNews.readEnabledSite(document.URL).then((siteData) => {
     class SlashdotComments extends Design.NewsDesign {
       constructor() {
         super({
-            parentProperties: SITE_LANGUAGE == ExtractNews.SITE_ENGLISH ?
+            parentProperties: urlSite.language == LANGUAGE_ENGLISH ?
               Array.of({
                   selectors: "#" + STORY_CLICKGEN,
                   setNewsElement: (element, newsParents) => {
@@ -266,7 +266,7 @@ ExtractNews.readEnabledSite(document.URL).then((siteData) => {
                       }
                     }
                 }),
-            commentProperties: SITE_LANGUAGE == ExtractNews.SITE_ENGLISH ?
+            commentProperties: urlSite.language == LANGUAGE_ENGLISH ?
               Array.of({
                   selectors: "#" + STORY_CLICKGEN,
                   setNewsElement: (element, commentNodes) => {
@@ -319,7 +319,7 @@ ExtractNews.readEnabledSite(document.URL).then((siteData) => {
             topicProperties: Array.of({
                 selectors: "a"
               }),
-            commentProperties: SITE_LANGUAGE == ExtractNews.SITE_ENGLISH ?
+            commentProperties: urlSite.language == LANGUAGE_ENGLISH ?
               Array.of({
                 selectorsForAll: "#slashboxes header",
                 setNewsElement: (element, commentNodes) => {
@@ -441,11 +441,12 @@ ExtractNews.readEnabledSite(document.URL).then((siteData) => {
 
     function _addStoryTopicKeyword(storyTopicKeyword) {
       const STORY_TOPIC_KEYWORDS =
-        splitSlashdotString("StoryTopicKeywords", SITE_LANGUAGE);
+        splitSlashdotString("StoryTopicKeywords", urlSite.language);
       var storyTopics = new Array();
       var storyTopicIndex = STORY_TOPIC_KEYWORDS.indexOf(storyTopicKeyword);
       if (storyTopicIndex >= 0) {
-        const STORY_TOPICS = splitSlashdotString("StoryTopics", SITE_LANGUAGE);
+        const STORY_TOPICS =
+          splitSlashdotString("StoryTopics", urlSite.language);
         var storyTopicMatch =
           STORY_TOPICS[storyTopicIndex].match(STORY_TOPIC_REGEXP);
         storyTopics.push(storyTopicMatch[1]);
@@ -464,54 +465,55 @@ ExtractNews.readEnabledSite(document.URL).then((siteData) => {
     const STORY_FILTER_QUERY_KEY = getSlashdotString("StoryFilterQueryKey");
 
     Site.addNewsTopicWords(
-      splitSlashdotString("CommonTopicWords", SITE_LANGUAGE));
+      splitSlashdotString("CommonTopicWords", urlSite.language));
 
-    var newsSiteUrlData = getSiteUrlData(siteData, document.URL);
-    if (newsSiteUrlData.hostServer != "") { // "xxx.slashdot.org"
-      _addStoryTopicKeyword(newsSiteUrlData.hostServer);
+    var urlData = getUrlData(urlSite.data, document.URL);
+
+    if (urlData.hostServer != "") { // "xxx.slashdot.org"
+      _addStoryTopicKeyword(urlData.hostServer);
     }
 
-    class SlashdotUrlParser extends SiteUrlParser {
+    class SlashdotUrlParser extends UrlParser {
       constructor() {
-        super(newsSiteUrlData);
+        super(urlData);
       }
       getPathString(pathId) {
         return getSlashdotString(pathId);
       }
       getPathRegExp(pathId) {
-        return getSlashdotRegExp(pathId, SITE_LANGUAGE);
+        return getSlashdotRegExp(pathId, urlSite.language);
       }
     }
 
-    var newsSiteUrlParser = new SlashdotUrlParser();
-    if (newsSiteUrlParser.parseQuery()) {
-      var storyFilterValue =
-        newsSiteUrlParser.getQueryValue(STORY_FILTER_QUERY_KEY);
+    var urlParser = new SlashdotUrlParser();
+
+    if (urlParser.parseQuery()) {
+      var storyFilterValue = urlParser.getQueryValue(STORY_FILTER_QUERY_KEY);
       if (storyFilterValue != undefined) { // "slashdot.org/?hfilter=xxx"
         _addStoryTopicKeyword(storyFilterValue);
       }
     }
 
-    if (newsSiteUrlParser.parseByRegExp("Story")) { // A story
-      Site.setNewsDesigns(new SlashdotStory(), new SlashdotComments());
-    } else if (newsSiteUrlParser.parseByRegExp("StoriesPath")) { // Story list
+    if (urlParser.parseByRegExp("Story")) { // A story
+      Site.setNewsDesign(new SlashdotStory(), new SlashdotComments());
+    } else if (urlParser.parseByRegExp("StoriesPath")) { // Story list
       Site.setNewsDesign(new SlashdotStories());
-      newsSiteUrlParser.parseAll();
+      urlParser.parseAll();
       Site.setNewsOpenedUrl(
-        newsSiteUrlParser.toString(
+        urlParser.toString(
           getSlashdotString("StoryViewQueryKey"), STORY_FILTER_QUERY_KEY));
-    } else if (newsSiteUrlParser.parse("StoryArchivePath")) { // Story Archive
+    } else if (urlParser.parse("StoryArchivePath")) { // Story Archive
       Site.setNewsDesign(new SlashdotStoryArchive());
       Site.setNewsOpenedUrl(
-        newsSiteUrlParser.toString(
+        urlParser.toString(
           getSlashdotString("StoryOpQueryKey"),
           getSlashdotString("StoryKeywordQueryKey")));
-    } else if (newsSiteUrlParser.parse("TaggedStoriesPath")) { // Tagged XXX
+    } else if (urlParser.parse("TaggedStoriesPath")) { // Tagged XXX
       Site.setNewsDesign(new SlashdotTaggedStories());
-      newsSiteUrlParser.parseAll();
-      Site.setNewsOpenedUrl(newsSiteUrlParser.toString());
+      urlParser.parseAll();
+      Site.setNewsOpenedUrl(urlParser.toString());
     }
-    if (SITE_LANGUAGE != ExtractNews.SITE_ENGLISH) {
+    if (urlSite.language != LANGUAGE_ENGLISH) {
       Site.setNewsDesign(
         // Menus including Apple, Microsoft, and Google on Srad
         new Design.NewsDesign({
@@ -523,7 +525,7 @@ ExtractNews.readEnabledSite(document.URL).then((siteData) => {
     }
     Site.setNewsDesign(new SlashdotStoryBoxes());
 
-    Site.setNewsSelector(new Selector(SITE_LANGUAGE));
+    Site.setNewsSelector(new Selector(urlSite.language));
     Site.displayNewsDesigns();
   }).catch((error) => {
     Debug.printStackTrace(error);

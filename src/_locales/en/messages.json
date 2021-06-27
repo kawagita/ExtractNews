@@ -439,14 +439,64 @@
     "description": "Suffixes of a word in English."
   },
 
-  "extractNewsFilteringIds": {
+  "extractNewsFilteringAllId": {
     "message": "All",
-    "description": "IDs of the filtering."
+    "description": "Category ID of the filtering for all topics."
   },
 
   "extractNewsFilteringAllCategoryName": {
     "message": "ALL",
     "description": "Category name of the filtering for all topics."
+  },
+
+  "extractNewsFilteringOffensiveWords": {
+    "message": "idiot,tranny,karen,kyle,gook,goombah,slitty+eyed,raghead,wetback",
+    "description": "Offensive words filtered initially."
+  },
+
+  "extractNewsSelectionIds": {
+    "message": "YahooNewsAgency,YahooSportsNews,YahooBroadcast,YahooForeignNews,Blank,SlashdotApple,SlashdotGoogle,SlashdotMicrosoft,Blank",
+    "description": "IDs of initial news selections."
+  },
+
+  "extractNewsSelectionYahooNewsAgency": {
+    "message": "News Agency/Paper - Yahoo!,,^(?:Bloomberg|Reuters|AP|Associated Press|The Wall Street Journal|USA TODAY|(?:The New York|Los Angeles|LA) Times|Washington Post),https://news.yahoo.com",
+    "description": "News selection of senders by the news agency or paper on Yahoo!."
+  },
+
+  "extractNewsSelectionYahooSportsNews": {
+    "message": "Sports News - Yahoo!,,/^[A-Za-z]+ Sports/,https://sports.yahoo.com",
+    "description": "News selection of senders by the sports news on Yahoo!."
+  },
+
+  "extractNewsSelectionYahooBroadcast": {
+    "message": "Broadcast - Yahoo!,,^(?:ABC|CBS|CNN|NBC|TODAY|FOX|Fox),https://news.yahoo.com",
+    "description": "News selection of senders by the broadcast on Yahoo!."
+  },
+
+  "extractNewsSelectionYahooForeignNews": {
+    "message": "Foreign News - Yahoo!,,^(?:The (?:Telegraph|Guardian)|BBC|The Independent),https://news.yahoo.com/world/",
+    "description": "News selection of senders by the foreign news on Yahoo!."
+  },
+
+  "extractNewsSelectionSlashdotApple": {
+    "message": "Apple's Topics - Slashdot,Apple|iPhone|iPad|Mac(?:Book|intosh|OS|s?(?:[- \"'\\x2c./:?]|$))|macOS|(?:OS[- ]?X|Safari|Siri)(?:[ \"'\\x2c./:?]|$)|(?:^|[ \"'/])[Ii](?:Book|Cloud|Mac|Message|OS|Pad|Phone|Pod|Tunes)|App Store|Air(?:Play|Pods|Tag)|Jobs|Woz|Tim Cook,,https://slashdot.org/archive.pl?op=sections&keyword=apple",
+    "description": "News selection of topics related to Apple on Slashdot."
+  },
+
+  "extractNewsSelectionSlashdotGoogle": {
+    "message": "Google's Topics - Slashdot,Google|(?:Android|Chrome(?:books?|OS)?|Alphabet|Alexa|Loon|Pixel|YouTube)(?:[- \"'\\x2c./:?]|$)|Chromium|DeepMind|Fitbit|G(?:board|[Mm]ail)|Go (?:Program|Language)|Waymo|Larry Page|Sergey Brin|Eric Schmidt,,https://slashdot.org/archive.pl?op=topics&keyword=google",
+    "description": "News selection of topics related to Google on Slashdot."
+  },
+
+  "extractNewsSelectionSlashdotMicrosoft": {
+    "message": "Microsoft's Topics - Slashdot,Microsoft|Windows|(?:Surface|Azure|Bing|Edge|Excel|MS|\\.NET|Outlook|Vista|XP)(?:[- \"'\\x2c./:?]|$)|Cortana|Internet Explorer|(?:^|[ \"'/])IE|Minecraft|Office (?:20|365)|OneDrive|PowerShell|Skype|Xbox|Visual Studio|Gates|Ballmer|Paul Allen,,https://slashdot.org/archive.pl?op=topics&keyword=microsoft",
+    "description": "News selection of topics related to Microsoft on Slashdot."
+  },
+
+  "extractNewsSelectionBlank": {
+    "message": ",,,about:blank",
+    "description": "News selection of a blank."
   },
 
   "extractNewsTextConcatenation": {
@@ -759,6 +809,11 @@
     "description": "Contenxt menu to hide comments on the site."
   },
 
+  "contextMenuOption": {
+    "message": "Option...",
+    "description": "Contenxt menu to open the option page."
+  },
+
   "browserActionShowNewsSelections": {
     "message": "Show news selections",
     "description": "Tooltip to show news selections by the browser action."
@@ -864,6 +919,16 @@
     "description": "Option label of settings for news selections."
   },
 
+  "optionUpdateNotification": {
+    "message": "Changed settings are not updated until you click 'Apply' button !!",
+    "description": "Option description to notify the update of option settings."
+  },
+
+  "optionUpdateOptionImmediately": {
+    "message": "Update these options immediately",
+    "description": "Option title to update the option immediately."
+  },
+
   "optionEnablingSite": {
     "message": "Enabling Site",
     "description": "Option label of enabling sites to apply news slections."
@@ -879,14 +944,14 @@
     "description": "Option label to disable the setting of filterings."
   },
 
+  "optionDisableContextMenu": {
+    "message": "Don't display the context menu",
+    "description": "Option label to disable the context menu."
+  },
+
   "optionDebugExtension": {
     "message": "Debug this extension",
     "description": "Option label to debug the extension."
-  },
-
-  "optionUpdateDescription": {
-    "message": "Changed settings are not updated until you click 'Apply' button.",
-    "description": "Option description to update option settings."
   },
 
   "optionExport": {

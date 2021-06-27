@@ -84,8 +84,6 @@ ExtractNews.Daemon = (() => {
         // excludedRegularExpression  String of a regular expression by which
         //                            topics are excluded on the news site
         // linkDisabled               Flag whether the hyperlink is disabled
-        // requestRecieved            Flag whether the request of settings are
-        //                            received from the news site
         // suspendedCount             Number of opening the page of disabled
         //                            or no news site continuously
         this.setting = {
@@ -209,8 +207,9 @@ ExtractNews.Daemon = (() => {
         this.setting.filteringIds = new Array();
         for (const filteringId of _newsFilteringDataMap.keys()) {
           var filteringData = _newsFilteringDataMap.get(filteringId);
-          if (filteringData.appliesTo(
-            this.setting.topicWordsString.toLowerCase().split(","))) {
+          var newsTopicWords =
+            this.setting.topicWordsString.toLowerCase().split(WORD_SEPARATOR);
+          if (filteringData.appliesTo(newsTopicWords)) {
             this.setting.filteringIds.push(filteringId);
             // Set the last target of filterings to the policy target which
             // is accepted or dropped for any word.
@@ -255,7 +254,8 @@ ExtractNews.Daemon = (() => {
         var message = this.toApplyMessage();
         message.command = ExtractNews.COMMAND_SETTING_INFORM;
         message.selectionOpenedUrl = this.newsSelection.openedUrl;
-        message.topicWords = this.setting.topicWordsString.split(",");
+        message.topicWords =
+          this.setting.topicWordsString.split(WORD_SEPARATOR);
         message.siteEnabled = this.isSiteEnabled();
         message.siteAccessCount = 0;
         if (this.siteId != undefined) {
@@ -301,8 +301,7 @@ ExtractNews.Daemon = (() => {
           var siteData = _newsSiteDataMap.get(tabSetting.siteId);
           if (siteData != undefined && siteData.accessCount <= 0) {
             // Remove zombie "loading" of a favicon for the specified ID when
-            // the promise is rejected or tab is closed before completing. Even
-            // if loading by the other tab, the access count is overwritten.
+            // the promise is rejected or tab is closed before completing.
             ExtractNews.deleteSite(siteData);
             _newsSiteDataMap.delete(siteData.id);
             Debug.printMessage("Delete the site data of " + siteData.id + ".");
@@ -365,9 +364,10 @@ ExtractNews.Daemon = (() => {
               if (Debug.isLoggingOn()) {
                 var categoryTopicsString = "";
                 if (filtering.categoryTopics != undefined) {
-                  categoryTopicsString = filtering.categoryTopics.join(",");
+                  categoryTopicsString =
+                    filtering.categoryTopics.join(WORD_SEPARATOR);
                   filtering.setCategoryTopics(
-                    categoryTopicsString.toLowerCase().split(","));
+                    categoryTopicsString.toLowerCase().split(WORD_SEPARATOR));
                 }
                 Debug.dump("", "[" + filteringId + "]");
                 Debug.dump("\t", filtering.categoryName, categoryTopicsString);
@@ -391,8 +391,10 @@ ExtractNews.Daemon = (() => {
                     if (filteringTarget.isWordsExcluded()) {
                       wordOptions.push(ExtractNews.TARGET_WORDS_EXCLUDED);
                     }
-                    Debug.dump("\t", filteringTarget.name,
-                      filteringTargetWords.join(","), wordOptions.join(","));
+                    Debug.dump(
+                      "\t", filteringTarget.name,
+                      filteringTargetWords.join(WORD_SEPARATOR),
+                      wordOptions.join(WORD_SEPARATOR));
                   }
                   filteringTargetObjects.push(filteringTarget.toObject());
                 });
@@ -553,14 +555,16 @@ ExtractNews.Daemon = (() => {
       if (tabSetting != undefined) {
         return _sendTabMessage(
           tabId, tabSetting.toApplyMessage(tabUpdated)).then(() => {
-            return _Popup.getWindowActiveTab();
-          }).then((tab) => {
-            if (tab != undefined && tab.id == tabId) {
-              if (tabUpdated) {
-                _Menus.updateContextMenus(tabSetting);
-              } else {
-                _Menus.updateTabNewsSettingContextMenus(tabSetting);
-              }
+            if (_Menus.hasCreated()) {
+              _Popup.getWindowActiveTab().then((tab) => {
+                  if (tab != undefined && tab.id == tabId) {
+                    if (tabUpdated) {
+                      _Menus.updateContextMenus(tabSetting);
+                    } else {
+                      _Menus.updateTabNewsSettingContextMenus(tabSetting);
+                    }
+                  }
+                });
             }
           });
       }
@@ -574,9 +578,8 @@ ExtractNews.Daemon = (() => {
     function requestTabNewsSetting(tab, openedUrl, topicWordsString) {
       const applyingPromises = Array.of(removeTabMessageDialog(tab.id));
       var tabSetting = _tabSettingMap.get(tab.id);
-      var siteData = ExtractNews.getSite(tab.url);
-      if (siteData == undefined
-        || ! ExtractNews.isDomainEnabled(siteData.domainId)) {
+      var urlSite = ExtractNews.getUrlSite(tab.url);
+      if (urlSite == undefined || ! urlSite.isEnabled()) {
         if (tabSetting != undefined) {
           if (tabSetting.suspendedCount >= TAB_SETTING_RETAINED_COUNT) {
             // Remove the setting suspended on the specified tab
@@ -610,12 +613,14 @@ ExtractNews.Daemon = (() => {
         }
         _tabSettingMap.set(tab.id, tabSetting);
       }
+
+      var siteData = urlSite.data;
       if (openedUrl != "") {
         // Set the opened URL to the URL sent from the content script except
         // for pages which don't contain selected topics like an article.
         newsSelection.openedUrl = openedUrl;
       } else if (newsSelection.openedUrl == ""
-        || siteData.id != tabSetting.siteId) {
+        || tabSetting.siteId != siteData.id) {
         // Set the opened URL to the URL of a top page on each news site.
         newsSelection.openedUrl = siteData.url;
       }
@@ -639,7 +644,7 @@ ExtractNews.Daemon = (() => {
 
       applyingPromises.push(_applyTabNewsSetting(tab.id, true));
 
-      if (! _newsSiteDataMap.has(siteData.id)) {
+      if (urlSite.isFirstAccessed()) {
         _newsSiteDataMap.set(siteData.id, siteData);
         Debug.printMessage("Set the site data of " + siteData.id + ".");
         // Load the favicon string of a sender tab after waiting few seconds
@@ -892,14 +897,10 @@ ExtractNews.Daemon = (() => {
       if (tabSetting != undefined) {
         newsSelection = tabSetting.newsSelection;
       } else {
-        if (tabUpdated) {
-          var siteData = ExtractNews.getSite(openedUrl);
-          if (siteData == undefined
-            || ! ExtractNews.isDomainEnabled(siteData.domainId)) {
-            // Never prepare any setting if the disabled or no news site
-            // is loaded on new tab.
-            return Promise.resolve();
-          }
+        if (tabUpdated && ! ExtractNews.isUrlSiteEnabled(openedUrl)) {
+          // Never prepare any setting if the disabled or no news site
+          // is loaded on new tab.
+          return Promise.resolve();
         }
         newsSelection = ExtractNews.newSelection();
         newsSelection.openedUrl = openedUrl;
@@ -1030,9 +1031,13 @@ ExtractNews.Daemon = (() => {
      * by the specified data object and return the promise.
      */
     function updateNewsDomainData(domainDataObjects) {
+      var updatingPromise = Promise.resolve();
       Debug.printMessage("Enable the news site ...");
       domainDataObjects.forEach(ExtractNews.setDomain);
-      return _Menus.createContextMenus().then(() => {
+      if (_Menus.hasCreated()) {
+        updatingPromise = _Menus.createContextMenus();
+      }
+      return updatingPromise.then(() => {
           const disposingPromises = new Array();
           var disabledDomainIds = new Array();
           ExtractNews.forEachDomain((domainData) => {
@@ -1091,7 +1096,7 @@ ExtractNews.Daemon = (() => {
 
     function _modifyNewsSiteAccessCount(passedCount = 0) {
       const writingPromises = new Array();
-      var deletedSiteIds = new Array();
+      var deletedSiteDataArray = new Array();
       // Multiply the access count for each news site by the common ratio in
       // a period, and write the modified time moved by the specified count
       // and those site data into the storage.
@@ -1104,25 +1109,26 @@ ExtractNews.Daemon = (() => {
         _Storage.writeSiteDataLastModifiedTime(_newsSiteDataModifiedTime));
       Debug.printMessage("Modify and write the site data ...");
       ExtractNews.forEachSite((siteData) => {
-          var oldCountData = "(" + siteData.accessCount + ")";
+          var oldCountData = "(" + String(siteData.accessCount) + ")";
           siteData.modifyAccessCount(commonRatio);
           if (Debug.isLoggingOn()) {
             Debug.dump("\t", siteData.accessCount, oldCountData, siteData.url);
           }
           if (siteData.accessCount <= 0) { // No access in a week
-            ExtractNews.deleteSite(siteData);
-            _newsSiteDataMap.delete(siteData.id);
-            deletedSiteIds.push(siteData.id);
+            deletedSiteDataArray.push(siteData);
           }
+        });
+      deletedSiteDataArray.forEach((siteData) => {
+          // Delete the site data when the access count for the enabled news
+          // site is zero but retain the favicon.
+          ExtractNews.deleteSite(siteData);
+          _newsSiteDataMap.delete(siteData.id);
+          Debug.printMessage("Delete the site data of " + siteData.id + ".");
         });
       writingPromises.push(
         _Storage.writeSiteData().then(() => {
             _newsSiteSavedAccessCount = 0;
           }));
-      if (deletedSiteIds.length > 0) {
-        Debug.printMessage(
-          "Delete the site data of " + deletedSiteIds.join(", ") + ".");
-      }
       return Promise.all(writingPromises);
     }
 
@@ -1138,6 +1144,9 @@ ExtractNews.Daemon = (() => {
           writingPromise =
             _modifyNewsSiteAccessCount().then(() => {
                 _newsSiteDataModifiedTime += SITE_DATA_MODIFIED_PERIOD;
+                Debug.printMessage(
+                  "Set the next alarm at "
+                  + (new Date(_newsSiteDataModifiedTime).toString()) + ".");
               });
           break;
         }
@@ -1156,7 +1165,11 @@ ExtractNews.Daemon = (() => {
 
       readingPromises.push(
         _Storage.readDomainData().then(() => {
-            _Menus.createContextMenus();
+            _Storage.readContextMenuDisabled().then((contextMenuDisabled) => {
+                if (! contextMenuDisabled) {
+                  _Menus.createContextMenus();
+                }
+              });
             const commentPromises = new Array();
             Debug.printMessage("Read the comment mode ...");
             ExtractNews.setDomainSites();
@@ -1187,20 +1200,30 @@ ExtractNews.Daemon = (() => {
                   (Date.now() - lastModifiedTime) / SITE_DATA_MODIFIED_PERIOD);
               if (passedCount > 0) {
                 Debug.printMessage(
-                  passedCount + " day" + (passedCount > 1 ? "s" : "")
+                  String(passedCount) + " day" + (passedCount > 1 ? "s" : "")
                   + " passed from the last modified time.");
                 writingPromises.push(_modifyNewsSiteAccessCount(passedCount));
               }
-            } else { // No domain and site data in the storage
+            } else { // No domain or site data, and selection in the storage
               ExtractNews.forEachDomain((domainData) => {
-                  var domainEnabledKey =
-                    domainData.id + ExtractNews.ENABLED_KEY;
-                  writingPromises.push(
-                    writeStorage({
-                        [domainEnabledKey]:
-                          ExtractNews.isDomainEnabled(domainData.id)
-                      }));
+                  if (ExtractNews.isDomainEnabled(domainData.id)) {
+                    writingPromises.push(
+                      ExtractNews.writeDomainLanguage(domainData));
+                  }
                 });
+              var newsSelectionIds = splitLocalizedString("SelectionIds");
+              var newsSelections = new Array();
+              for (let i = 0; i < newsSelectionIds.length; i++) {
+                var newsSelectionData =
+                  splitLocalizedString("Selection" + newsSelectionIds[i]);
+                var newsSelection = ExtractNews.newSelection();
+                newsSelection.settingName = newsSelectionData[0];
+                newsSelection.topicRegularExpression = newsSelectionData[1];
+                newsSelection.senderRegularExpression = newsSelectionData[2];
+                newsSelection.openedUrl = newsSelectionData[3];
+                newsSelections.push(newsSelection);
+              }
+              writingPromises.push(_Storage.writeSelectionAll(newsSelections));
               // Write the current time as the last modified time of site data.
               lastModifiedTime = Date.now();
               writingPromises.push(
@@ -1210,14 +1233,15 @@ ExtractNews.Daemon = (() => {
             return Promise.all(writingPromises);
           }).then(() => {
             // Set the alarm started from the next modified time of site data.
-            var modifiedMinutes = SITE_DATA_MODIFIED_PERIOD / 60000;
+            var siteDataModifiedMinutes = SITE_DATA_MODIFIED_PERIOD / 60000;
             _newsSiteDataModifiedTime += SITE_DATA_MODIFIED_PERIOD;
             browser.alarms.create(ALARM_MODIFY_SITE_DATA, {
                 when: _newsSiteDataModifiedTime,
-                periodInMinutes: modifiedMinutes
+                periodInMinutes: siteDataModifiedMinutes
               });
             Debug.printMessage(
-              "Start the alarm in " + modifiedMinutes + " minutes from "
+              "Start the alarm in " + String(siteDataModifiedMinutes / 60)
+              + " hours from "
               + (new Date(_newsSiteDataModifiedTime).toString()) + ".");
           }),
         _Storage.readFilteringDisabled().then((filteringDisabled) => {
@@ -1288,6 +1312,13 @@ browser.runtime.onMessage.addListener((message, sender) => {
                 filteringDisabled: message.filteringDisabled
               }));
         }
+        if (message.contextMenuDisabled != undefined) {
+          if (message.contextMenuDisabled) {
+            updatingPromises.push(Menus.removeContextMenus());
+          } else if (! Menus.hasCreated()) {
+            updatingPromises.push(Menus.createContextMenus());
+          }
+        }
         if (message.debugOn != undefined) {
           ExtractNews.setDebugMode(message.debugOn);
         }
@@ -1356,6 +1387,9 @@ browser.contextMenus.onClicked.addListener((info, tab) => {
     case Menus.ID_HIDE_COMMENT:
       applyingPromise = Daemon.setTabCommentHidden(tab.id, info.checked);
       break;
+    case Menus.ID_OPTION:
+      applyingPromise = callAsynchronousAPI(browser.runtime.openOptionsPage);
+      break;
     }
     if (applyingPromise != undefined) {
       applyingPromise.catch((error) => {
@@ -1367,10 +1401,12 @@ browser.contextMenus.onClicked.addListener((info, tab) => {
 // Updates the context menu for the tab of a new site when activated.
 
 browser.tabs.onActivated.addListener((activeInfo) => {
-    Menus.updateContextMenus(
-      Daemon.getTabSetting(activeInfo.tabId)).catch((error) => {
-        Debug.printStackTrace(error);
-      });
+    if (Menus.hasCreated()) {
+      Menus.updateContextMenus(
+        Daemon.getTabSetting(activeInfo.tabId)).catch((error) => {
+          Debug.printStackTrace(error);
+        });
+    }
   });
 
 // Closes the dialog and remove the setting for the tab of a new site

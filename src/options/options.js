@@ -23,10 +23,10 @@ var optionUpdateParagraph = getOptionElement("OptionUpdate", "p");
 var optionImportButton = getOptionButton("Import");
 var optionExportButton = getOptionButton("Export");
 var optionApplyButton = getOptionButton("Apply");
-var optionPointedGroup = new _Event.PointedGroup();
+var optionFocusedGroup = new _Event.FocusedGroup();
 
-optionUpdateParagraph.textContent = getOptionMessage("UpdateDescription");
-optionPointedGroup.addElements(
+optionUpdateParagraph.textContent = getOptionMessage("UpdateNotification");
+optionFocusedGroup.addElements(
   Array.of(optionImportButton, optionExportButton, optionApplyButton));
 
 // Creates the data and pane of general, filtering, and selection options.
@@ -42,22 +42,22 @@ class OptionPageSettings extends OptionSettings {
   }
   setGeneralDataUpdated() {
     optionApplyButton.disabled = false;
-    optionUpdateParagraph.className = "";
+    optionUpdateParagraph.className = OPTION_NOTIFIED;
     super.setGeneralDataUpdated()
   }
   setFilteringDataUpdated() {
     optionApplyButton.disabled = false;
-    optionUpdateParagraph.className = "";
+    optionUpdateParagraph.className = OPTION_NOTIFIED;
     super.setFilteringDataUpdated()
   }
   setSelectionDataUpdated() {
     optionApplyButton.disabled = false;
-    optionUpdateParagraph.className = "";
+    optionUpdateParagraph.className = OPTION_NOTIFIED;
     super.setSelectionDataUpdated()
   }
   clearDataUpdated() {
     optionApplyButton.disabled = true;
-    optionUpdateParagraph.className = OPTION_GRAYED_OUT;
+    optionUpdateParagraph.className = "";
     super.clearDataUpdated()
   }
 }
@@ -70,22 +70,23 @@ var optionSelectionPageManager;
 var optionSelectionPane;
 var optionSelectionEditPane;
 
-optionGeneralPane.setEventRelation(optionPointedGroup);
-optionFilteringPane.setEventRelation(optionPointedGroup);
+optionGeneralPane.setEventRelativeGroup(optionFocusedGroup);
+optionFilteringPane.setEventRelativeGroup(optionFocusedGroup);
 
 class SelectionFocusedGroup extends _Event.BubblingFocusedGroup {
   constructor() {
     super();
   }
   setFocusedTarget(event) {
-    super.setFocusedTarget(event);
-    if (! optionSelectionPane.focusFaviconElement(event.target)) {
+    var target = super.setFocusedTarget(event);
+    if (! optionSelectionPane.focusFaviconElement(target)) {
       optionSelectionPane.hideFaviconList(true);
     }
+    return target;
   }
   clearFocusedTarget(event) {
     var target = super.clearFocusedTarget(event);
-    if (! optionSelectionPane.containsFaviconElement(event.target)) {
+    if (! optionSelectionPane.containsFaviconElement(target)) {
       optionSelectionPane.hideFaviconList(true);
     }
     return target;
@@ -94,14 +95,13 @@ class SelectionFocusedGroup extends _Event.BubblingFocusedGroup {
 
 optionSelectionPane = new SelectionPane(new SelectionFocusedGroup());
 optionSelectionEditPane = optionSelectionPane.getEditPane();
-optionSelectionPane.setEventRelation(optionPointedGroup);
+optionSelectionPane.setEventRelativeGroup(optionFocusedGroup);
 
 // Displays the menu list of general, filtering, and selection options.
 
 const OPTION_MENU_GENERAL = "general";
 const OPTION_MENU_FILTERING = "filtering";
 const OPTION_MENU_SELECTION = "selection";
-
 const OPTION_MENUS = [
     OPTION_MENU_GENERAL, OPTION_MENU_FILTERING, OPTION_MENU_SELECTION
   ];
@@ -111,7 +111,7 @@ var optionMenuItems = Array.from(document.querySelectorAll("#OptionMenu li"));
 
 optionMenuItems.forEach((optionMenuItem) => {
     optionMenuItem.textContent = getOptionMessage(optionMenuItem.id);
-    optionPointedGroup.addElement(optionMenuItem);
+    optionFocusedGroup.addElement(optionMenuItem);
   });
 
 var optionMenuManager =
@@ -193,20 +193,10 @@ function _fireFilteringTargetWordsLocalizeEvent(event) {
   event.target.disabled = true;
   var targetIndex = optionFilteringPane.getEventNodeIndex(event);
   var targetData = optionFilteringData.getTargetData(targetIndex);
-  var wordSet = new Set();
   if (targetData.wordsString != "") {
-    targetData.wordsString.split(",").forEach((word) => {
-        var targetWord = _Text.trimText(_Text.removeTextZeroWidthSpaces(word));
-        if (targetWord != "") {
-          var localizedContext = _Text.getLocalizedContext(targetWord);
-          wordSet.add(localizedContext.halfwidthText.textString);
-          if (localizedContext.hasDifferentWidth()) {
-            wordSet.add(localizedContext.fullwidthText.textString);
-          }
-        }
-      });
+    var wordSet = getFilteringTargetWordSet(targetData.wordsString, true);
     var wordsInput = optionFilteringPane.getTargetWordsInput(targetIndex);
-    var wordsString = Array.from(wordSet).join(",");
+    var wordsString = Array.from(wordSet).join(WORD_SEPARATOR);
     if (wordsString.length <= _Alert.FILTERING_WORDS_MAX_UTF16_CHARACTERS) {
       wordsInput.value = wordsString;
       targetData.wordsString = wordsString;
@@ -624,7 +614,7 @@ function removeNewsSelectionNode(removedIndex) {
     // to append new data on the list.
     if (removedIndex <= 0
       && optionSelectionPageManager.isFirstPageKeeping()) {
-      optionSelectionPageManager.disableButton(0, OPERATION_UP);
+      optionSelectionPane.disableButton(0, OPERATION_UP);
     }
     if (removedIndex >= optionSelectionPane.nodeSize - 2
       && optionSelectionPageManager.isLastPageKeeping()) {
@@ -860,6 +850,8 @@ optionExportButton.addEventListener(_Event.CLICK, (event) => {
 
 optionApplyButton.addEventListener(_Event.CLICK, (event) => {
     event.target.disabled = true;
+    // Close the selection edit window because an error occurs by overwriting.
+    _Popup.closeSelectionEditWindow();
     const updatingPromises = new Array();
     var updatedObject = { };
     if (optionSettings.isGeneralDataUpdated()) {

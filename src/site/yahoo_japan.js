@@ -19,8 +19,8 @@
 
 "use strict";
 
-ExtractNews.readEnabledSite(document.URL).then((siteData) => {
-    if (siteData == undefined) {
+ExtractNews.readUrlSite(document.URL).then((urlSite) => {
+    if (urlSite == undefined || ! urlSite.isEnabled()) {
       Site.displayNewsDesigns();
       return;
     }
@@ -504,15 +504,15 @@ ExtractNews.readEnabledSite(document.URL).then((siteData) => {
 
     // Adds categories gotten by the specified URL parser to the specified set.
 
-    function _parseNewsCategory(siteUrlParser, categorySet) {
+    function _parseNewsCategory(urlParser, categorySet) {
       const CATEGORY_PATHS = splitYahooNewsString("CategoryPaths");
       for (let i = 0; i < CATEGORY_PATHS.length; i++) {
-        if (siteUrlParser.parsePath(CATEGORY_PATHS[i])) {
+        if (urlParser.parsePath(CATEGORY_PATHS[i])) {
           categorySet.add(CATEGORIES[i]);
           return;
         }
       }
-      if (siteUrlParser.parse("ITScienceCategoryPath")) {
+      if (urlParser.parse("ITScienceCategoryPath")) {
         splitYahooNewsString("ITScienceCategories").forEach((category) => {
             categorySet.add(category);
           });
@@ -524,9 +524,9 @@ ExtractNews.readEnabledSite(document.URL).then((siteData) => {
     // Display news designs arranged by a selector which selects and excludes
     // topics or senders, waiting the settings from the background script.
 
-    class YahooNewsUrlParser extends SiteUrlParser {
+    class YahooNewsUrlParser extends UrlParser {
       constructor() {
-        super(getSiteUrlData(siteData, document.URL));
+        super(getUrlData(urlSite.data, document.URL));
       }
       getPathString(pathId) {
         return getYahooNewsString(pathId);
@@ -536,11 +536,12 @@ ExtractNews.readEnabledSite(document.URL).then((siteData) => {
       }
     }
 
-    var newsSiteUrlParser = new YahooNewsUrlParser();
-    if (newsSiteUrlParser.parse("ArticlePaths")) { // An article or its pickup
+    var urlParser = new YahooNewsUrlParser();
+
+    if (urlParser.parse("ArticlePaths")) { // An article or its pickup
       var lateSectionObserved = false;
-      if (! newsSiteUrlParser.parseByRegExp("ArticleComments")) {
-        if (newsSiteUrlParser.endsWith("ArticlePath")) {
+      if (! urlParser.parseByRegExp("ArticleComments")) {
+        if (urlParser.endsWith("ArticlePath")) {
           // Set the flag whether the section "Douga Access Ranking" is late
           // in the article side.
           lateSectionObserved = true;
@@ -558,16 +559,16 @@ ExtractNews.readEnabledSite(document.URL).then((siteData) => {
       Site.setNewsDesign(new YahooNewsSideLists(true, lateSectionObserved));
     } else { // News feed displayed in the bottom of the main pane
       var newsCategorySet = new Set();
-      if (newsSiteUrlParser.parseDirectory()
-        || newsSiteUrlParser.parse("CategoryRootPath")) { // Category's top
-        _parseNewsCategory(newsSiteUrlParser, newsCategorySet);
+      if (urlParser.parseDirectory()
+        || urlParser.parse("CategoryRootPath")) { // Category's top
+        _parseNewsCategory(urlParser, newsCategorySet);
         Site.setNewsDesign(new YahooNewsCategoryTopics());
-      } else if (newsSiteUrlParser.parse("FlashPath")) { // News Flash
+      } else if (urlParser.parse("FlashPath")) { // News Flash
         Site.setNewsDesign(new YahooNewsFlashSummaries());
-      } else if (newsSiteUrlParser.parse("LivePath")) { // News Live
+      } else if (urlParser.parse("LivePath")) { // News Live
         Site.setNewsDesign(new YahooNewsLiveMoviePanels());
-      } else if (newsSiteUrlParser.parse("TopicsPath")) {
-        if (newsSiteUrlParser.isCompleted()) { // Headlines for all categories
+      } else if (urlParser.parse("TopicsPath")) {
+        if (urlParser.isCompleted()) { // Headlines for all categories
           Site.setNewsDesign(
             new Design.NewsDesign({
               parentProperties: Array.of({
@@ -585,13 +586,13 @@ ExtractNews.readEnabledSite(document.URL).then((siteData) => {
               topicProperties: Design.ONESELF_QUERY_PROPERTIES
             }));
         } else { // List of each category's topics
-          _parseNewsCategory(newsSiteUrlParser, newsCategorySet);
+          _parseNewsCategory(urlParser, newsCategorySet);
         }
-      } else if (newsSiteUrlParser.parse("RankingRootPath")
-        && newsSiteUrlParser.parse("RankingPaths")) { // Access ranking
-        _parseNewsCategory(newsSiteUrlParser, newsCategorySet);
+      } else if (urlParser.parse("RankingRootPath")
+        && urlParser.parse("RankingPaths")) { // Access ranking
+        _parseNewsCategory(urlParser, newsCategorySet);
       }
-      Site.setNewsDesigns(new YahooNewsFeed(), new YahooNewsSideLists());
+      Site.setNewsDesign(new YahooNewsFeed(), new YahooNewsSideLists());
       // Add topics for categories of this page to the array of topic words.
       if (newsCategorySet.size <= 0) {
         newsCategorySet.add(CATEGORIES[0]);
@@ -599,11 +600,10 @@ ExtractNews.readEnabledSite(document.URL).then((siteData) => {
       newsCategorySet.forEach((newsCategory) => {
           Site.addNewsTopicWords(CATEGORY_TOPIC_WORDS_MAP.get(newsCategory));
         });
-      Site.setNewsOpenedUrl(newsSiteUrlParser.toString());
+      Site.setNewsOpenedUrl(urlParser.toString());
     }
 
-    Site.setNewsSelector(
-      new Selector(ExtractNews.getDomainLanguage(siteData.domainId)));
+    Site.setNewsSelector(new Selector(urlSite.language));
     Site.displayNewsDesigns();
   }).catch((error) => {
     Debug.printStackTrace(error);

@@ -30,40 +30,49 @@ ExtractNews.Menus = (() => {
       return browser.i18n.getMessage("contextMenu" + id);
     }
 
-    const _Menus = { };
-
+    // ID of this extension's menu created on the context menu
     const ID_EXTRACT_NEWS_SETTINGS = "ExtractNewsSettings";
 
+    // IDs of the menu to select or exclude a news topic or sender displayed
+    // for the selection text on a tab
     const ID_SELECT_NEWS_TOPIC = "SelectNewsTopic";
     const ID_SELECT_NEWS_SENDER = "SelectNewsSender";
     const ID_EXCLUDE_NEWS_TOPIC = "ExcludeNewsTopic";
 
+    // IDs of the menu to change the state on a tab
     const ID_DISABLE_TAB_LINK = "DisableTabLink";
     const ID_DISABLE_TAB_NEWS_SELECTION = "DisableTabNewsSelection";
 
+    // IDs of the menu to change the news setting on a tab
     const ID_SAVE_TAB_NEWS_SELECTION = "SaveTabNewsSelection";
     const ID_CLEAR_TAB_SELECTED_TOPIC = "ClearTabSelectedTopic";
     const ID_CLEAR_TAB_SELECTED_SENDER = "ClearTabSelectedSender";
     const ID_CLEAR_TAB_NEWS_EXCLUSION = "ClearTabNewsExclusion";
 
+    // ID of the menu to hide comments for a new site
     const ID_HIDE_COMMENT = "HideComment";
 
-    _Menus.ID_SELECT_NEWS_TOPIC = ID_SELECT_NEWS_TOPIC;
-    _Menus.ID_SELECT_NEWS_SENDER = ID_SELECT_NEWS_SENDER;
-    _Menus.ID_EXCLUDE_NEWS_TOPIC = ID_EXCLUDE_NEWS_TOPIC;
-
-    _Menus.ID_DISABLE_TAB_LINK = ID_DISABLE_TAB_LINK;
-    _Menus.ID_DISABLE_TAB_NEWS_SELECTION = ID_DISABLE_TAB_NEWS_SELECTION;
-
-    _Menus.ID_SAVE_TAB_NEWS_SELECTION = ID_SAVE_TAB_NEWS_SELECTION;
-    _Menus.ID_CLEAR_TAB_SELECTED_TOPIC = ID_CLEAR_TAB_SELECTED_TOPIC;
-    _Menus.ID_CLEAR_TAB_SELECTED_SENDER = ID_CLEAR_TAB_SELECTED_SENDER;
-    _Menus.ID_CLEAR_TAB_NEWS_EXCLUSION = ID_CLEAR_TAB_NEWS_EXCLUSION;
-
-    _Menus.ID_HIDE_COMMENT = ID_HIDE_COMMENT;
+    // ID of  the menu to open the option page
+    const ID_OPTION = "Option";
 
     const ID_SEPARATOR = "Separator";
     const ID_HIDE_COMMENT_SEPARATOR = "HideCommentSeparator";
+
+    const _Menus = {
+        ID_SELECT_NEWS_TOPIC: ID_SELECT_NEWS_TOPIC,
+        ID_SELECT_NEWS_SENDER: ID_SELECT_NEWS_SENDER,
+        ID_EXCLUDE_NEWS_TOPIC: ID_EXCLUDE_NEWS_TOPIC,
+        ID_DISABLE_TAB_LINK: ID_DISABLE_TAB_LINK,
+        ID_DISABLE_TAB_NEWS_SELECTION: ID_DISABLE_TAB_NEWS_SELECTION,
+        ID_SAVE_TAB_NEWS_SELECTION: ID_SAVE_TAB_NEWS_SELECTION,
+        ID_CLEAR_TAB_SELECTED_TOPIC: ID_CLEAR_TAB_SELECTED_TOPIC,
+        ID_CLEAR_TAB_SELECTED_SENDER: ID_CLEAR_TAB_SELECTED_SENDER,
+        ID_CLEAR_TAB_NEWS_EXCLUSION: ID_CLEAR_TAB_NEWS_EXCLUSION,
+        ID_HIDE_COMMENT: ID_HIDE_COMMENT,
+        ID_OPTION: ID_OPTION
+      };
+
+    const DISABLED_ICON_SUFFIX = "_disabled";
 
     var menuIconMap = new Map();
 
@@ -75,8 +84,6 @@ ExtractNews.Menus = (() => {
     menuIconMap.set(ID_CLEAR_TAB_SELECTED_TOPIC, "clear_tab_selected_topic");
     menuIconMap.set(ID_CLEAR_TAB_SELECTED_SENDER, "clear_tab_selected_sender");
     menuIconMap.set(ID_CLEAR_TAB_NEWS_EXCLUSION, "clear_tab_news_exclusion");
-
-    const DISABLED_ICON_SUFFIX = "_disabled";
 
     function _menuIcons(iconName) {
       if (iconName != undefined) {
@@ -106,26 +113,87 @@ ExtractNews.Menus = (() => {
         ID_CLEAR_TAB_SELECTED_SENDER,
         ID_CLEAR_TAB_NEWS_EXCLUSION,
         ID_HIDE_COMMENT_SEPARATOR,
-        ID_HIDE_COMMENT
+        ID_HIDE_COMMENT,
+        ID_SEPARATOR,
+        ID_OPTION
       ];
+
+    var _menusCreated = false;
+
+    /*
+     * Returns true if the context menu has already created.
+     */
+    function hasCreated() {
+      return _menusCreated;
+    }
+
+    _Menus.hasCreated = hasCreated;
+
+    /*
+     * Removes the context menu and returns the promise.
+     */
+    function removeContextMenus() {
+      if (_menusCreated) {
+        _menusCreated = false;
+        return callAsynchronousAPI(browser.contextMenus.removeAll);
+      }
+      return Promise.resolve();
+    }
+
+    function _forEachHostServerUrlPatterns(
+      callback, hostServerPattern, hostDomain, paths) {
+      var urlHost = URL_HTTPS_SCHEME;
+      if (hostServerPattern != URL_PATTERN_NON_EXISTENCE) {
+        urlHost += hostServerPattern + URL_DOMAIN_LABEL_SEPARATOR;
+      }
+      urlHost += hostDomain;
+      if (paths != undefined) {
+        paths.forEach((path) => {
+            callback(
+              urlHost + path + URL_PATH_SEPARATOR + URL_PATTERN_ANY_MATCH);
+          });
+      } else {
+        callback(urlHost + URL_PATH_SEPARATOR + URL_PATTERN_ANY_MATCH);
+      }
+    }
 
     /*
      * Removes and creates the context menu applied on only enabled news sites
      * and returns the promise.
      */
     function createContextMenus() {
-      var enabledSiteUrlPatterns = ExtractNews.getEnabledSiteUrlPatterns();
-      var enabledCommentSiteUrlPatterns =
-        ExtractNews.getEnabledCommentSiteUrlPatterns();
+      var enabledSiteUrlPatterns = new Array();
+      var enabledCommentSiteUrlPatterns = new Array();
       var separatorCount = 0;
 
-      return callAsynchronousAPI(browser.contextMenus.removeAll).then(() => {
+      ExtractNews.forEachDomain((domainData) => {
+          if (ExtractNews.isDomainEnabled(domainData.id)) {
+            domainData.hostServerPatterns.forEach((hostServerPattern) => {
+                _forEachHostServerUrlPatterns((urlPattern) => {
+                    enabledSiteUrlPatterns.push(urlPattern);
+                  }, hostServerPattern, domainData.hostDomain,
+                  domainData.paths);
+              });
+            var commentServerPatterns = domainData.commentServerPatterns;
+            if (commentServerPatterns != undefined) {
+              commentServerPatterns.forEach((commentServerPattern) => {
+                  _forEachHostServerUrlPatterns((urlPattern) => {
+                      enabledCommentSiteUrlPatterns.push(urlPattern);
+                    }, commentServerPattern, domainData.hostDomain,
+                    domainData.commentPaths);
+                });
+            }
+          }
+        });
+
+      return removeContextMenus().then(() => {
           browser.contextMenus.create({
               id: ID_EXTRACT_NEWS_SETTINGS,
               title: getContextMenuMessage(ID_EXTRACT_NEWS_SETTINGS),
               contexts: [ "all" ],
               documentUrlPatterns: enabledSiteUrlPatterns
             });
+          _menusCreated = true;
 
           NEWS_SELECTION_MENUS.forEach((menuId) => {
               var menuTitle = undefined;
@@ -200,15 +268,14 @@ ExtractNews.Menus = (() => {
         });
     }
 
+    _Menus.removeContextMenus = removeContextMenus;
     _Menus.createContextMenus = createContextMenus;
 
     // Enables or disables the menu of the specified ID on a tab
     // and sets light or dark icon.
 
     function _updateTabNewsSettingMenuEnabled(menuId, menuEnabled) {
-      var menuUpdateProperty = {
-          enabled: menuEnabled
-        };
+      var menuUpdateProperty = { enabled: menuEnabled };
       if (browser.contextMenus.refresh != undefined) {
         var menuIconSuffix = "";
         if (! menuEnabled) {
@@ -268,7 +335,8 @@ ExtractNews.Menus = (() => {
     function updateContextMenus(tabSetting) {
       return Promise.all(
         Array.of(
-          _updateMenuChecked(ID_DISABLE_TAB_LINK, tabSetting.isLinkDisabled()),
+          _updateMenuChecked(
+            ID_DISABLE_TAB_LINK, tabSetting.isLinkDisabled()),
           _updateMenuChecked(
             ID_DISABLE_TAB_NEWS_SELECTION,
             tabSetting.isNewsSelectionDisabled()),

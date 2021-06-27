@@ -64,12 +64,12 @@ var newsSelectionEditQueryMap = _Popup.getQueryMap(document.URL);
 var newsSelectionEditPane =
   _Popup.getSelectionEditPane(
     "title", newsSelectionEditQueryMap.get(_Popup.QUERY_OPENER_TAB_ID));
-var newsSelectionEditPointedGroup = new _Event.PointedGroup();
+var newsSelectionEditFocusedGroup = new _Event.FocusedGroup();
 
-newsSelectionEditPointedGroup.addElements(
+newsSelectionEditFocusedGroup.addElements(
   Array.of(newsSelectionEditPane.nameInput, newsSelectionEditPane.urlSelect));
 newsSelectionEditPane.regexps.forEach((editRegexp) => {
-    newsSelectionEditPointedGroup.addElement(editRegexp.textarea);
+    newsSelectionEditFocusedGroup.addElement(editRegexp.textarea);
   });
 
 // Sets the alternative of halfwidth and fullwidth strings for a regular
@@ -101,7 +101,7 @@ newsSelectionEditPane.localizedButtons.forEach((localizedButton) => {
         }
         editRegexp.textarea.focus();
       });
-    newsSelectionEditPointedGroup.addElement(localizedButton);
+    newsSelectionEditFocusedGroup.addElement(localizedButton);
   });
 
 var newsSelectionEditSaveButton = getEditButton("Save");
@@ -110,7 +110,7 @@ var newsSelectionEditRemoveButton = getEditButton("Remove");
 newsSelectionEditSaveButton.disabled = true;
 newsSelectionEditRemoveButton.disabled = true;
 
-newsSelectionEditPointedGroup.addElements(
+newsSelectionEditFocusedGroup.addElements(
   Array.of(newsSelectionEditSaveButton, newsSelectionEditRemoveButton));
 
 // Writes the news selection into the storage when "Save" button is pressed,

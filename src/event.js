@@ -43,11 +43,13 @@ ExtractNews.Event = (() => {
       };
 
     const TARGET_POINTED = "pointed";
-    const TARGET_SELECTED = "selected";
-    const TARGET_HIDDEN = "hidden";
 
     const TARGET_FOCUSED_IN = "focused_in";
     const TARGET_FOCUSED_OUT = "focused_out";
+
+    const TARGET_SELECTED = "selected";
+    const TARGET_HIDDEN = "hidden";
+    const TARGET_VISIBLE = "visible";
 
     const PAGE_UPDATE_EVENT = new Event(_Event.PAGE_UPDATE);
     const PAGE_MOVE_BACK_EVENT = new Event(_Event.PAGE_MOVE_BACK);
@@ -60,7 +62,7 @@ ExtractNews.Event = (() => {
      * Returns the target of the specified tag name within which the specified
      * event occurs if exists, otherwise, null.
      */
-    function getEventTarget(event, tagName) {
+    function getEventTarget(event, tagName = event.target.tagName) {
       var target = event.target;
       if (target.tagName != tagName) {
         if (event.type == _Event.POINTER_LEAVE) {
@@ -112,64 +114,99 @@ ExtractNews.Event = (() => {
 
     _Event.getBubblingFocusedTarget = getBubblingFocusedTarget;
 
+    const NO_RELATIVE_GROUP_SET = new Set();
+
     /*
-     * The group of elements pointed by "pointermove" or "pointerleave".
+     * The group of elements pointed by "pointermove" or "pointerleave" events.
      */
     class PointedGroup {
-      constructor() {
+      constructor(elementTagName) {
         this.elementPointedIndex = -1;
-        this.elementFocusedIndex = -1;
+        this.elementTagName = elementTagName;
         this.elements = new Array();
-        this.eventGroupSet = new Set();
       }
 
-      addElement(element) {
+      addElement(element, pointed) {
         if (element == undefined) {
           throw newNullPointerException("element");
         }
-        element.addEventListener("focus", (event) => {
-            this.eventGroupSet.forEach((group) => {
-                group.clearFocusedTarget(event);
-              });
-            this.clearFocusedTarget(event);
-            togglePointedTarget(event.target);
-            this.elementPointedIndex = this.elements.indexOf(event.target);
-            this.setFocusedTarget(event);
-          });
-        element.addEventListener("blur", (event) => {
-            var elementIndex = this.elements.indexOf(event.target);
-            if (elementIndex == this.elementPointedIndex) {
-              this.clearPointedTarget(event);
-            }
-            // Clear this target when the one of other targets is focused.
-            //this.clearFocusedTarget(event);
-          });
-        if (element.tagName == "LI" || element.tagName == "BUTTON"
-          || element.tagName == "IMG" || (element.tagName == "INPUT"
-            && (element.type == "checkbox" || element.type == "image"))) {
-          element.addEventListener(_Event.POINTER_MOVE, (event) => {
-              if (! event.target.disabled) {
-                var elementIndex = this.elements.indexOf(event.target);
-                if (elementIndex != this.elementPointedIndex) {
-                  this.eventGroupSet.forEach((group) => {
-                      group.clearPointedTarget(event);
-                    });
-                  this.clearPointedTarget(event);
-                  togglePointedTarget(event.target);
-                  this.elementPointedIndex = elementIndex;
-                }
+        if (pointed || (pointed == undefined
+          && element.tagName != "SELECT" && element.tagName != "TEXTAREA"
+          && (element.tagName != "INPUT"
+            || element.type == "checkbox" || element.type == "image"))) {
+            element.addEventListener(_Event.POINTER_MOVE, (event) => {
+              if (! event.target.disabled
+                && this.setPointedTarget(event) != undefined) {
+                this.getEventRelativeGroup().forEach((group) => {
+                    group.clearPointedTarget(event);
+                  });
               }
             });
           element.addEventListener(_Event.POINTER_LEAVE, (event) => {
               if (! event.target.disabled) {
-                var elementIndex = this.elements.indexOf(event.target);
-                if (elementIndex == this.elementPointedIndex) {
-                  this.clearPointedTarget(event);
-                }
+                this.clearPointedTarget(event);
               }
             });
         }
         this.elements.push(element);
+      }
+
+      setPointedTarget(event) {
+        var target = getEventTarget(event, this.elementTagName);
+        var elementIndex = this.elements.indexOf(target);
+        if (elementIndex != this.elementPointedIndex) {
+          if (this.elementPointedIndex >= 0) {
+            togglePointedTarget(this.elements[this.elementPointedIndex]);
+          }
+          togglePointedTarget(target);
+          this.elementPointedIndex = elementIndex;
+          return target;
+        }
+        return undefined;
+      }
+
+      clearPointedTarget(event) {
+        if (this.elementPointedIndex >= 0) {
+          var elementIndex =
+            this.elements.indexOf(getEventTarget(event, this.elementTagName));
+          if (elementIndex < 0 || elementIndex == this.elementPointedIndex) {
+            var target = this.elements[this.elementPointedIndex];
+            togglePointedTarget(target);
+            this.elementPointedIndex = -1;
+            return target;
+          }
+        }
+        return undefined;
+      }
+
+      getEventRelativeGroup() {
+        return NO_RELATIVE_GROUP_SET;
+      }
+    }
+
+    _Event.PointedGroup = PointedGroup;
+
+    /*
+     * The group of elements pointed by "pointermove" or "pointerleave"
+     * and focused by "focus" or "blur" events.
+     */
+    class FocusedGroup extends PointedGroup {
+      constructor() {
+        super();
+        this.elementFocusedIndex = -1;
+        this.eventGroupSet = new Set();
+      }
+
+      addElement(element, pointed) {
+        super.addElement(element, pointed);
+        element.addEventListener("focus", (event) => {
+            this.getEventRelativeGroup().forEach((group) => {
+                group.clearFocusedTarget(event);
+              });
+            this.setFocusedTarget(event);
+          });
+        // Not clear the focus on an element by the "blur" event but clear
+        // it by clearFocusedTarget() on the one of relative targets.
       }
 
       addElements(elements) {
@@ -217,35 +254,33 @@ ExtractNews.Event = (() => {
       }
 
       setFocusedTarget(event) {
-        this.elementFocusedIndex = this.elementPointedIndex;
+        var target = this.setPointedTarget(event);
+        if (target != undefined) {
+          this.elementFocusedIndex = this.elementPointedIndex;
+        }
+        return target;
       }
 
       clearFocusedTarget(event) {
-        var target = undefined;
-        this.clearPointedTarget(event);
-        if (this.elementFocusedIndex >= 0) {
+        var target = this.clearPointedTarget(event);
+        if (target == undefined && this.elementFocusedIndex >= 0) {
+          // The pointed index has been unset yet by "pointerleave".
           target = this.elements[this.elementFocusedIndex];
-          this.elementFocusedIndex = -1;
         }
+        this.elementFocusedIndex = -1;
         return target;
       }
 
-      clearPointedTarget(event) {
-        var target = undefined;
-        if (this.elementPointedIndex >= 0) {
-          target = this.elements[this.elementPointedIndex];
-          togglePointedTarget(target);
-          this.elementPointedIndex = -1;
-        }
-        return target;
+      getEventRelativeGroup() {
+        return this.eventGroupSet;
       }
 
-      setEventRelation(group) {
+      setEventRelativeGroup(group) {
         if (group == undefined) {
           throw newNullPointerException("group");
         } else if (! this.eventGroupSet.has(group)) {
           this.eventGroupSet.add(group);
-          group.setEventRelation(this);
+          group.setEventRelativeGroup(this);
         }
       }
     }
@@ -254,13 +289,13 @@ ExtractNews.Event = (() => {
      * The group of elements which are focused or whose children are focused
      * by a bubbling event, which marked as "focused_in" or "focused_out".
      */
-    class BubblingFocusedGroup extends PointedGroup {
+    class BubblingFocusedGroup extends FocusedGroup {
       constructor() {
         super();
       }
 
-      addElement(element) {
-        super.addElement(element);
+      addElement(element, pointed) {
+        super.addElement(element, pointed);
         // Must be contained in the element added by addFocusedElement().
         if (element.classList != null) {
           do {
@@ -275,7 +310,7 @@ ExtractNews.Event = (() => {
       }
 
       addFocusedElement(element) {
-        super.addElement(element);
+        super.addElement(element, false);
         if (element.classList.contains(TARGET_FOCUSED_OUT)) {
           throw newInvalidParameterException(JSON.stringify(element));
         }
@@ -283,28 +318,43 @@ ExtractNews.Event = (() => {
       }
 
       setFocusedTarget(event) {
-        super.setFocusedTarget(event);
-        var element = getBubblingFocusedTarget(event.target, true);
-        if (element != null) {
-          element.classList.toggle(TARGET_FOCUSED_OUT);
-          element.classList.toggle(TARGET_FOCUSED_IN);
+        var focusedOutTarget = null;
+        if (this.elementFocusedIndex >= 0) {
+          focusedOutTarget =
+            getBubblingFocusedTarget(this.elements[this.elementFocusedIndex]);
         }
+        var target = super.setFocusedTarget(event);
+        if (target != undefined) {
+          var focusedInTarget = getBubblingFocusedTarget(target, true);
+          if (focusedInTarget != null) {
+            // Never set "focused_out" if contained in the same focused target
+            // because operation buttons are hidden by it just before pressed.
+            if (focusedOutTarget != null
+              && focusedOutTarget != focusedInTarget) {
+              focusedOutTarget.classList.toggle(TARGET_FOCUSED_IN);
+              focusedOutTarget.classList.toggle(TARGET_FOCUSED_OUT);
+            }
+            focusedInTarget.classList.toggle(TARGET_FOCUSED_OUT);
+            focusedInTarget.classList.toggle(TARGET_FOCUSED_IN);
+          }
+        }
+        return target;
       }
 
       clearFocusedTarget(event) {
         var target = super.clearFocusedTarget(event);
         if (target != undefined) {
-          var element = getBubblingFocusedTarget(target);
-          if (element != null) {
-            element.classList.toggle(TARGET_FOCUSED_IN);
-            element.classList.toggle(TARGET_FOCUSED_OUT);
+          var focusedOutTarget = getBubblingFocusedTarget(target);
+          if (focusedOutTarget != null) {
+            focusedOutTarget.classList.toggle(TARGET_FOCUSED_IN);
+            focusedOutTarget.classList.toggle(TARGET_FOCUSED_OUT);
           }
         }
         return target;
       }
     }
 
-    _Event.PointedGroup = PointedGroup;
+    _Event.FocusedGroup = FocusedGroup;
     _Event.BubblingFocusedGroup = BubblingFocusedGroup;
 
     /*
@@ -420,11 +470,11 @@ ExtractNews.Event = (() => {
       setPageSize(pageSize) {
         super.setPageSize(pageSize);
         if (this.pageIndex < this.pageSize - 1) {
-          this.pageMovedForwardNode.style.visibility = "visible";
+          this.pageMovedForwardNode.style.visibility = TARGET_VISIBLE;
         } else if (this.pageIndex <= 0) {
-            this.pageMovedBackNode.style.visibility = "hidden";
+            this.pageMovedBackNode.style.visibility = TARGET_HIDDEN;
         } else {
-          this.pageMovedForwardNode.style.visibility = "hidden";
+          this.pageMovedForwardNode.style.visibility = TARGET_HIDDEN;
         }
       }
 
@@ -433,15 +483,15 @@ ExtractNews.Event = (() => {
         switch (event.type) {
         case _Event.PAGE_MOVE_BACK:
           if (this.pageIndex <= 0) {
-            this.pageMovedBackNode.style.visibility = "hidden";
+            this.pageMovedBackNode.style.visibility = TARGET_HIDDEN;
           }
-          this.pageMovedForwardNode.style.visibility = "visible";
+          this.pageMovedForwardNode.style.visibility = TARGET_VISIBLE;
           break;
         case _Event.PAGE_MOVE_FORWARD:
           if (this.pageIndex >= this.pageSize - 1) {
-            this.pageMovedForwardNode.style.visibility = "hidden";
+            this.pageMovedForwardNode.style.visibility = TARGET_HIDDEN;
           }
-          this.pageMovedBackNode.style.visibility = "visible";
+          this.pageMovedBackNode.style.visibility = TARGET_VISIBLE;
           break;
         }
       }

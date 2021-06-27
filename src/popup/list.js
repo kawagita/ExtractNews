@@ -36,11 +36,6 @@ const PAGE_LIST_ITEM_COUNT = 10;
 const PAGE_LIST_ITEM_FAVICON_DATA_MAP = new Map();
 const PAGE_LIST_ITEM_DEFAULT_FAVICON_PNG = "../icons/night-40.png";
 
-const PAGE_TO_PREVIOUS_BLACK_PNG = "../icons/to_previous_black.png";
-const PAGE_TO_PREVIOUS_WHITE_PNG = "../icons/to_previous_white.png";
-const PAGE_TO_NEXT_BLACK_PNG = "../icons/to_next_black.png";
-const PAGE_TO_NEXT_WHITE_PNG = "../icons/to_next_white.png";
-
 // The array of news selections displayed to list items on the current page.
 var listNewsSelections = new Array();
 var listNewsSelectionSiteIds = new Array();
@@ -136,7 +131,7 @@ document.body.addEventListener(_Event.POINTER_DOWN, (event) => {
 /*
  * The close button on the user interface to act a news selection.
  */
-class PageListActionUICloseButton extends _Event.PointedGroup {
+class PageListActionUICloseButton extends _Event.FocusedGroup {
   constructor(actionUI, closeButtonElement) {
     super();
     this.actionUI = actionUI;
@@ -147,8 +142,9 @@ class PageListActionUICloseButton extends _Event.PointedGroup {
   }
 
   setFocusedTarget(event) {
-    super.setFocusedTarget(event);
+    var target = super.setFocusedTarget(event);
     this.actionUI.clearPointedMenuItem();
+    return target;
   }
 }
 
@@ -206,8 +202,8 @@ class PageListActionUI {
               }
               _Event.togglePointedTarget(target);
               this.actionMenuPointedIndex = menuIndex;
+              this.actionUICloseButton.clearFocusedTarget(event);
             }
-            this.actionUICloseButton.clearFocusedTarget(event);
           }
         });
       actionMenuItem.addEventListener(_Event.POINTER_LEAVE, (event) => {
@@ -636,9 +632,9 @@ function displayPageList(pageIndex) {
       newsSelections.forEach((newsSelection) => {
           var siteId = "";
           if (newsSelection.openedUrl != URL_ABOUT_BLANK) {
-            var siteData = ExtractNews.getSite(newsSelection.openedUrl);
-            if (siteData != undefined) {
-              siteId = siteData.id;
+            var urlSite = ExtractNews.getUrlSite(newsSelection.openedUrl);
+            if (urlSite != undefined) {
+              siteId = urlSite.data.id;
             }
           }
           if (siteId != ""
@@ -759,89 +755,99 @@ function displayNewsSelectionMessage(pageMessageId) {
   pageMessageElement.style.visibility = "visible";
 }
 
-{
-  // Displays the page header and title with the manager of page links.
+const LINK_TO_PREVIOUS_PAGE_BLACK_PNG = "../icons/to_previous_black.png";
+const LINK_TO_PREVIOUS_PAGE_WHITE_PNG = "../icons/to_previous_white.png";
+const LINK_TO_NEXT_PAGE_BLACK_PNG = "../icons/to_next_black.png";
+const LINK_TO_NEXT_PAGE_WHITE_PNG = "../icons/to_next_white.png";
 
+var linkToPreviousPage;
+var linkToNextPage;
+
+{
   var pageHeader = document.querySelector(".page_header");
   var pageTitle = pageHeader.querySelector(".page_title");
-  var linkToPreviousPage = pageHeader.firstElementChild;
-  var linkToNextPage = pageHeader.lastElementChild;
 
   pageTitle.textContent = getBrowserActionMessage("NewsSelection");
+  linkToPreviousPage = pageHeader.firstElementChild;
+  linkToPreviousPage.firstElementChild.src = LINK_TO_PREVIOUS_PAGE_BLACK_PNG;
+  linkToNextPage = pageHeader.lastElementChild;
+  linkToNextPage.firstElementChild.src = LINK_TO_NEXT_PAGE_BLACK_PNG;
   pageManager = new _Event.LinkedPageManager((event, pageIndex) => {
       pageListActionUI.closeMenu(event);
       clearPageList();
       if (pageIndex >= 0) {
-        // Display the list of retained news selections on the same page
-        // if all list items are not removed on the last page, otherwise,
-        // the previous.
+        // Display the list of retained news selections on the same page if all
+        // items are not removed on the last page, otherwise, the previous.
         displayPageList(pageIndex);
       } else {
         displayNewsSelectionMessage("NewsSelectionNotExist");
       }
     }, linkToPreviousPage, linkToNextPage);
-
-  // Change the black link "<<" and ">>" into the white by a mouse over.
-  linkToPreviousPage.firstElementChild.src = PAGE_TO_PREVIOUS_BLACK_PNG;
-  linkToPreviousPage.addEventListener(_Event.POINTER_MOVE, (event) => {
-      var target = event.target;
-      if (target.tagName == "LI") {
-        target = target.firstElementChild;
-      }
-      target.src = PAGE_TO_PREVIOUS_WHITE_PNG;
-    });
-  linkToPreviousPage.addEventListener(_Event.POINTER_LEAVE, (event) => {
-      if (event.target.tagName == "LI") {
-        event.target.firstElementChild.src = PAGE_TO_PREVIOUS_BLACK_PNG;
-      }
-    });
-  linkToNextPage.firstElementChild.src = PAGE_TO_NEXT_BLACK_PNG;
-  linkToNextPage.addEventListener(_Event.POINTER_MOVE, (event) => {
-      var target = event.target;
-      if (target.tagName == "LI") {
-        target = target.firstElementChild;
-      }
-      target.src = PAGE_TO_NEXT_WHITE_PNG;
-    });
-  linkToNextPage.addEventListener(_Event.POINTER_LEAVE, (event) => {
-      if (event.target.tagName == "LI") {
-        event.target.firstElementChild.src = PAGE_TO_NEXT_BLACK_PNG;
-      }
-    });
-
-  // Sets the text label and event listener to the page header or action UI,
-  // and lastly call displayPageList() if a news selection exist.
-
-  _Storage.readDomainData(false).then(() => {
-      ExtractNews.setDomainSites();
-      return _Popup.searchSelectionEditWindow();
-    }).then((editWindow) => {
-      if (editWindow == undefined) {
-        return _Storage.readSelectionCount();
-      }
-      return Promise.resolve(-1);
-    }).then((newsSelectionCount) => {
-      if (newsSelectionCount >= 0) {
-        var pageSize = 0;
-        for (let i = 0; i < newsSelectionCount; i++) {
-          if (i % PAGE_LIST_ITEM_COUNT == 0) {
-            PAGE_INDEX_STRING_ARRAYS.push(new Array());
-            pageSize++;
-          }
-          PAGE_INDEX_STRING_ARRAYS[pageSize - 1].push(String(i));
-        }
-        // Call updating the list in the page manager, and display the link
-        // to the previous or next page and list items on the first page,
-        // otherwise, the message of no news selection.
-        pageManager.setPageSize(pageSize);
-      } else {
-        displayNewsSelectionMessage("NewsSelectionNowEditing");
-      }
-      pagesNewsSelectionCount = newsSelectionCount;
-    }).catch((error) => {
-      Debug.printStackTrace(error);
-    });
 }
+
+// The group of links to the previous or next page pointed by "pointermove"
+// or "pointerleave", changed from the black "<<" or ">>" to white image.
+
+class LinkToPagePointedGroup extends _Event.PointedGroup {
+  constructor() {
+    super("LI");
+    this.addElement(linkToPreviousPage);
+    this.addElement(linkToNextPage);
+  }
+
+  setPointedTarget(event) {
+    var target = super.setPointedTarget(event);
+    if (target == linkToPreviousPage) {
+      target.firstElementChild.src = LINK_TO_PREVIOUS_PAGE_WHITE_PNG;
+    } else if (target == linkToNextPage) {
+      target.firstElementChild.src = LINK_TO_NEXT_PAGE_WHITE_PNG;
+    }
+    return target;
+  }
+
+  clearPointedTarget(event) {
+    var target = super.clearPointedTarget(event);
+    if (target == linkToPreviousPage) {
+      target.firstElementChild.src = LINK_TO_PREVIOUS_PAGE_BLACK_PNG;
+    } else if (target == linkToNextPage) {
+      target.firstElementChild.src = LINK_TO_NEXT_PAGE_BLACK_PNG;
+    }
+    return target;
+  }
+}
+
+var linkToPagePointedGroup = new LinkToPagePointedGroup();
+
+// Displays the list of news selections if an edit window is not open.
+
+_Storage.readDomainData(false).then(() => {
+    ExtractNews.setDomainSites();
+    return _Popup.searchSelectionEditWindow();
+  }).then((editWindow) => {
+    if (editWindow == undefined) {
+      return _Storage.readSelectionCount();
+    }
+    return Promise.resolve(-1);
+  }).then((newsSelectionCount) => {
+    if (newsSelectionCount >= 0) {
+      var pageSize = 0;
+      for (let i = 0; i < newsSelectionCount; i++) {
+        if (i % PAGE_LIST_ITEM_COUNT == 0) {
+          PAGE_INDEX_STRING_ARRAYS.push(new Array());
+          pageSize++;
+        }
+        PAGE_INDEX_STRING_ARRAYS[pageSize - 1].push(String(i));
+      }
+      // Update the list by the page manager, and display page links and
+      // list items on the first page or a message of no news selection.
+      pageManager.setPageSize(pageSize);
+    } else {
+      displayNewsSelectionMessage("NewsSelectionNowEditing");
+    }
+    pagesNewsSelectionCount = newsSelectionCount;
+  }).catch((error) => {
+    Debug.printStackTrace(error);
+  });
 
 document.addEventListener("contextmenu", (event) => {
     event.preventDefault();

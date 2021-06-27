@@ -80,27 +80,21 @@ ExtractNews.Site = (() => {
     _Site.getNewsDisplayOptions = getNewsDisplayOptions;
 
     /*
-     * Sets the specified news design into this site.
-     */
-    function setNewsDesign(design) {
-      if (design == undefined) {
-        throw newNullPointerException("design");
-      }
-      newsDesigns.push(design);
-    }
-
-    /*
      * Sets news designs of the specified variable into this site.
      */
-    function setNewsDesigns(...designs) {
+    function setNewsDesign(...designs) {
       if (designs == undefined) {
         throw newNullPointerException("designs");
       }
-      designs.forEach(setNewsDesign);
+      designs.forEach((design) => {
+          if (design == undefined) {
+            throw newNullPointerException("design");
+          }
+          newsDesigns.push(design);
+        });
     }
 
     _Site.setNewsDesign = setNewsDesign;
-    _Site.setNewsDesigns = setNewsDesigns;
 
     /*
      * Adds the specified topic to the set of topics word this site.
@@ -129,8 +123,8 @@ ExtractNews.Site = (() => {
     _Site.addNewsTopicWords = addNewsTopicWords;
 
     function _arrangeNewsDesigns() {
-      const arrangingPromises = new Array();
       if (newsSelector != undefined) {
+        const arrangingPromises = new Array();
         newsDesigns.forEach((newsDesign) => {
             if (newsDesign.hasComments != undefined
               && newsDesign.hasComments()) {
@@ -150,8 +144,9 @@ ExtractNews.Site = (() => {
             }
             arrangingPromises.push(newsDesign.arrange());
           });
+        return Promise.all(arrangingPromises);
       }
-      return Promise.all(arrangingPromises);
+      return Promise.resolve();
     }
 
     function _changeNewsDisplaying(message) {
@@ -162,10 +157,10 @@ ExtractNews.Site = (() => {
         if (newsSelector == undefined) {
           throw newUnsupportedOperationException();
         } else if (message.filteringTargetObjects != undefined) {
+          newsSelector.setNewsFilterings(message.filteringTargetObjects);
           newsDesigns.forEach((newsDesign) => {
               newsDesign.reset();
             });
-          newsSelector.setNewsFilterings(message.filteringTargetObjects);
           newsDisplayOptions.filteringDisabled = message.filteringDisabled;
           newsDisplayOptions.commentHidden = message.commentHidden;
           Debug.printProperty(
@@ -202,10 +197,12 @@ ExtractNews.Site = (() => {
         if (newsSelector != undefined) {
           newsSelector.setNewsFilterings();
           newsSelector.setNewsSelection();
+          newsDesigns.forEach((newsDesign) => {
+              newsDesign.reset();
+            });
           newsDisplayOptions.filteringDisabled = false;
           newsDisplayOptions.selectionDisabled = false;
           newsDisplayOptions.commentHidden = false;
-          Debug.printMessage("Disabling this site.");
         }
         break;
       }
@@ -243,7 +240,8 @@ ExtractNews.Site = (() => {
             displayingPromises.push(newsDesign.display());
           });
         Promise.all(displayingPromises).then(() => {
-            var newsTopicWordsString = Array.from(newsTopicWordSet).join(",");
+            var newsTopicWordsString =
+              Array.from(newsTopicWordSet).join(WORD_SEPARATOR);
             Debug.printProperty("Opened URL", newsOpenedUrl);
             Debug.printProperty("Topic Words", newsTopicWordsString);
             ExtractNews.sendRuntimeMessage({
@@ -275,9 +273,11 @@ ExtractNews.Site = (() => {
     _Site.displayNewsDesigns = displayNewsDesigns;
 
     window.addEventListener("beforeunload", (event) => {
-        newsDesigns.forEach((newsDesign) => {
-          newsDesign.clear();
-        });
+        if (newsDesigns != undefined) {
+          newsDesigns.forEach((newsDesign) => {
+            newsDesign.clear();
+          });
+        }
       });
 
     return _Site;

@@ -262,13 +262,14 @@ function _readFilterings(importData, filteringMap) {
             if (importData.lineTextSize > 1) {
               categoryTopicsString = importData.getLineText(1);
             }
-            filtering.setCategoryTopics(categoryTopicsString.split(","));
+            filtering.setCategoryTopics(
+              categoryTopicsString.split(WORD_SEPARATOR));
           }
           filtering.setCategoryName(lineFirstText);
           continue;
         }
         importData.setLineError("FilteringCategoryNameNotSpecified");
-      } else if (ExtractNews.isFilteringTargetName(lineFirstText)) {
+      } else if (isFilteringTargetName(lineFirstText)) {
         if (filteringTargetTotal < ExtractNews.FILTERING_MAX_COUNT) {
           // Set the filtering target name to 1st data on the next line
           // of a category name and topics.
@@ -283,30 +284,25 @@ function _readFilterings(importData, filteringMap) {
                 _Alert.FILETERING_WORDS_MAX_UTF16_CHARACTERS_EXCEEDED);
               return false;
             }
-            var wordSet = new Set();
-            var wordBeginningMatched = false;
-            var wordEndMatched = false;
-            var wordsExcluded = false;
-            wordsString.split(",").forEach((wordString) => {
-                var word = wordString.trim();
-                if (word != "") {
-                  wordSet.add(word);
-                }
-              });
+            var targetWordSet = getFilteringTargetWordSet(wordsString);
+            var targetWordBeginningMatched = false;
+            var targetWordEndMatched = false;
+            var targetWordsExcluded = false;
             if (importData.lineTextSize >= 3) {
-              var wordOptions = importData.getLineText(2).split(",");
+              var wordOptions =
+                importData.getLineText(2).split(WORD_SEPARATOR);
               for (let j = 0; j < wordOptions.length; j++) {
                 var wordOption = wordOptions[j].trim();
                 if (wordOption != "") {
                   switch (wordOption.toLowerCase()) {
                   case FILTERING_TARGET_WORD_BEGINNING_TO_LOWER_CASE:
-                    wordBeginningMatched = true;
+                    targetWordBeginningMatched = true;
                     continue;
                   case FILTERING_TARGET_WORD_END_TO_LOWER_CASE:
-                    wordEndMatched = true;
+                    targetWordEndMatched = true;
                     continue;
                   case FILTERING_TARGET_WORDS_EXCLUDED_TO_LOWER_CASE:
-                    wordsExcluded = true;
+                    targetWordsExcluded = true;
                     continue;
                   }
                   importData.setLineError(
@@ -317,14 +313,13 @@ function _readFilterings(importData, filteringMap) {
             }
             filteringTargets.push(
               ExtractNews.newFilteringTarget(
-                filteringTargetName, wordSet, wordBeginningMatched,
-                wordEndMatched, wordsExcluded));
-            filteringTargetTotal++;
+                filteringTargetName, targetWordSet, targetWordBeginningMatched,
+                targetWordEndMatched, targetWordsExcluded));
           } else { // Filtering target in the end of a block
             filteringTargets.push(
               ExtractNews.newFilteringTarget(filteringTargetName));
-            filteringTargetTotal++;
           }
+          filteringTargetTotal++;
           continue;
         }
         importData.setLineError(_Alert.FILTERING_NOT_SAVED_ANY_MORE);
@@ -458,6 +453,8 @@ function importOptionData(optionSettings) {
       importInput.addEventListener("change", (event) => {
           var reader = new FileReader();
           reader.addEventListener("load", (readEvent) => {
+              // Read "General", "Filtering", or "Selection" in the first line
+              // and data from following lines for each setting.
               var importData = new ImportData(readEvent.target.result);
               while (importData.readLine()) {
                 if (importData.hasIgnoredLine()) {
@@ -555,7 +552,8 @@ function _writeFilterings(exportData, filteringMap) {
       exportData.writeLine();
       var filteringCategoryTopicsString = "";
       if (filteringId != ExtractNews.FILTERING_FOR_ALL) {
-        filteringCategoryTopicsString = filtering.categoryTopics.join(",");
+        filteringCategoryTopicsString =
+          filtering.categoryTopics.join(WORD_SEPARATOR);
       }
       exportData.addLineText(filtering.categoryName);
       exportData.addLineText(filteringCategoryTopicsString);
@@ -573,8 +571,8 @@ function _writeFilterings(exportData, filteringMap) {
             if (filteringTarget.isWordsExcluded()) {
               wordOptions.push(ExtractNews.TARGET_WORDS_EXCLUDED);
             }
-            exportData.addLineText(filteringTarget.words.join(","));
-            exportData.addLineText(wordOptions.join(","));
+            exportData.addLineText(filteringTarget.words.join(WORD_SEPARATOR));
+            exportData.addLineText(wordOptions.join(WORD_SEPARATOR));
           }
           exportData.writeLine();
         });
@@ -607,6 +605,8 @@ function _writeSelections(exportData, newsSelections) {
  * Exports the specified option data to the file as "ExtractNewsSettings.tsv".
  */
 function exportOptionData(optionSettings) {
+  // Write "General", "Filtering", and "Selection" in the first line and
+  // data to following lines for each setting.
   var exportData = new ExportData();
   exportData.addLineText(OPTION_DATA_GENERAL);
   exportData.writeLine();
