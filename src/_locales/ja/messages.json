@@ -660,7 +660,7 @@
   },
 
   "extractNewsSradStoryBoxNames": {
-    "message": "thisday,mainpage_commentcount_widget",
+    "message": "afpbb,blogos,cnetjapan,eetimesjp,engadgetjp,impress-enterprise,excitebit,exciteoddnews,itmediad,itmediaalt,itmediaen,itmedianews,japaninternetcom,sect_linuxkernel,nhknews,osnews,pcworld,slashdot,sect_askslashdot,sect_yro,zdnet,zdnetnews,asahicom,sect_mac,topcomments,sect_interview,wsj,sect_opensource,sect_science,sect_security,sect_developers,mostdiscussed,sect_mobile,sect_books,reuters,jinmei,thisday,kyodo,mainpage_commentcount_widget,mainpage_hits_widget,mainichi,yomiuri",
     "description": "スラドのストーリーのリンクボックス名称。"
   },
 
@@ -695,48 +695,58 @@
   },
 
   "extractNewsSelectionIds": {
-    "message": "YahooNewsPaper,YahooSportsNews,YahooBroadcast,YahooForeignNews,Blank,ImpressNewsHeadline,ITMediaNewsArchive,SradIt,Blank",
+    "message": "Yahoo,YahooNewsPaper,YahooSportsNews,YahooBroadcast,YahooForeignNews,ImpressWatch,ImpressNewsHeadline,ITMediaNews,ITMediaNewsArchive,SradIt",
     "description": "最初のニュース選択ID。"
   },
 
+  "extractNewsSelectionYahoo": {
+    "message": "Yahoo!ニュース,,,https://news.yahoo.co.jp",
+    "description": "Yahoo!ニュースのニュース選択。"
+  },
+
   "extractNewsSelectionYahooNewsPaper": {
-    "message": "新聞・通信社 - Yahoo!,,時事|^(?:共同通信|(?:読売|朝日|毎日|産経)新聞),https://news.yahoo.co.jp/categories/domestic",
+    "message": " - 新聞・通信社,,時事|^(?:共同通信|(?:読売|朝日|毎日|産経)新聞),https://news.yahoo.co.jp/categories/domestic",
     "description": "Yahoo!ニュースの新聞・通信社による発信元のニュース選択。"
   },
 
   "extractNewsSelectionYahooSportsNews": {
-    "message": "スポーツ紙 - Yahoo!,,スポニチ|日刊スポーツ|報知|(?:東|サンケイ|デイリー)スポ,https://news.yahoo.co.jp/categories/sports",
+    "message": " - スポーツ紙,,スポニチ|日刊スポーツ|報知|(?:東|サンケイ|デイリー)スポ,https://news.yahoo.co.jp/categories/sports",
     "description": "Yahoo!ニュースのスポーツ紙による発信元のニュース選択。"
   },
 
   "extractNewsSelectionYahooBroadcast": {
-    "message": "テレビ・ラジオ - Yahoo!,,^(?:日本テレビ|TBS|ニッポン放送|FNN|テレビ?[朝東]|TOKYO FM|ABEMA),https://news.yahoo.co.jp/categories/domestic",
+    "message": " - テレビ・ラジオ,,^(?:日本テレビ|TBS|ニッポン放送|FNN|テレビ?[朝東]|TOKYO FM|ABEMA),https://news.yahoo.co.jp/categories/domestic",
     "description": "Yahoo!ニュースのテレビ・ラジオによる発信元のニュース選択。"
   },
 
   "extractNewsSelectionYahooForeignNews": {
-    "message": "海外報道 - Yahoo!,,^(?:Bloomberg|ロイター|AP通信|ウォール・ストリート・ジャーナル|Reuters|AP|Associated Press|The Wall Street Journal|ABC|CBS|CNN|NBC|FOX|Fox|The (?:Telegraph|Guardian|Independent)|BBC|AFP|中央社|(?:中央|朝鮮)日報|ハンギョレ|聯合ニュース),https://news.yahoo.co.jp/categories/world",
+    "message": " - 海外報道,,^(?:Bloomberg|AP|ロイター|Associated Press|Reuters|ウォール・ストリート・ジャーナル|The Wall Street Journal|ABC|CBS|CNN|NBC|FOX|Fox|The (?:Telegraph|Guardian|Independent)|BBC|AFP|中央社|(?:中央|朝鮮)日報|ハンギョレ|聯合ニュース),https://news.yahoo.co.jp/categories/world",
     "description": "Yahoo!ニュースの海外報道による発信元のニュース選択。"
   },
 
+  "extractNewsSelectionImpressWatch": {
+    "message": "Impress Watch,,,https://www.watch.impress.co.jp",
+    "description": "Impress Watchのニュース選択。"
+  },
+
   "extractNewsSelectionImpressNewsHeadline": {
-    "message": "Impress News Headline,,,https://www.watch.impress.co.jp/headline/",
+    "message": " - News Headline,,,https://www.watch.impress.co.jp/headline/",
     "description": "Impress WatchのNews Headlineのニュース選択。"
   },
 
+  "extractNewsSelectionITMediaNews": {
+    "message": "ITMedia NEWS,,,https://www.itmedia.co.jp/news/",
+    "description": "ITMedia NEWSのニュース選択。"
+  },
+
   "extractNewsSelectionITMediaNewsArchive": {
-    "message": "ITMedia NEWS 今月の記事,,,https://www.itmedia.co.jp/news/subtop/archive/",
+    "message": " - 今月の記事一覧,,,https://www.itmedia.co.jp/news/subtop/archive/",
     "description": "ITMedia NEWSの過去記事のニュース選択。"
   },
 
   "extractNewsSelectionSradIt": {
-    "message": "ITトピックス - スラド,,,https://it.srad.jp/",
+    "message": "スラド - ITトピックス,,,https://it.srad.jp/",
     "description": "スラドのITトピックスのニュース選択。"
-  },
-
-  "extractNewsSelectionBlank": {
-    "message": ",,,about:blank",
-    "description": "ブランクのニュース選択。"
   },
 
   "extractNewsTextConcatenation": {

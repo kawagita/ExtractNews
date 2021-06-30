@@ -254,11 +254,11 @@ ExtractNews.Event = (() => {
       }
 
       setFocusedTarget(event) {
-        var target = this.setPointedTarget(event);
-        if (target != undefined) {
-          this.elementFocusedIndex = this.elementPointedIndex;
-        }
-        return target;
+        // Always set the index of an element forcused by "click" and return
+        // it because inevitably pointed.
+        this.setPointedTarget(event);
+        this.elementFocusedIndex = this.elementPointedIndex;
+        return event.target;
       }
 
       clearFocusedTarget(event) {
@@ -324,19 +324,17 @@ ExtractNews.Event = (() => {
             getBubblingFocusedTarget(this.elements[this.elementFocusedIndex]);
         }
         var target = super.setFocusedTarget(event);
-        if (target != undefined) {
-          var focusedInTarget = getBubblingFocusedTarget(target, true);
-          if (focusedInTarget != null) {
-            // Never set "focused_out" if contained in the same focused target
-            // because operation buttons are hidden by it just before pressed.
-            if (focusedOutTarget != null
-              && focusedOutTarget != focusedInTarget) {
-              focusedOutTarget.classList.toggle(TARGET_FOCUSED_IN);
-              focusedOutTarget.classList.toggle(TARGET_FOCUSED_OUT);
-            }
-            focusedInTarget.classList.toggle(TARGET_FOCUSED_OUT);
-            focusedInTarget.classList.toggle(TARGET_FOCUSED_IN);
+        var focusedInTarget = getBubblingFocusedTarget(target, true);
+        if (focusedInTarget != null) {
+          // Never set "focused_out" if contained in the same focused target
+          // because operation buttons are hidden by it just before pressed.
+          if (focusedOutTarget != null
+            && focusedOutTarget != focusedInTarget) {
+            focusedOutTarget.classList.toggle(TARGET_FOCUSED_IN);
+            focusedOutTarget.classList.toggle(TARGET_FOCUSED_OUT);
           }
+          focusedInTarget.classList.toggle(TARGET_FOCUSED_OUT);
+          focusedInTarget.classList.toggle(TARGET_FOCUSED_IN);
         }
         return target;
       }

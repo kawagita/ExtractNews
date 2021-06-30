@@ -20,7 +20,7 @@
 "use strict";
 
 ExtractNews.readUrlSite(document.URL).then((urlSite) => {
-    if (urlSite == undefined || ! urlSite.isEnabled()) {
+    if (urlSite != undefined && urlSite.isEnabled()) {
       var urlParser = new UrlParser(getUrlData(urlSite.data, document.URL));
 
       Site.setNewsOpenedUrl(urlParser.toString());

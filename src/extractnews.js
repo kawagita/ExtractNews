@@ -171,6 +171,7 @@ const LANGUAGE_JAPANESE = "Japanese";
 const LANGUAGE_CODE_EN = "en";
 const LANGUAGE_CODE_JA = "ja";
 
+const URL_ABOUT_NEW_TAB = "about:newtab";
 const URL_ABOUT_BLANK = "about:blank";
 
 const URL_HTTPS_SCHEME = "https://";
@@ -894,7 +895,6 @@ const ExtractNews = (() => {
         }
         if (dataAdded) {
           this.site.data = domainSiteDataMap.addSite(domainData, dataObject);
-          // Set the flag whether the site data is added firstly or again.
           this.site.firstAccessed = dataObject == this.site.data.toObject();
         } else {
           var siteId =
@@ -916,6 +916,10 @@ const ExtractNews = (() => {
         return this.site.enabled;
       }
 
+      /*
+       * Returns true if the site data for a URL is registered firstly or again
+       * in the current context to get this information.
+       */
       isFirstAccessed() {
         return this.site.firstAccessed;
       }

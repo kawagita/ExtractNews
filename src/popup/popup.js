@@ -450,54 +450,50 @@ ExtractNews.Popup = (() => {
     function openNewsSelectionsInTab(tabOpen, newsSelections) {
       if (! Array.isArray(newsSelections)) {
         throw newIllegalArgumentException("newsSelections");
-      } else if (newsSelections.length == 0) {
-        return Promise.resolve();
-      }
-      var tabGettingPromise;
-      var newsSelectionObjects = new Array();
-      newsSelections.forEach((newsSelection) => {
-          newsSelectionObjects.push(newsSelection.toObject());
-        });
-      //                            In this tab   In new tab
-      //
-      // Enabled site               Current URL   Opened URL
-      // Disabled or no news site   Opened URL    Opened URL
-      //
-      // Consider the state of a site on the active tab, and apply news
-      // selections to the current URL on enabled sites if open in this tab,
-      // otherwise, update by the opened URL of its.
-      if (tabOpen) {
-        tabGettingPromise = callAsynchronousAPI(browser.tabs.create, {
-            active: false,
-            url: URL_ABOUT_BLANK
-          });
-      } else {
-        tabGettingPromise = getWindowActiveTab();
-      }
-      return tabGettingPromise.then((tab) => {
-          var tabUpdated = true;
-          if (! tabOpen) {
-            // Update the active tab by the opened URL if not enabled.
-            tabUpdated = ! ExtractNews.isUrlSiteEnabled(tab.url);
-            if (tabUpdated && newsSelections[0].openedUrl == URL_ABOUT_BLANK) {
-              return Promise.resolve();
-            }
-          }
-          return ExtractNews.sendRuntimeMessage({
-              command: ExtractNews.COMMAND_SETTING_SELECT,
-              tabId: tab.id,
-              tabOpen: tabOpen,
-              tabUpdated: tabUpdated,
-              newsSelectionObjects: newsSelectionObjects
-            }).then(() => {
-              if (tabUpdated) {
-                callAsynchronousAPI(browser.tabs.update, tab.id, {
-                    active: ! tabOpen,
-                    url: newsSelections[0].openedUrl
-                  });
-              }
+      } else if (newsSelections.length > 0) {
+        var tabGettingPromise;
+        if (tabOpen) {
+          tabGettingPromise = callAsynchronousAPI(browser.tabs.create, {
+              active: false,
+              url: URL_ABOUT_BLANK
             });
-        });
+        } else {
+          tabGettingPromise = getWindowActiveTab();
+        }
+        return tabGettingPromise.then((tab) => {
+            var tabUrl = undefined;
+            var tabUpdated = true;
+            if (! tabOpen) {
+              if (tab.url != URL_ABOUT_NEW_TAB && tab.url != URL_ABOUT_BLANK) {
+                // Send "Apply" message but not load the opened URL if the news
+                // site is enabled on the active tab, otherwise, do nothing.
+                if (! ExtractNews.isUrlSiteEnabled(tab.url)) {
+                  return Promise.resolve();
+                }
+                tabUpdated = false;
+              }
+              tabUrl = tab.url;
+            }
+            var newsSelectionObjects = new Array();
+            newsSelections.forEach((newsSelection) => {
+                newsSelectionObjects.push(newsSelection.toObject());
+              });
+            return ExtractNews.sendRuntimeMessage({
+                command: ExtractNews.COMMAND_SETTING_SELECT,
+                tabId: tab.id,
+                tabUrl: tabUrl,
+                newsSelectionObjects: newsSelectionObjects
+              }).then(() => {
+                if (tabUpdated) {
+                  callAsynchronousAPI(browser.tabs.update, tab.id, {
+                      active: ! tabOpen,
+                      url: newsSelections[0].openedUrl
+                    });
+                }
+              });
+          });
+      }
+      return Promise.resolve();
     }
 
     _Popup.openNewsSelectionsInTab = openNewsSelectionsInTab;

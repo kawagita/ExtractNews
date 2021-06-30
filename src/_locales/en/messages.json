@@ -395,7 +395,7 @@
   },
 
   "extractNewsSlashdotStoryBoxNames": {
-    "message": "mostdiscussed,srandblock,thisday",
+    "message": "apache,apple,askslashdot,bbc,bsd,betanews,boingboing,developers,features,firehose,games,topcomments,interview,it,linux,osnews,osopinion,politics,science,slashdotjp,thisday,yro,mostdiscussed,srandblock",
     "description": "Names of the story box on Slashdot."
   },
 
@@ -455,43 +455,53 @@
   },
 
   "extractNewsSelectionIds": {
-    "message": "YahooNewsAgency,YahooSportsNews,YahooBroadcast,YahooForeignNews,Blank,SlashdotApple,SlashdotGoogle,SlashdotMicrosoft,Blank",
+    "message": "Yahoo,YahooNewsAgency,YahooSportsNews,YahooBroadcast,YahooForeignNews,Slashdot,SlashdotArchiveForApple,SlashdotArchiveForGoogle,SlashdotArchiveForMicrosoft,Blank",
     "description": "IDs of initial news selections."
   },
 
+  "extractNewsSelectionYahoo": {
+    "message": "Yahoo!,,,https://www.yahoo.com",
+    "description": "News selection of Yahoo!."
+  },
+
   "extractNewsSelectionYahooNewsAgency": {
-    "message": "News Agency/Paper - Yahoo!,,^(?:Bloomberg|Reuters|AP|Associated Press|The Wall Street Journal|USA TODAY|(?:The New York|Los Angeles|LA) Times|Washington Post),https://news.yahoo.com",
+    "message": "- News Agency/Paper,,^(?:Bloomberg|AP|Reuters|Associated Press|The Wall Street Journal|USA TODAY|(?:The New York|Los Angeles|LA) Times|Washington Post),https://news.yahoo.com",
     "description": "News selection of senders by the news agency or paper on Yahoo!."
   },
 
   "extractNewsSelectionYahooSportsNews": {
-    "message": "Sports News - Yahoo!,,/^[A-Za-z]+ Sports/,https://sports.yahoo.com",
+    "message": "- Sports News,,^[A-Za-z]+ Sports,https://sports.yahoo.com",
     "description": "News selection of senders by the sports news on Yahoo!."
   },
 
   "extractNewsSelectionYahooBroadcast": {
-    "message": "Broadcast - Yahoo!,,^(?:ABC|CBS|CNN|NBC|TODAY|FOX|Fox),https://news.yahoo.com",
+    "message": "- Broadcast,,^(?:ABC|CBS|CNN|NBC|TODAY|FOX|Fox),https://news.yahoo.com",
     "description": "News selection of senders by the broadcast on Yahoo!."
   },
 
   "extractNewsSelectionYahooForeignNews": {
-    "message": "Foreign News - Yahoo!,,^(?:The (?:Telegraph|Guardian)|BBC|The Independent),https://news.yahoo.com/world/",
+    "message": "- Foreign News,,^(?:The (?:Telegraph|Guardian)|BBC|The Independent),https://news.yahoo.com/world/",
     "description": "News selection of senders by the foreign news on Yahoo!."
   },
 
-  "extractNewsSelectionSlashdotApple": {
-    "message": "Apple's Topics - Slashdot,Apple|iPhone|iPad|Mac(?:Book|intosh|OS|s?(?:[- \"'\\x2c./:?]|$))|macOS|(?:OS[- ]?X|Safari|Siri)(?:[ \"'\\x2c./:?]|$)|(?:^|[ \"'/])[Ii](?:Book|Cloud|Mac|Message|OS|Pad|Phone|Pod|Tunes)|App Store|Air(?:Play|Pods|Tag)|Jobs|Woz|Tim Cook,,https://slashdot.org/archive.pl?op=sections&keyword=apple",
-    "description": "News selection of topics related to Apple on Slashdot."
+  "extractNewsSelectionSlashdot": {
+    "message": "Slashdot,,,https://slashdot.org",
+    "description": "News selection of Slashdot."
   },
 
-  "extractNewsSelectionSlashdotGoogle": {
-    "message": "Google's Topics - Slashdot,Google|(?:Android|Chrome(?:books?|OS)?|Alphabet|Alexa|Loon|Pixel|YouTube)(?:[- \"'\\x2c./:?]|$)|Chromium|DeepMind|Fitbit|G(?:board|[Mm]ail)|Go (?:Program|Language)|Waymo|Larry Page|Sergey Brin|Eric Schmidt,,https://slashdot.org/archive.pl?op=topics&keyword=google",
-    "description": "News selection of topics related to Google on Slashdot."
+  "extractNewsSelectionSlashdotArchiveForApple": {
+    "message": "- Story Archive for Apple,Apple|iPhone|iPad|Mac(?:Book|intosh|OS|s?(?:[- \"'\\x2c./:?]|$))|macOS|(?:OS[- ]?X|Safari|Siri)(?:[ \"'\\x2c./:?]|$)|(?:^|[ \"'/])[Ii](?:Book|Cloud|Mac|Message|OS|Pad|Phone|Pod|Tunes)|App Store|Air(?:Play|Pods|Tag)|Jobs|Woz|Tim Cook,,https://slashdot.org/archive.pl?op=sections&keyword=apple",
+    "description": "News selection of the story archve for Apple on Slashdot."
   },
 
-  "extractNewsSelectionSlashdotMicrosoft": {
-    "message": "Microsoft's Topics - Slashdot,Microsoft|Windows|(?:Surface|Azure|Bing|Edge|Excel|MS|\\.NET|Outlook|Vista|XP)(?:[- \"'\\x2c./:?]|$)|Cortana|Internet Explorer|(?:^|[ \"'/])IE|Minecraft|Office (?:20|365)|OneDrive|PowerShell|Skype|Xbox|Visual Studio|Gates|Ballmer|Paul Allen,,https://slashdot.org/archive.pl?op=topics&keyword=microsoft",
-    "description": "News selection of topics related to Microsoft on Slashdot."
+  "extractNewsSelectionSlashdotArchiveForGoogle": {
+    "message": "- Story Archive for Google,Google|(?:Android|Chrome(?:books?|OS)?|Alphabet|Alexa|Loon|Pixel|YouTube)(?:[- \"'\\x2c./:?]|$)|Chromium|DeepMind|Fitbit|G(?:board|[Mm]ail)|Go (?:Program|Language)|Waymo|Larry Page|Sergey Brin|Eric Schmidt,,https://slashdot.org/archive.pl?op=topics&keyword=google",
+    "description": "News selection of the story archve for Google on Slashdot."
+  },
+
+  "extractNewsSelectionSlashdotArchiveForMicrosoft": {
+    "message": "- Story Archive for Microsoft,Microsoft|Windows|(?:Surface|Azure|Bing|Edge|Excel|MS|\\.NET|Outlook|Vista|XP)(?:[- \"'\\x2c./:?]|$)|Cortana|Internet Explorer|(?:^|[ \"'/])IE|Minecraft|Office (?:20|365)|OneDrive|PowerShell|Skype|Xbox|Visual Studio|Gates|Ballmer|Paul Allen,,https://slashdot.org/archive.pl?op=topics&keyword=microsoft",
+    "description": "News selection of the story archve for Microsoft on Slashdot."
   },
 
   "extractNewsSelectionBlank": {
@@ -830,7 +840,7 @@
   },
 
   "browserActionOpenInPresentTab": {
-    "message": "Open in this tab",
+    "message": "Open in present tab",
     "description": "Label to open a news selection in the present tab."
   },
 

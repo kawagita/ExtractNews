@@ -862,8 +862,7 @@ ExtractNews.Daemon = (() => {
      * the specified objects of news selection on a tab of the specified ID
      * and returns the promise.
      */
-    function applyTabNewsSelections(
-      tabId, tabOpen, tabUpdated, newsSelectionObjects) {
+    function applyTabNewsSelections(tabId, tabUrl, newsSelectionObjects) {
       var settingNames = new Array();
       var topicRegexpString = "";
       var senderRegexpString = "";
@@ -893,13 +892,14 @@ ExtractNews.Daemon = (() => {
         _Text.concatTextStrings(settingNames, _Alert.SETTING_NAME_MAX_WIDTH);
 
       var newsSelection;
+      var tabOpen = tabUrl == undefined;
       var tabSetting = _tabSettingMap.get(tabId);
       if (tabSetting != undefined) {
         newsSelection = tabSetting.newsSelection;
       } else {
-        if (tabUpdated && ! ExtractNews.isUrlSiteEnabled(openedUrl)) {
+        if (tabOpen && ! ExtractNews.isUrlSiteEnabled(openedUrl)) {
           // Never prepare any setting if the disabled or no news site
-          // is loaded on new tab.
+          // is loaded on an open tab.
           return Promise.resolve();
         }
         newsSelection = ExtractNews.newSelection();
@@ -909,7 +909,8 @@ ExtractNews.Daemon = (() => {
       }
 
       var applyingPromise;
-      if (! tabUpdated) {
+      if (! tabOpen
+        && tabUrl != URL_ABOUT_NEW_TAB && tabUrl != URL_ABOUT_BLANK) {
         if (! tabSetting.isRequestRecieved()) {
           return _setTabMessageDialog(tabId, _Alert.TAB_SETTING_NOT_ENABLED);
         }
@@ -1284,11 +1285,10 @@ browser.runtime.onMessage.addListener((message, sender) => {
     case ExtractNews.COMMAND_SETTING_SELECT:
       if (message.newsSelectionObjects.length > 0) {
         // Receive settings to select news topics and/or senders from the list
-        // of news selections, which applied to the tab of the specified ID.
+        // of news selections, which applied to a tab of the specified ID.
         settingPromise =
           Daemon.applyTabNewsSelections(
-            message.tabId, message.tabOpen, message.tabUpdated,
-            message.newsSelectionObjects);
+            message.tabId, message.tabUrl, message.newsSelectionObjects);
       }
       break;
     case ExtractNews.COMMAND_SETTING_UPDATE:
