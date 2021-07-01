@@ -488,7 +488,7 @@ ExtractNews.readUrlSite(document.URL).then((urlSite) => {
         }
         return false;
       }
-s    }
+    }
 
     const ARTICLE_LIST = "article_list";
 
