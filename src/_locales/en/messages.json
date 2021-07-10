@@ -395,7 +395,7 @@
   },
 
   "extractNewsSlashdotStoryBoxNames": {
-    "message": "apache,apple,askslashdot,bbc,bsd,betanews,boingboing,developers,features,firehose,games,topcomments,interview,it,linux,osnews,osopinion,politics,science,slashdotjp,thisday,yro,mostdiscussed,srandblock",
+    "message": "apache,apple,askslashdot,bbc,bsd,betanews,boingboing,developers,features,firehose,games,interview,it,linux,osnews,osopinion,politics,science,slashdotjp,thisday,yro,mostdiscussed,srandblock",
     "description": "Names of the story box on Slashdot."
   },
 

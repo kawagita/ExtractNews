@@ -660,7 +660,7 @@
   },
 
   "extractNewsSradStoryBoxNames": {
-    "message": "afpbb,blogos,cnetjapan,eetimesjp,engadgetjp,impress-enterprise,excitebit,exciteoddnews,itmediad,itmediaalt,itmediaen,itmedianews,japaninternetcom,sect_linuxkernel,nhknews,osnews,pcworld,slashdot,sect_askslashdot,sect_yro,zdnet,zdnetnews,asahicom,sect_mac,topcomments,sect_interview,wsj,sect_opensource,sect_science,sect_security,sect_developers,mostdiscussed,sect_mobile,sect_books,reuters,jinmei,thisday,kyodo,mainpage_commentcount_widget,mainpage_hits_widget,mainichi,yomiuri",
+    "message": "afpbb,blogos,cnetjapan,eetimesjp,engadgetjp,impress-enterprise,excitebit,exciteoddnews,itmediad,itmediaalt,itmediaen,itmedianews,japaninternetcom,sect_linuxkernel,nhknews,osnews,pcworld,slashdot,sect_askslashdot,sect_yro,zdnet,zdnetnews,asahicom,sect_mac,sect_interview,wsj,sect_opensource,sect_science,sect_security,sect_developers,mostdiscussed,sect_mobile,sect_books,reuters,jinmei,thisday,kyodo,mainpage_commentcount_widget,mainpage_hits_widget,mainichi,yomiuri",
     "description": "スラドのストーリーのリンクボックス名称。"
   },
 

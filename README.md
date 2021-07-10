@@ -1,11 +1,15 @@
 ExtractNews
 ===========
 
-This is chromium and firefox addon to extract news topics and/or senders on the site of Yahoo! and Slashdot in English locale, and Yahoo! Japan News, Impress Watch, ITMedia NEWS, and Srad in Japanese locale. News selection pointed by the list on toolbar and supplemented by the selection text on context menu is applyed to each tab on above site. Main news items are selected and displayed from the top to the bottom, and unselected topics and/or senders are hidden. However the advertising or sponsored link is always retained.
+ExtractNews is chromium and firefox addon to select news topics and/or senders on Yahoo! and Slashdot in English locale, and Yahoo! News, Impress Watch, ITMedia, and Srad in Japanese locale. News selection can be applied to tabs on above sites and news items of only selected topics and/or senders are displayed in the main list. And unfavorite words are hidden on those sites by the filtering. However any advertising or sponsored links are not excluded so always retained.
+
+This package don't use the other code library like jQuery or Node.js. In addition, your news selections and filtering words are never collected and send to any server while you don't know.
+
+Let's make good use of your time without boring topics on the news site by this addon.
 
 ## Installation
 
-This addon could be installed from Chrome Web Store, Addons.mozilla.org, or Microsoft Edge Add-ons as soon as it's ready.
+This addon could be installed from [Addons.mozilla.org](https://addons.mozilla.org/ja/firefox/addon/extractnews/) or [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/extractnews/pjollmndgopckjplpmjglomkdbhbklio) to your browser. In Chrome Web Store, this have not been published yet but as soon as it's ready.
 
 ## License
 

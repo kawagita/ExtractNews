@@ -704,7 +704,7 @@ optionSelectionPane.addDeleteButtonClickEventListener((event) => {
   });
 
 optionSelectionEditPane.addLocalizeButtonClickEventListener((event) => {
-    var regexpIndex = Number(target.value);
+    var regexpIndex = Number(event.target.value);
     if (! optionSelectionEditPane.localizeRegularExpression(regexpIndex)) {
       sendOpitonWarningMessage(optionSelectionEditPane.getDataWarning());
     }
