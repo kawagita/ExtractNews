@@ -481,27 +481,29 @@ ExtractNews.Design = (() => {
             textContent = newsTopicTextNode.alt;
           } else if (newsTopicTextNode.nodeType == Node.TEXT_NODE) {
             var textNode = newsTopicTextNode.parentNode;
-            while (textNode.tagName != "A"
-              && TEXT_LEVEL_TAG_NAME_SET.has(textNode.tagName)) {
-              textNode = textNode.parentNode;
-            }
-            var textNodeChildCount = textNode.childNodes.length;
-            if (textNodeChildCount > 1) {
-              // Returns textContent value of the parent node including
-              // only text nodes and "Text-level semantics".
-              do {
-                var node = textNode.childNodes[textNodeChildCount - 1];
-                if (node.nodeType == Node.ELEMENT_NODE
-                  && ! TEXT_LEVEL_TAG_NAME_SET.has(node.tagName)) {
+            if (textNode != null) {
+              while (textNode.tagName != "A"
+                && TEXT_LEVEL_TAG_NAME_SET.has(textNode.tagName)) {
+                textNode = textNode.parentNode;
+              }
+              var textNodeChildCount = textNode.childNodes.length;
+              if (textNodeChildCount > 1) {
+                // Returns textContent value of the parent node including
+                // only text nodes and "Text-level semantics".
+                do {
+                  var node = textNode.childNodes[textNodeChildCount - 1];
+                  if (node.nodeType == Node.ELEMENT_NODE
+                    && ! TEXT_LEVEL_TAG_NAME_SET.has(node.tagName)) {
+                    break;
+                  }
+                  textNodeChildCount--;
+                  if (textNodeChildCount > 0) {
+                    continue;
+                  }
+                  textContent = textNode.textContent;
                   break;
-                }
-                textNodeChildCount--;
-                if (textNodeChildCount > 0) {
-                  continue;
-                }
-                textContent = textNode.textContent;
-                break;
-              } while (true);
+                } while (true);
+              }
             }
           }
           return textContent.trim();

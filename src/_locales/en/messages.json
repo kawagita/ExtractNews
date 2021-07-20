@@ -394,14 +394,14 @@
     "description": "Regular expression of arrow linked to the previous and next page of a story Slashdot."
   },
 
-  "extractNewsSlashdotStoryBoxNames": {
+  "extractNewsSlashdotStoryBoxIds": {
     "message": "apache,apple,askslashdot,bbc,bsd,betanews,boingboing,developers,features,firehose,games,interview,it,linux,osnews,osopinion,politics,science,slashdotjp,thisday,yro,mostdiscussed,srandblock",
-    "description": "Names of the story box on Slashdot."
+    "description": "IDs of the story box on Slashdot."
   },
 
-  "extractNewsSlashdotStoryBoxTitleForComments": {
+  "extractNewsSlashdotStoryBoxHotComments": {
     "message": "Hot Comments",
-    "description": "Title of the story box for comments on Slashdot."
+    "description": "Title of the story box for hot comments on Slashdot."
   },
 
   "extractNewsSlashdotStoryArchiveOptions": {

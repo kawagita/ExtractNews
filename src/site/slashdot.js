@@ -60,10 +60,9 @@ ExtractNews.readUrlSite(document.URL).then((urlSite) => {
     const STORY_LINK_ARROW_REGEXP = getSlashdotRegExp("StoryLinkArrow");
     const STORY_CLICKGEN = "clickgen";
 
-    const STORY_BOX_NAME_SET =
-      new Set(splitSlashdotString("StoryBoxNames", urlSite.language));
-    const STORY_BOX_TITLE_FOR_COMMENTS =
-      getSlashdotString("StoryBoxTitleForComments");
+    const STORY_BOX_ID_SET =
+      new Set(splitSlashdotString("StoryBoxIds", urlSite.language));
+    const STORY_BOX_HOT_COMMENTS = getSlashdotString("StoryBoxHotComments");
 
     const STORY_ARCHIVE_OPTION_SET =
       new Set(splitSlashdotString("StoryArchiveOptions"));
@@ -297,6 +296,16 @@ ExtractNews.readUrlSite(document.URL).then((urlSite) => {
       }
     }
 
+    function _matchStoryBoxHotComments(headerElement) {
+      // Check the titile of a story box displayed at randam is "Hot Comments".
+      if (headerElement.firstElementChild != null) {
+        var storyBoxTitle =
+          squeezeSpaces(headerElement.firstElementChild.textContent);
+        return storyBoxTitle == STORY_BOX_HOT_COMMENTS;
+      }
+      return false;
+    }
+
     /*
      * Story boxes displayed in the side on Slashdot and Srad.
      */
@@ -306,12 +315,12 @@ ExtractNews.readUrlSite(document.URL).then((urlSite) => {
             parentProperties: Array.of({
                 selectorsForAll: "#slashboxes header",
                 setNewsElement: (element, newsParents) => {
-                    var storyBoxTitle = squeezeSpaces(element.textContent);
-                    var storyBoxNameLength = element.id.indexOf("-title");
-                    if (storyBoxNameLength > 0
-                      && STORY_BOX_NAME_SET.has(
-                        element.id.substring(0, storyBoxNameLength))
-                      && storyBoxTitle != STORY_BOX_TITLE_FOR_COMMENTS) {
+                    var storyBoxIdLength = element.id.indexOf("-title");
+                    if (storyBoxIdLength > 0
+                      && STORY_BOX_ID_SET.has(
+                        element.id.substring(0, storyBoxIdLength))
+                      && (urlSite.language != LANGUAGE_ENGLISH
+                        || ! _matchStoryBoxHotComments(element))) {
                       newsParents.push(element.parentNode);
                     }
                   }
@@ -323,8 +332,7 @@ ExtractNews.readUrlSite(document.URL).then((urlSite) => {
               Array.of({
                 selectorsForAll: "#slashboxes header",
                 setNewsElement: (element, commentNodes) => {
-                    var storyBoxTitle = squeezeSpaces(element.textContent);
-                    if (storyBoxTitle == STORY_BOX_TITLE_FOR_COMMENTS) {
+                    if (_matchStoryBoxHotComments(element)) {
                       commentNodes.push(element.parentNode);
                     }
                   }

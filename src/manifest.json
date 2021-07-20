@@ -2,7 +2,7 @@
   "name": "__MSG_extensionName__",
   "description": "__MSG_extensionDescription__",
   "author": "Yoshinori Kawagita",
-  "version": "1.1",
+  "version": "1.1.1",
   "homepage_url": "https://github.com/kawagita/ExtractNews/",
 
   "manifest_version": 2,
