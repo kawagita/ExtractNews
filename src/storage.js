@@ -155,7 +155,7 @@ ExtractNews.Storage = (() => {
     const FAVICON_KEY = "Favicon";
 
     /*
-     * Reads the favicon on the news site of the specified ID from the storage
+     * Reads a favicon on the news site of the specified ID from the storage
      * and returns the promise fulfilled with its value or rejected.
      */
     function readSiteFavicon(siteId) {
@@ -189,8 +189,18 @@ ExtractNews.Storage = (() => {
         });
     }
 
+    /*
+     * Removes a favicon on the news site of the specified ID from the storage
+     * and returns the promise.
+     */
+    function removeSiteFavicon(siteId) {
+      _checkSiteId(siteId);
+      return removeStorage(siteId + FAVICON_KEY);
+    }
+
     _Storage.readSiteFavicon = readSiteFavicon;
     _Storage.writeSiteFavicon = writeSiteFavicon;
+    _Storage.removeSiteFavicon = removeSiteFavicon;
 
 
     // Key to read and write the comment flag by suffixing the site ID

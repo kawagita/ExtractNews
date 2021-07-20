@@ -2,16 +2,16 @@
   "name": "__MSG_extensionName__",
   "description": "__MSG_extensionDescription__",
   "author": "Yoshinori Kawagita",
-  "version": "1.0.1",
+  "version": "1.1",
   "homepage_url": "https://github.com/kawagita/ExtractNews/",
 
   "manifest_version": 2,
   "default_locale": "en",
 
   "icons": {
-      "16": "icons/tulku-16.png",
-      "32": "icons/tulku-32.png",
-      "48": "icons/tulku-48.png"
+      "16": "icons/extractnews-16.png",
+      "48": "icons/extractnews-48.png",
+      "96": "icons/extractnews-96.png"
     },
 
   "permissions": [

@@ -33,6 +33,7 @@ ExtractNews.Alert = (() => {
         EXCLUDED_TOPIC_MAX_UTF16_CHARACTERS_EXCEEDED:
           "ExcludedTopicMaxUTF16CharactersExceeded",
         SELECTION_NOT_SAVED_ANY_MORE: "SelectionNotSavedAnyMore",
+        SELECTION_NOT_ENABLED: "SelectionNotEnabled",
 
         // Maximum numbers for the setting name and regular expressions input
         // on the edit window or option page and selected by the context menu
@@ -46,10 +47,7 @@ ExtractNews.Alert = (() => {
 
         // Maximum numbers of the string of filtering words separated by commas
         // input or imported on the option page
-        FILTERING_WORDS_MAX_UTF16_CHARACTERS: 64,
-
-        // Warning IDs for the error of tab settings
-        TAB_SETTING_NOT_ENABLED: "TabSettingNotEnabled"
+        FILTERING_WORDS_MAX_UTF16_CHARACTERS: 64
       };
 
     /*
@@ -138,8 +136,8 @@ ExtractNews.Alert = (() => {
       _Alert.FILTERING_NOT_SAVED_ANY_MORE,
       _newWarning(_Alert.FILTERING_NOT_SAVED_ANY_MORE));
     WARNING_MAP.set(
-      _Alert.TAB_SETTING_NOT_ENABLED,
-      _newWarning(_Alert.TAB_SETTING_NOT_ENABLED));
+      _Alert.SELECTION_NOT_ENABLED,
+      _newWarning(_Alert.SELECTION_NOT_ENABLED));
 
     /*
      * Returns the information of a warning for the specified ID displayed

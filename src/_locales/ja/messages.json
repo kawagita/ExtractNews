@@ -789,6 +789,11 @@
     "description": "ニュース選択の最大数を超える保存に対するメッセージ。"
   },
 
+  "extractNewsSelectionNotEnabled": {
+    "message": "ニュース選択を有効にするため再読み込みして下さい。",
+    "description": "無効化されたタブにニュース選択を適用することに対するメッセージ。"
+  },
+
   "extractNewsFilteringWordsMaxUTF16CharactersExceeded": {
     "message": "フィルタリングワードはUTF-16エンコーディングで$1文字以内にして下さい。",
     "description": "フィルタリングワードでUTF-16エンコーディングで最大文字長を超えていることに対するメッセージ。"
@@ -797,11 +802,6 @@
   "extractNewsFilteringNotSavedAnyMore": {
     "message": "フィルタリングはこれ以上保存されません。",
     "description": "フィルタリングの最大数を超える保存に対するメッセージ。"
-  },
-
-  "extractNewsTabSettingNotEnabled": {
-    "message": "タブの設定を有効化するため、再読み込みして下さい。",
-    "description": "タブの設定が有効化されていないことに対するメッセージ。"
   },
 
   "regularExpressionControlEscapeNotFollowedByAlphabet": {

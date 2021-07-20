@@ -306,10 +306,9 @@ ExtractNews.Daemon = (() => {
             _newsSiteDataMap.delete(siteData.id);
             Debug.printMessage("Delete the site data of " + siteData.id + ".");
           }
-          Debug.printMessage(
-            "Remove the setting on Tab " + String(tabId) + ".");
         }
         _tabSettingMap.delete(tabId);
+        Debug.printMessage("Remove the setting on Tab " + String(tabId) + ".");
       }
     }
 
@@ -581,7 +580,8 @@ ExtractNews.Daemon = (() => {
       var urlSite = ExtractNews.getUrlSite(tab.url);
       if (urlSite == undefined || ! urlSite.isEnabled()) {
         if (tabSetting != undefined) {
-          if (tabSetting.suspendedCount >= TAB_SETTING_RETAINED_COUNT) {
+          if (! tabSetting.isRequestRecieved()
+            || tabSetting.suspendedCount >= TAB_SETTING_RETAINED_COUNT) {
             // Remove the setting suspended on the specified tab
             applyingPromises.push(removeTabSetting(tab.id));
           } else {
@@ -712,7 +712,7 @@ ExtractNews.Daemon = (() => {
       }) {
       var tabSetting = _tabSettingMap.get(tabId);
       if (tabSetting == undefined || ! tabSetting.isRequestRecieved()) {
-        return _setTabMessageDialog(tabId, _Alert.TAB_SETTING_NOT_ENABLED);
+        return _setTabMessageDialog(tabId, _Alert.SELECTION_NOT_ENABLED);
       }
       var newsSelection = tabSetting.newsSelection;
       var settingName = newsSelection.settingName;
@@ -816,7 +816,7 @@ ExtractNews.Daemon = (() => {
     function excludeTabNews(tabId, regexpString, regexpAdded = false) {
       var tabSetting = _tabSettingMap.get(tabId);
       if (tabSetting == undefined || ! tabSetting.isRequestRecieved()) {
-        return _setTabMessageDialog(tabId, _Alert.TAB_SETTING_NOT_ENABLED);
+        return _setTabMessageDialog(tabId, _Alert.SELECTION_NOT_ENABLED);
       }
 
       regexpString = _Text.trimText(
@@ -912,7 +912,7 @@ ExtractNews.Daemon = (() => {
       if (! tabOpen
         && tabUrl != URL_ABOUT_NEW_TAB && tabUrl != URL_ABOUT_BLANK) {
         if (! tabSetting.isRequestRecieved()) {
-          return _setTabMessageDialog(tabId, _Alert.TAB_SETTING_NOT_ENABLED);
+          return _setTabMessageDialog(tabId, _Alert.SELECTION_NOT_ENABLED);
         }
         // Apply above news selection to the active tab of the specified ID.
         newsSelection.settingName = settingName;
@@ -1051,21 +1051,37 @@ ExtractNews.Daemon = (() => {
           if (disabledDomainIds.length > 0) {
             var disabledDomainIdSet = new Set(disabledDomainIds);
             _tabSettingMap.forEach((tabSetting, tabId) => {
-                // Dispose the resource to arrange news items for disabled
-                // domains on the tab from which the request is received.
-                if (disabledDomainIdSet.has(tabSetting.domainId)
-                  && tabSetting.isRequestRecieved()
-                  && tabSetting.suspendedCount == 0) {
-                  disposingPromises.push(
-                    _sendTabMessage(tabId, {
-                        command: ExtractNews.COMMAND_SETTING_DISPOSE
-                      }),
-                  removeTabSetting(tabId));
+                if (tabSetting.isRequestRecieved()
+                  && disabledDomainIdSet.has(tabSetting.domainId)) {
+                  // Dispose the resource to arrange news items for disabled
+                  // domains on the tab from which the request is received.
+                  if (tabSetting.suspendedCount == 0) {
+                    disposingPromises.push(
+                      _sendTabMessage(tabId, {
+                          command: ExtractNews.COMMAND_SETTING_DISPOSE
+                        }));
+                  }
+                  disposingPromises.push(removeTabSetting(tabId));
                 }
               });
             Debug.printMessage(
               "Disable the news site of " + disabledDomainIds.join(", ")
               + ".");
+            ExtractNews.forEachSite((siteData) => {
+                // Delete the site data of disabled domains with the favicon.
+                if (disabledDomainIdSet.has(siteData.domainId)) {
+                  var siteId = siteData.id;
+                  ExtractNews.deleteSite(siteData);
+                  _newsSiteDataMap.delete(siteId);
+                  disposingPromises.push(_Storage.removeSiteFavicon(siteId));
+                  Debug.printMessage(
+                    "Delete the site data and favicon of " + siteId + ".");
+                }
+              });
+            disposingPromises.push(
+              _Storage.writeSiteData().then(() => {
+                  _newsSiteSavedAccessCount = 0;
+                }));
           }
           Promise.all(disposingPromises);
         });
@@ -1120,8 +1136,8 @@ ExtractNews.Daemon = (() => {
           }
         });
       deletedSiteDataArray.forEach((siteData) => {
-          // Delete the site data when the access count for the enabled news
-          // site is zero but retain the favicon.
+          // Delete the site data when the access count for it is zero
+          // but retain the favicon.
           ExtractNews.deleteSite(siteData);
           _newsSiteDataMap.delete(siteData.id);
           Debug.printMessage("Delete the site data of " + siteData.id + ".");

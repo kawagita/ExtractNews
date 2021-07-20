@@ -117,6 +117,12 @@ ExtractNews.Design = (() => {
         "STRONG", "INS", "DEL"
       ]);
 
+    const TEXT_LEVEL_TAG_NAME_SET = new Set([
+        "A", "EM", "STRONG", "SMALL", "S", "CITE", "Q", "DFN", "ABBR", "RUBY",
+        "RT", "RP", "DATA", "TIME", "CODE", "VAR", "SAMP", "KBD", "SUB", "SUP",
+        "I", "B", "U", "MARK", "BDI", "BDO", "SPAN", "BR", "WBR"
+      ]);
+
     /*
      * The design of news panels or lists displayed and arranged on a site.
      */
@@ -472,7 +478,31 @@ ExtractNews.Design = (() => {
         if (newsTopicTextNode != null) {
           var textContent = newsTopicTextNode.textContent;
           if (newsTopicTextNode.tagName == "IMG") {
-            return textContent = newsTopicTextNode.alt;
+            textContent = newsTopicTextNode.alt;
+          } else if (newsTopicTextNode.nodeType == Node.TEXT_NODE) {
+            var textNode = newsTopicTextNode.parentNode;
+            while (textNode.tagName != "A"
+              && TEXT_LEVEL_TAG_NAME_SET.has(textNode.tagName)) {
+              textNode = textNode.parentNode;
+            }
+            var textNodeChildCount = textNode.childNodes.length;
+            if (textNodeChildCount > 1) {
+              // Returns textContent value of the parent node including
+              // only text nodes and "Text-level semantics".
+              do {
+                var node = textNode.childNodes[textNodeChildCount - 1];
+                if (node.nodeType == Node.ELEMENT_NODE
+                  && ! TEXT_LEVEL_TAG_NAME_SET.has(node.tagName)) {
+                  break;
+                }
+                textNodeChildCount--;
+                if (textNodeChildCount > 0) {
+                  continue;
+                }
+                textContent = textNode.textContent;
+                break;
+              } while (true);
+            }
           }
           return textContent.trim();
         }
@@ -515,7 +545,7 @@ ExtractNews.Design = (() => {
         if (newsSenderTextNode != null) {
           var textContent = newsSenderTextNode.textContent;
           if (newsSenderTextNode.tagName == "IMG") {
-            return textContent = newsSenderTextNode.alt;
+            textContent = newsSenderTextNode.alt;
           }
           return textContent.trim();
         }

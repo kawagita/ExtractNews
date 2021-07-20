@@ -549,6 +549,11 @@
     "description": "Message for saving over the maximum count of news selections."
   },
 
+  "extractNewsSelectionNotEnabled": {
+    "message": "Reload this page in order to enable news selection.",
+    "description": "Message for applying the news selection to a disabled tab."
+  },
+
   "extractNewsFilteringWordsMaxUTF16CharactersExceeded": {
     "message": "Filtering words must not exceed $1 characters by UTF-16 encoding.",
     "description": "Message for exceeding the maximum character length by UTF-16 encoding in filtering words."
@@ -557,11 +562,6 @@
   "extractNewsFilteringNotSavedAnyMore": {
     "message": "Word filtering is not saved any more.",
     "description": "Message for saving over the maximum count of filtering targets."
-  },
-
-  "extractNewsTabSettingNotEnabled": {
-    "message": "Setting has not been enabled yet. Reload this tab, please.",
-    "description": "Message for enabling the setting on a tab."
   },
 
   "regularExpressionControlEscapeNotFollowedByAlphabet": {
