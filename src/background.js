@@ -34,8 +34,47 @@ ExtractNews.Daemon = (() => {
     // Modified time of the site data
     var _newsSiteDataModifiedTime;
 
-    // Count of the accesse to the news site after the site data is saved
-    var _newsSiteSavedAccessCount = 0;
+    // Flag whether the site data is changed after saved
+    var _newsSiteDataChanged = false;
+
+    function _writeNewsSiteData(disabledDomainIdSet) {
+      const writingPromises = new Array();
+      // Delete the site data of no access in a week, zombie "loading"
+      // of a favicon, and disabled domains before saved.
+      var deletedSiteDataArray = new Array();
+      ExtractNews.forEachSite((siteData) => {
+          if (siteData.accessCount <= 0
+            || (disabledDomainIdSet != undefined
+              && disabledDomainIdSet.has(siteData.domainId))) {
+            deletedSiteDataArray.push(siteData);
+          }
+        });
+      deletedSiteDataArray.forEach((siteData) => {
+          ExtractNews.deleteSite(siteData);
+          _newsSiteDataMap.delete(siteData.id);
+          if (disabledDomainIdSet != undefined) {
+            // Remove the site favicon of disabled domains from the storage.
+            writingPromises.push(_Storage.removeSiteFavicon(siteData.id));
+            Debug.printMessage(
+              "Delete the site data and favicon of " + siteData.id + ".");
+          } else {
+            Debug.printMessage("Delete the site data of " + siteData.id + ".");
+          }
+        });
+      if (_newsSiteDataChanged) {
+        writingPromises.push(
+          _Storage.writeSiteData().then(() => {
+              _newsSiteDataChanged = false;
+              Debug.printMessage("Write the site data ...");
+              ExtractNews.forEachSite((siteData) => {
+                  if (Debug.isLoggingOn()) {
+                    Debug.dump("\t", siteData.accessCount, siteData.url);
+                  }
+                });
+            }));
+      }
+      return Promise.all(writingPromises);
+    }
 
     // Minutes in which the site data is saved
     const SITE_DATA_SAVED_MINUTES = 10;
@@ -662,7 +701,7 @@ ExtractNews.Daemon = (() => {
                               // Increment the access count by this promise
                               // firstly after the favicon is saved.
                               siteData.incrementAccessCount();
-                              _newsSiteSavedAccessCount++;
+                              _newsSiteDataChanged = true;
                               Debug.printMessage(
                                 "Write the favicon of " + siteData.id + ".");
                               resolve();
@@ -679,7 +718,7 @@ ExtractNews.Daemon = (() => {
             }));
       } else if (siteData.accessCount > 0) {
         siteData.incrementAccessCount();
-        _newsSiteSavedAccessCount++;
+        _newsSiteDataChanged = true;
       }
 
       return Promise.all(applyingPromises);
@@ -1067,21 +1106,9 @@ ExtractNews.Daemon = (() => {
             Debug.printMessage(
               "Disable the news site of " + disabledDomainIds.join(", ")
               + ".");
-            ExtractNews.forEachSite((siteData) => {
-                // Delete the site data of disabled domains with the favicon.
-                if (disabledDomainIdSet.has(siteData.domainId)) {
-                  var siteId = siteData.id;
-                  ExtractNews.deleteSite(siteData);
-                  _newsSiteDataMap.delete(siteId);
-                  disposingPromises.push(_Storage.removeSiteFavicon(siteId));
-                  Debug.printMessage(
-                    "Delete the site data and favicon of " + siteId + ".");
-                }
-              });
-            disposingPromises.push(
-              _Storage.writeSiteData().then(() => {
-                  _newsSiteSavedAccessCount = 0;
-                }));
+            // Delete the site data of disabled domains with the favicon.
+            _newsSiteDataChanged = true;
+            disposingPromises.push(_writeNewsSiteData(disabledDomainIdSet));
           }
           Promise.all(disposingPromises);
         });
@@ -1099,21 +1126,8 @@ ExtractNews.Daemon = (() => {
         periodInMinutes: SITE_DATA_SAVED_MINUTES
       });
 
-    function _writeNewsSiteData() {
-      return _Storage.writeSiteData().then(() => {
-          _newsSiteSavedAccessCount = 0;
-          Debug.printMessage("Write the site data ...");
-          ExtractNews.forEachSite((siteData) => {
-              if (Debug.isLoggingOn()) {
-                Debug.dump("\t", siteData.accessCount, siteData.url);
-              }
-            });
-        });
-    }
-
     function _modifyNewsSiteAccessCount(passedCount = 0) {
       const writingPromises = new Array();
-      var deletedSiteDataArray = new Array();
       // Multiply the access count for each news site by the common ratio in
       // a period, and write the modified time moved by the specified count
       // and those site data into the storage.
@@ -1124,28 +1138,14 @@ ExtractNews.Daemon = (() => {
       }
       writingPromises.push(
         _Storage.writeSiteDataLastModifiedTime(_newsSiteDataModifiedTime));
-      Debug.printMessage("Modify and write the site data ...");
+      Debug.printMessage("Modify the site access count by " + commonRatio);
       ExtractNews.forEachSite((siteData) => {
-          var oldCountData = "(" + String(siteData.accessCount) + ")";
           siteData.modifyAccessCount(commonRatio);
-          if (Debug.isLoggingOn()) {
-            Debug.dump("\t", siteData.accessCount, oldCountData, siteData.url);
-          }
-          if (siteData.accessCount <= 0) { // No access in a week
-            deletedSiteDataArray.push(siteData);
-          }
         });
-      deletedSiteDataArray.forEach((siteData) => {
-          // Delete the site data when the access count for it is zero
-          // but retain the favicon.
-          ExtractNews.deleteSite(siteData);
-          _newsSiteDataMap.delete(siteData.id);
-          Debug.printMessage("Delete the site data of " + siteData.id + ".");
-        });
-      writingPromises.push(
-        _Storage.writeSiteData().then(() => {
-            _newsSiteSavedAccessCount = 0;
-          }));
+      // Delete the site data when the access count for it is zero
+      // but retain the favicon.
+      _newsSiteDataChanged = true;
+      writingPromises.push(_writeNewsSiteData());
       return Promise.all(writingPromises);
     }
 
@@ -1153,9 +1153,7 @@ ExtractNews.Daemon = (() => {
         var writingPromise = undefined;
         switch (alarm.name) {
         case ALARM_WRITE_SITE_DATA:
-          if (_newsSiteSavedAccessCount > 0) {
-            writingPromise = _writeNewsSiteData();
-          }
+          writingPromise = _writeNewsSiteData();
           break;
         case ALARM_MODIFY_SITE_DATA:
           writingPromise =
